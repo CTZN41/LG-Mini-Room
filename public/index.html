@@ -4,13 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LG 미니룸</title>
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/styles.css">
+  <script>
+    // Keep existing shared links while using the same isometric room at every entry.
+    const target=new URL('/editor'+location.search,location.href);
+    const space=location.hash.slice(1);
+    if(['menu','example','dream','my'].includes(space))target.searchParams.set('space',space);
+    else if(!target.searchParams.has('space')&&(location.hash||location.search))target.searchParams.set('space','menu');
+    location.replace(target.href);
+  </script>
 </head>
-<body>
-  <main>
-    <h1>LG 미니룸</h1>
-    <p>로컬 개발 서버가 실행 중이에요.</p>
-  </main>
-</body>
+<body><a href="/editor">LG 미니룸 열기</a></body>
 </html>

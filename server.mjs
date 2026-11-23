@@ -1,11 +1,20 @@
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 
-const host = "127.0.0.1";
+const host = process.env.LG_MINI_ROOM_HOST || "127.0.0.1";
 const port = Number(process.env.LG_MINI_ROOM_PORT ?? "4173");
 const pages = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
+  ["/editor", ["dot-room.html", "text/html; charset=utf-8"]],
+  ["/dot-room.html", ["dot-room.html", "text/html; charset=utf-8"]],
+  ["/dot-editor.css", ["dot-editor.css", "text/css; charset=utf-8"]],
+  ["/dot-assets.js", ["dot-assets.js", "text/javascript; charset=utf-8"]],
+  ["/dot-scene.js", ["dot-scene.js", "text/javascript; charset=utf-8"]],
+  ["/dot-editor.js", ["dot-editor.js", "text/javascript; charset=utf-8"]],
   ["/styles.css", ["styles.css", "text/css; charset=utf-8"]],
+  ["/app.js", ["app.js", "text/javascript; charset=utf-8"]],
+  ["/room.js", ["room.js", "text/javascript; charset=utf-8"]],
+  ["/state.js", ["state.js", "text/javascript; charset=utf-8"]],
 ]);
 
 const server = createServer(async (request, response) => {

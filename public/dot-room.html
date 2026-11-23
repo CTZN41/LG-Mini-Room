@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3d2740">
+  <title>MY DOT ROOM · 도트 룸 에디터</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="dot-editor.css">
+  <script defer src="dot-assets.js"></script>
+  <script defer src="dot-scene.js"></script>
+  <script defer src="dot-editor.js"></script>
+</head>
+<body>
+<header class="top">
+  <h1 aria-label="MY DOT ROOM"><canvas id="logo" aria-hidden="true"></canvas></h1>
+  <nav id="rooms" aria-label="방 구조"></nav>
+  <div class="tones" aria-label="가구 톤"><button data-tone="pink">핑크</button><button data-tone="lime">연두</button></div>
+  <button id="more" aria-label="방 메뉴" title="방 메뉴">···</button>
+</header>
+<nav id="spaces" hidden aria-label="미니룸"><a id="dreamLink" href="?space=dream">드림룸</a><a id="myLink" href="?space=my">마이룸</a><button id="editMode">배치 편집</button></nav>
+<main>
+  <section class="studio" aria-label="방 배치">
+    <div id="view" tabindex="0" aria-label="방 캔버스. 둘러볼 때 좌우 방향키로 제품을 고르고 Enter로 열 수 있어요. 편집할 때 제품을 끌어 이동하세요.">
+      <canvas id="scene" aria-label="방 전체와 배치한 제품"></canvas>
+      <span id="keyboardTarget" role="status" hidden></span>
+    </div>
+    <nav class="camera" aria-label="화면 배율">
+      <button id="overview">전체 보기</button><button id="wallView" hidden>벽면 확대</button>
+      <div class="zoom"><button id="out" aria-label="축소">−</button><output id="scale">100%</output><button id="in" aria-label="확대">＋</button></div>
+    </nav>
+    <section id="living" hidden aria-label="방 상호작용"><strong id="lifeTitle"></strong><div id="routineTools" role="group" aria-label="루틴 관리" hidden></div><span id="lifeDetail" role="status"></span><div id="lifeActions"></div></section>
+    <div class="selection">
+      <div class="selectedName"><canvas id="sample" width="40" height="40" hidden></canvas><span id="name" role="status">제품을 눌러 선택</span></div>
+      <div id="actions" hidden>
+        <button id="ccw" aria-label="왼쪽 90도 회전" title="왼쪽 90도 (Shift+R)">↺ 90°</button><button id="flip" title="오른쪽 90도 (R)">↻ 90°</button><button id="aim" hidden>TV 쪽으로</button><button id="up" aria-label="높이 올리기" title="높이 올리기 (])">높이＋</button><button id="down" aria-label="높이 내리기" title="높이 내리기 ([)">높이−</button><button id="duplicate">복제</button><button id="remove">삭제</button><button id="overlap" hidden>겹친 제품</button>
+      </div>
+      <button id="undo" title="되돌리기 (Ctrl+Z)">↶ 되돌리기</button>
+    </div>
+  </section>
+  <aside id="drawer">
+    <div class="drawerHead"><h2>제품 서랍 <span id="count"></span></h2><button id="expand" aria-controls="products" aria-expanded="false">펼치기 ⌃</button></div>
+    <nav id="categories" aria-label="제품 카테고리"></nav>
+    <div id="products" aria-label="제품 목록"></div>
+  </aside>
+</main>
+<dialog id="menu"><header><h2>방 메뉴</h2><button class="close" aria-label="메뉴 닫기">×</button></header>
+  <button id="observationFile" hidden>관찰 기록 내려받기</button>
+  <button id="manageTVs" hidden>체험용 TV 관리</button>
+  <button id="shot">이미지로 보기</button>
+  <button id="saveFile">배치 파일 저장</button><button id="openFile">배치 파일 불러오기</button><input type="file" id="layoutFile" accept="application/json,.json" hidden>
+  <button id="reset">이 방 기본 배치</button><button id="clear">이 방 전부 비우기</button>
+  <a id="friendRoom" href="/#example" hidden>예시 친구 방</a>
+  <a id="mini" href="/#menu">LG 미니룸으로</a>
+</dialog>
+<dialog id="picture"><header><h2>방 이미지</h2><button class="close" aria-label="이미지 닫기">×</button></header><img id="exportImage" alt="편집 표시가 없는 방 전체 이미지"><a id="download" download>PNG 저장</a></dialog>
+<dialog id="batch" aria-labelledby="batchTitle">
+  <header><h2 id="batchTitle">여러 루틴 설정</h2><button class="close" aria-label="설정 닫기">×</button></header>
+  <div id="batchList" aria-label="설정할 루틴"></div>
+  <footer><span id="batchStatus" role="status"></span><button id="batchSave" disabled>선택한 루틴 저장</button></footer>
+</dialog>
+<div id="notice" role="status"></div>
+</body></html>
