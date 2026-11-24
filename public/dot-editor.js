@@ -3,6 +3,7 @@
   const M=DotScene, $=id=>document.getElementById(id);
   const cv=$('scene'), view=$('view'), drawer=$('drawer'), ctx=cv.getContext('2d');
   const cats=['가전','가구','소품','바닥','벽','구조'];
+  const myDrawerOrder=new Map(['fridge_bm','robot_vacuum','vacuum','fridge_pb','fridge_sg'].map((key,i)=>[key,i]));
   const hist={A:[],B:[],C:[]};
   let room='B', tone='pink', layouts={}, next=1, cat='가전', selected=null, overlap=[];
   let life=null;
@@ -11,7 +12,7 @@
   const space=online&&['menu','example','my'].includes(requestedSpace)?requestedSpace:'dream';
   const readOnly=space==='menu'||space==='example';
   let storeKey=online&&space==="my"?"lg-miniroom.dot.my":"dotroom";
-  let ordered=[], storageOK=true, noticeTimer, ready=false;
+  let ordered=[],displayed=[], storageOK=true, noticeTimer, ready=false;
   const list=()=>layouts[room], id=()=>next++;
   const camera={zoom:1,k:1,x:0,y:0,left:0,top:0};
   const bounds={A:[12,8,410,346],B:[12,8,404,313],C:[12,8,400,327]};
@@ -82,7 +83,10 @@
   function redraw(){ordered=M.sorted(room,life?list().filter(life.visible):list());paintFrame()}
   function paintFrame(){
     const frame=life?.frame();
-    M.paint(ctx,room,tone,ordered,selected,frame);
+    const moving=frame?.movingRobot;
+    const movingUnits=frame?.movingUnits;
+    displayed=movingUnits?.size?M.sorted(room,ordered.map(o=>movingUnits.get(o.id)||o)):ordered;
+    M.paint(ctx,room,tone,displayed,moving&&selected?.id===moving.id?moving:selected,frame);
   }
   function placementStatus(k,unitId){
     if(unitId)return life.canAdd(k,unitId)?'놓을 수 있음':'배치됨';
@@ -119,6 +123,9 @@
   }
   function inventory(){
     const items=Object.values(M.products).filter(i=>i.c===cat&&(!life||life.allowed(i.k)));
+    if(space==='my'&&cat==='가전'){
+      items.sort((a,b)=>(myDrawerOrder.get(a.k)??myDrawerOrder.size)-(myDrawerOrder.get(b.k)??myDrawerOrder.size));
+    }
     const cards=items.flatMap(item=>life&&space==='my'&&life.isAppliance(item.k)?
       life.owned(item.k).map(unit=>({item,unit})):[{item}]);
     $('count').textContent=items.length+'종';
@@ -250,7 +257,8 @@
       gesture={type:'pinch',dist,anchor:native(mid),zoom:camera.zoom};return;
     }
     if(pointers.size!==1)return;
-    const n=native(p), stack=M.hits(room,tone,ordered,n.x,n.y);
+    const n=native(p), stack=M.hits(room,tone,displayed,n.x,n.y);
+    if(displayed!==ordered)for(let i=0;i<stack.length;i++)stack[i]=ordered.find(o=>o.id===stack[i].id);
     // After explicitly picking a covered object, dragging that same overlap moves it.
     const o=overlap.length>1&&stack.includes(selected)?selected:stack[0];
     gesture=life&&!life.editing()?{type:'visit',p,o,x:camera.x,y:camera.y,k:camera.k}:o?{type:'move',o,stack,p,ox:o.x,oy:o.y,k:camera.k,before:JSON.stringify(list())}:
@@ -399,6 +407,9 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
   let editMode=false, panel='idle',target=null,seat=null,start=null,started=0,walking=false;
   let playback=null,previousPanel='idle',bindings={},raf=0,lastFrame=-100,offer=null;
   let lampOn=false,poweredTV=null,sceneBeforeMovie=null;
+  let reaction=null;
+  let cleaningRuns=[];
+  const approachMs=740,reactionCycleMs=2100;
   const sample=model.homeSource==='demo';
   const hasHome=()=>model.homeSource==='thinq'||(sample&&model.state.myFixtureId==='sample-home-v1');
   const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
@@ -450,11 +461,19 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
   const templates=model.applianceTemplates,groups=model.applianceGroups;
   const groupFor=k=>Object.keys(groups).find(kind=>groups[kind].keys.includes(k));
   const recipeFor=k=>templates.find(t=>t.actions.some(a=>a.kind===groupFor(k)));
+  const tapKind=k=>k?.startsWith('fridge_')?'fridge':k==='vacuum'||k==='robot_vacuum'?k:null;
+  const tapDescriptions={
+    fridge:'고양이가 냉장고 문을 올려다보며 간식을 기다려요.',
+    vacuum:'청소기가 떨리면 고양이가 한 발 물러났다가 다시 들여다봐요.',
+    robot_vacuum:'고양이가 움직이는 로봇청소기를 눈으로 따라가요.'
+  };
   let recipe=null,recipeBindings={},recipeEffects={};
   function remember(t){
     try{model.rememberPreview(t.id,source)}catch{notice('발견 기록을 저장할 수 없어요. 저장 공간을 확인해 주세요.')}
   }
   function productUse(k){
+    if(k==='robot_vacuum')return tapDescriptions[k]+' 청소 시간 루틴을 시작할 수 있어요.';
+    if(tapKind(k))return tapDescriptions[tapKind(k)];
     if(isTV({k}))return '영화 보기에서 화면을 켜요.';
     if(k==='floor_lamp')return '영화 보기에서 조명을 30%로 낮춰요.';
     const t=recipeFor(k),a=t?.actions.find(a=>a.kind===groupFor(k));
@@ -541,7 +560,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
   let standing=null;
   function position(now){
     const end=seat?sofaPoint(seat):standing||spawn();
-    const t=Math.min(1,(now-started)/740);
+    const t=Math.min(1,(now-started)/approachMs);
     if(!walking||t>=1){walking=false;return end}
     const eased=t*t*(3-2*t);
     return {x:start.x+(end.x-start.x)*eased,y:start.y+(end.y-start.y)*eased-3*Math.sin(Math.PI*t),depth:start.depth+(end.depth-start.depth)*eased};
@@ -550,7 +569,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     if(!raf)raf=requestAnimationFrame(function tick(now){
       raf=0;
       if(now-lastFrame>=60){lastFrame=now;draw()}
-      if(walking||(playback&&!still()))animate();
+      if(walking||((playback||reaction||poweredTV)&&!still()))animate();
     });
   }
   function nearbySofa(tv){
@@ -566,22 +585,33 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     }
     return nearest;
   }
-  function standingPoint(tv){
-    const {w,d}=M.dims(tv),{W,D}=M.roomData(room());
-    const [nx,ny]=[[0,1],[-1,0],[0,-1],[1,0]][M.heading(tv)];
-    const cx=tv.x+w/2,cy=tv.y+d/2;
-    const frontX=cx+nx*(w/2+8),frontY=cy+ny*(d/2+8);
+  function standingPoint(item,kind){
+    const {w,d}=M.dims(item),{W,D}=M.roomData(room());
+    const [nx,ny]=[[0,1],[-1,0],[0,-1],[1,0]][M.heading(item)];
+    const cx=item.x+w/2,cy=item.y+d/2,gap=kind==='washer'?4:kind==='cleaning'?15:8;
+    const frontX=cx+nx*(w/2+gap),frontY=cy+ny*(d/2+gap);
     const obstacles=list().filter(o=>visible(o)&&M.products[o.k].layer&&!M.products[o.k].wall)
-      .map(o=>({x:o.x,y:o.y,...M.dims(o)}));
+      .map(o=>({x:o.x,y:o.y,...M.dims(o),loc:kind&&M.place(room(),tone(),o),flipped:o.f}));
     let best=Infinity,point=null;
     for(let x=2;x<=W-2;x+=2)for(let y=2;y<=D-2;y+=2){
       if(room()==='B'&&x+2>52&&y+2>48)continue;
-      if(x>=tv.x-1&&x<=tv.x+w+1&&y>=tv.y-1&&y<=tv.y+d+1)continue;
+      if(x>=item.x-1&&x<=item.x+w+1&&y>=item.y-1&&y<=item.y+d+1)continue;
       let score=(x-frontX)**2+(y-frontY)**2;
       if(score>=best)continue;
       if(obstacles.some(o=>x>o.x-2&&x<o.x+o.w+2&&y>o.y-2&&y<o.y+o.d+2))continue;
       if((x-cx)*nx+(y-cy)*ny<0)score+=100;
-      if(score<best){best=score;point=floorPoint(x,y)}
+      if(score>=best)continue;
+      const floor=floorPoint(x,y);
+      // Check the cat's silhouette as well as its floor tile in a crowded room.
+      if(kind&&obstacles.some(o=>{
+        if(o.x+o.y<=floor.depth)return false;
+        const {s}=o.loc;
+        return [-10,0,10].some(dx=>[-21,-13,-4].some(dy=>{
+          const px=floor.x+dx-o.loc.x,py=floor.y+dy-o.loc.y;
+          return px>=0&&px<s.w&&py>=0&&py<s.h&&s.pixels[(py*s.w+(o.flipped?s.w-1-px:px))*4+3]>10;
+        }));
+      }))score+=1600;
+      if(score<best){best=score;point=floor}
     }
     return point||spawn();
   }
@@ -593,27 +623,93 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     start=current;started=performance.now();walking=!still()&&Math.hypot(end.x-current.x,end.y-current.y)>1;
     if(walking)animate();
   }
+  function approachAppliance(item,kind){
+    const now=performance.now();
+    start=position(now);seat=null;target=item;
+    standing=standingPoint(item,kind);started=now;
+    walking=!still()&&Math.hypot(standing.x-start.x,standing.y-start.y)>1;
+    reaction={itemId:item.id,kind,wall:item.k==='wall_ac',arrives:now+(walking?approachMs:0)};
+    if(kind==='robot_vacuum')reaction.path=robotPath(item);
+    if(!still())animate();
+  }
+  function robotPath(item,resting=standing,reserved=[]){
+    const {w,d}=M.dims(item),level=M.zone(room(),item);
+    const {zones}=M.roomData(room());
+    const blocks=list().filter(o=>o!==item&&visible(o)&&M.products[o.k].layer&&!M.products[o.k].wall);
+    let best={dx:0,dy:0,length:0};
+    const directions=[[0,1],[-1,0],[0,-1],[1,0]];
+    for(let i=0;i<4;i++){
+      const [dx,dy]=directions[(M.heading(item)+i)%4];
+      for(let n=1;n<=8;n++){
+        const x=item.x+dx*n,y=item.y+dy*n,probe={...item,x,y};
+        M.clamp(room(),probe);
+        if(probe.x!==x||probe.y!==y||M.zone(room(),probe)!==level)break;
+        const onStep=zones.some(([l,t,r,b])=>x<r&&x+w>l&&y<b&&y+d>t&&
+          (x<l||x+w>r||y<t||y+d>b));
+        if(onStep)break;
+        if(blocks.some(o=>{
+          const size=M.dims(o);
+          return x<o.x+size.w&&x+w>o.x&&y<o.y+size.d&&y+d>o.y;
+        }))break;
+        if(reserved.some(b=>x<b.x+b.w&&x+w>b.x&&y<b.y+b.d&&y+d>b.y))break;
+        const [cx,cy]=M.project(room(),x+w/2,y+d/2,level);
+        if(resting&&Math.hypot(cx-resting.x,cy-resting.y)<13)break;
+        if(n>best.length)best={dx,dy,length:n};
+      }
+      if(best.length===8)break;
+    }
+    return best;
+  }
+  function stopReaction(){
+    if(!reaction)return;
+    standing=position(performance.now());walking=false;reaction=null;
+  }
   function frame(){
     if(editMode)return;
     const now=performance.now(),cat=position(now);
+    let pose=null;
+    const active=cleaningRuns[0]||reaction;
+    if(active&&!walking){
+      const elapsed=Math.max(0,now-active.arrives);
+      const progress=still() ? 0.7 : (elapsed%reactionCycleMs)/reactionCycleMs;
+      const settle=still()?1:Math.min(1,elapsed/450);
+      pose={kind:active.kind,itemId:active.itemId,wall:active.wall,progress,settle};
+    }
     const movie=playback&&(!playback.templateId||playback.templateId==='movie-night');
     const tv=movie?target:poweredTV;
-    const tvLoc=target&&M.place(room(),tone(),target);
-    return {cat,depth:cat.depth,seat:!walking&&seat?seat.id:null,
-      time:still()?0:now,walking,facingAway:!!tvLoc&&tvLoc.y+tvLoc.s.h/3<cat.y,
-      facingLeft:!!tvLoc&&tvLoc.x+tvLoc.s.w/2<cat.x,
-      facingSide:!!tvLoc&&Math.abs(tvLoc.x+tvLoc.s.w/2-cat.x)>12,tv:tv?.id,
+    const movingUnits=new Map();
+    if(pose?.kind==='robot_vacuum'&&!still()){
+      for(const {item,path} of cleaningRuns.length?cleaningRuns:[{item:target,path:reaction.path}]){
+        const step=Math.round(path.length*(1-Math.cos(2*Math.PI*pose.progress))/2);
+        if(step)movingUnits.set(item.id,{...item,x:item.x+path.dx*step,y:item.y+path.dy*step});
+      }
+    }
+    const movingRobot=movingUnits.get(target?.id)||null;
+    const tvLoc=target&&M.place(room(),tone(),movingRobot||target);
+    const destination=walking&&(seat?sofaPoint(seat):standing);
+    const dx=destination?destination.x-start.x:tvLoc?tvLoc.x+tvLoc.s.w/2-cat.x:0;
+    const dy=destination?destination.y-start.y:tvLoc?tvLoc.y+tvLoc.s.h/3-cat.y:0;
+    if(pose?.kind==='robot_vacuum'){
+      const gx=movingRobot?movingRobot.x-target.x:0,gy=movingRobot?movingRobot.y-target.y:0;
+      pose.gazeX=Math.max(-2,Math.min(2,(gx-gy)*(dx<0?-1:1)/3));
+      pose.gazeY=Math.max(-1,Math.min(1,-(gx+gy)/5));
+    }
+    return {cat,reaction:pose,movingRobot,movingUnits,depth:cat.depth,seat:!walking&&seat?seat.id:null,
+      time:still()?0:now,walking,facingAway:dy<0,facingLeft:dx<0,
+      facingSide:walking?Math.abs(dx)>Math.abs(dy)*.65:Math.abs(dx)>12,tv:tv?.id,
       appliances:recipeEffects,playing:!!movie||!!poweredTV,
       dim:!!playback?.bindings['light-dim']||(playback?.custom&&Object.values(recipeEffects).some(op=>op==='light-off'||op==='light-dim')),
       lampLit:lampOn||!!playback?.bindings['light-dim'],
       curtain:!!movie&&!my};
   }
   function clearScene(){
-    if(raf)cancelAnimationFrame(raf);raf=0;walking=false;standing=start=seat=target=playback=null;
+    cleaningRuns=[];
+    if(raf)cancelAnimationFrame(raf);raf=0;walking=false;standing=start=seat=target=playback=reaction=null;
+    poweredTV=null;
     offer?.disconnect();offer=null;offeredTarget=null;skipped=false;sceneBeforeMovie=null;
   }
   function reset(){
-    clearScene();recipe=null;recipeBindings={};recipeEffects={};poweredTV=null;lampOn=false;panel='idle';bindings={};render();
+    clearScene();recipe=null;recipeBindings={};recipeEffects={};lampOn=false;panel='idle';bindings={};render();
   }
   function action(text,fn,primary=false,container=$('lifeActions')){
     const b=document.createElement('button');b.type='button';b.textContent=text;
@@ -622,7 +718,11 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     container.append(b);return b;
   }
   function show(title,detail=''){$('lifeTitle').textContent=title;$('lifeDetail').textContent=detail}
-  function setPanel(next){panel=next;render();draw()}
+  function setPanel(next){
+    if(next!=='applianceConfig'&&next!=='petVisit')stopReaction();
+    panel=next;render();draw();
+    if(poweredTV&&!still())animate();
+  }
   function toggleEdit(){
     if(readOnly||gestureActive())return;
     clearScene();panel='idle';editMode=!editMode;select();drawerOpen(false);
@@ -679,6 +779,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     const replay=my&&['idle','saved'].includes(from);
     const origin=replay?savedSource():source;
     if(!my&&from==='product')log('routine_opened');
+    stopReaction();
     sceneBeforeMovie={target,seat,standing,start,walking,elapsed:performance.now()-started};
     watch(tv);playback=result;panel='playing';render();draw();if(!still())animate();
     remember(model.movieTemplate);
@@ -688,9 +789,12 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
   function leaveMovie(destination=previousPanel){
     const draft=destination==='composer'&&playback?.custom?playback:null;
     if(destination==='connect'&&playback)bindings={...playback.bindings};
-    playback=null;skipped=false;recipeEffects={};
+    playback=null;skipped=false;recipeEffects={};cleaningRuns=[];
     if(sceneBeforeMovie){
       ({target,seat,standing,start,walking}=sceneBeforeMovie);
+      if(sceneBeforeMovie.reaction&&destination===previousPanel&&!returnToBag){
+        reaction={...sceneBeforeMovie.reaction,arrives:performance.now()+sceneBeforeMovie.arrivalOffset};
+      }
       started=performance.now()-sceneBeforeMovie.elapsed;sceneBeforeMovie=null;
       if(still())walking=false;
       if(walking)animate();
@@ -698,6 +802,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     const backToBag=returnToBag&&destination===previousPanel;
     returnToBag=false;
     panel=backToBag||draft?'idle':destination;render();draw();
+    if((poweredTV||reaction)&&!still())animate();
     if(backToBag)openBag();
     if(draft)openComposer(draft);
   }
@@ -726,8 +831,17 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
   }
   function tap(o){
     if(playback||menu)return;
+    if(reaction&&reaction.itemId===o?.id)return;
+    stopReaction();
+    poweredTV=isTV(o)?o:null;
+    const kind=tapKind(o?.k);
+    if(kind){
+      approachAppliance(o,kind);
+      setPanel('petVisit');return;
+    }
     const found=o&&recipeFor(o.k);
     if(found){
+      approachAppliance(o,groupFor(o.k));
       openRecipe(found,o);
       return;
     }
@@ -744,7 +858,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     }else if(o?.k==='sofa'&&my&&saved()){
       seat=o;walking=false;target=screenFor(saved().bindings['tv-on']);log('routine_reopened',savedSource());setPanel('saved');
     }else if(o?.k==='floor_lamp'){setPanel('lamp')}
-    else{standing=seat=target=null;walking=false;setPanel('idle')}
+    else{standing=position(performance.now());seat=target=null;walking=false;setPanel('idle')}
   }
   function beginRepair(){
     bindings={...saved().bindings};delete bindings['tv-on'];setPanel('repair');
@@ -822,6 +936,25 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
   function recipeReady(){
     return recipe.actions.every(a=>!a.required||applianceOptions(a).some(d=>d.id===recipeBindings[a.actionId]));
   }
+  function beginCleaningScene(effects){
+    const robots=list().filter(o=>effects[o.id]==='robot_vacuum');
+    if(!robots.length)return;
+    const now=performance.now(),current=position(now);
+    sceneBeforeMovie={target,seat,standing,start,walking,elapsed:now-started,reaction,
+      arrivalOffset:reaction?reaction.arrives-now:0};
+    reaction=null;
+    target=robots[0];start=current;started=now;seat=nearbySofa(target);
+    standing=seat?null:standingPoint(target,'cleaning');
+    const end=seat?sofaPoint(seat):standing;
+    walking=!still()&&Math.hypot(end.x-current.x,end.y-current.y)>1;
+    const reserved=[];
+    cleaningRuns=robots.map(item=>{
+      const path=robotPath(item,standing,reserved),{w,d}=M.dims(item);
+      const dx=path.length*path.dx,dy=path.length*path.dy;
+      reserved.push({x:item.x+Math.min(0,dx),y:item.y+Math.min(0,dy),w:w+Math.abs(dx),d:d+Math.abs(dy)});
+      return {item,itemId:item.id,path,kind:'robot_vacuum',arrives:now+(walking?approachMs:0)};
+    });
+  }
   function playRecipe(from){
     const record=model.routine(recipeBindings,recipe,applianceOptions);
     const effects={};
@@ -830,6 +963,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
       if(d)effects[d.item.id]=a.kind;
     }
     if(!samplePreview)history.pushState({...history.state,dotMovie:true},'');
+    beginCleaningScene(effects);
     previousPanel=from;playback=record;recipeEffects=effects;setPanel('appliancePlaying');
     if(!still())animate();
     remember(recipe);
@@ -917,6 +1051,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
       if(item)recipeEffects[item.id]=groups[a.kind]?a.kind:a.operation;
     }
     history.pushState({...history.state,dotMovie:true},'');
+    beginCleaningScene(recipeEffects);
     previousPanel=from;playback=verified;setPanel('customPlaying');if(!still())animate();
   }
   // Each selected template owns a draft. Only the final save writes routine records.
@@ -1067,7 +1202,9 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
         }
         if(groups[a.kind]&&!options.length&&groups[a.kind].keys.some(k=>canAdd(k))){
           action((sample?'체험용 ':'등록 ')+groups[a.kind].label+' 배치',()=>{
-            d.bindings[key]=addDemoAppliance(a);fieldsFor(d,fields);updateStatus();
+            d.bindings[key]=addDemoAppliance(a);
+            for(const other of drafts.filter(row=>row.selected))fieldsFor(other,$('batch-'+other.template.id));
+            updateStatus();
           },false,fields);
         }
         if(a.kind==='tv'&&options.some(o=>o.id===selected)&&!screenFor(selected)){
@@ -1134,8 +1271,12 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
       const d=applianceOptions(a).find(d=>d.id===playback.bindings[a.actionId]);
       return d?d.name+' '+a.label:groups[a.kind].label+' 제외';
     });
+    if(cleaningRuns.length){
+      summary.push(seat?'고양이는 소파에서 청소기를 지켜봐요':'고양이는 옆에서 청소기를 지켜봐요');
+      if(!cleaningRuns[0].path.length)summary.push('빈 통로가 없어 표시등만 깜박여요');
+    }
     show(recipe.name+' 실행 중',summary.join(' · ')+' · 실제 가전은 작동하지 않아요');
-    if(!still())action('연출 건너뛰기',()=>{skipped=true;render();draw()});
+    if(!still())action('연출 건너뛰기',()=>{skipped=true;walking=false;render();draw()});
     action('재생 종료',()=>closeMovie());
     if(my&&previousPanel!=='idle')action('내 루틴에 저장',()=>{
       const record=model.routine(playback.bindings,recipe,applianceOptions);
@@ -1319,7 +1460,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
       action('다시 불러오기',()=>location.reload());return;
     }
     if(panel==='setup'||(panel==='idle'&&my&&!hasHome())){
-      show('마이룸','ThinQ 앱에 등록된 가전만 놓을 수 있어요. 체험용 계정에는 TV 2대, 조명, 에어컨, 공기청정기, 워시타워, 스타일러가 있어요.');
+      show('마이룸','ThinQ 앱에 등록된 가전만 놓을 수 있어요. 체험용 기기에는 냉장고, 무선청소기, 로봇청소기도 있어요.');
       action('체험용 기기 사용',prepare,true);
       if(!recipe)action('다른 가전 루틴',()=>setPanel('recipeList'));return;
     }
@@ -1361,6 +1502,12 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
       if(my)action('연결 설정',connect);
       action('닫기',()=>tap(null));return;
     }
+    if(panel==='petVisit'){
+      const blocked=reaction?.path?.length===0;
+      show(M.products[target.k].n,blocked?'빈 통로가 없어 로봇청소기가 제자리에서 깜박여요.':tapDescriptions[tapKind(target.k)]);
+      if(target.k==='robot_vacuum')action('청소 시간',()=>openRecipe(recipeFor(target.k),target),true);
+      action('닫기',()=>tap(null));return;
+    }
     if(panel==='lamp'){show('스탠드 조명',lampOn?'켜짐':'꺼짐');action(lampOn?'조명 끄기':'조명 켜기',()=>{lampOn=!lampOn;setPanel('lamp')});return}
     show(my?'마이룸':'드림룸',list().some(o=>isTV(o)&&visible(o))?'방 안의 TV를 눌러 보세요.':
       list().some(o=>visible(o)&&recipeFor(o.k))?'방 안의 가전을 눌러 루틴을 확인해 보세요.':
@@ -1378,7 +1525,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     }
     reducedMotion.addEventListener('change',()=>{
       if(reducedMotion.matches)walking=false;
-      if(playback){render();draw();if(!still())animate()}
+      if(playback||reaction||poweredTV){render();draw();if(!still())animate()}
     });
     $('routineBagButton').onclick=openBag;
     $('editMode').onclick=toggleEdit;$('manageTVs').onclick=manageTVs;$('libraryButton').onclick=openLibrary;
@@ -1406,7 +1553,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     if(model.storageMessage)notice(model.storageMessage);
     window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
   }
-  const interactive=o=>!menu&&(!!recipeFor(o.k)||isTV(o)||o.k==='sofa'||(!friend&&o.k==='floor_lamp'));
+  const interactive=o=>!menu&&(!!tapKind(o.k)||!!recipeFor(o.k)||isTV(o)||o.k==='sofa'||(!friend&&o.k==='floor_lamp'));
   return {enter,visible,allowed,owned,isAppliance,bindUnit,interactive,restoreDeviceIds,identifyDevices,editing:()=>editMode,frame,tap,canAdd,reset,initialMy};
 }
 

@@ -214,19 +214,45 @@ const catWatching=raster(23,27,c=>{
  rect(c,8,16,10,2,'#76a395');
 });
 
+  // The curled body uses the original side-view face and scarf.
+  const sleepingCoat=raster(17,10,c=>{
+    steps(c,0,0,17,10,3,ink);steps(c,1,1,15,8,2,'#ecc194');
+    rect(c,3,2,4,2,'#c79275');rect(c,7,1,3,2,'#d2a582');
+  });
+  const sleepingHead=raster(23,17,c=>{
+    c.drawImage(catWatching,0,0,23,17,0,0,23,17);
+    rect(c,17,8,1,2,'#ffdaad');
+    rect(c,15,10,1,1,ink);rect(c,16,11,3,1,ink);
+  });
+  const wrappedTail=raster(16,6,c=>{
+    rect(c,0,0,3,3,ink);rect(c,1,1,3,3,'#c79275');
+    rect(c,2,3,11,3,ink);rect(c,3,3,9,2,'#e9ba91');
+    rect(c,10,2,5,2,ink);rect(c,11,2,3,1,'#ffe1b0');
+  });
+  const windCat=raster(23,27,c=>{
+    c.drawImage(catWatching,0,5,23,22,0,5,23,22);
+    rect(c,2,4,7,2,ink);rect(c,4,6,5,2,'#c79275');
+    rect(c,12,3,7,2,ink);rect(c,14,5,4,2,'#e3ad86');
+    rect(c,16,8,3,3,'#ffdaad');rect(c,16,10,4,1,ink);
+  });
+
   function drawAppliance(ctx,o,s,kind,time){
     ctx.save();
     if(o.f){ctx.translate(s.w,0);ctx.scale(-1,1)}
     const phase=Math.floor(time/160)%6;
-    if(kind==='air'){
+    if(kind==='robot_vacuum'){
+      rect(ctx,rear(o)?16:22,rear(o)?8:6,2,1,phase<3?'#a8e4d1':'#478882');
+    }else if(kind==='air'){
       const x=o.k==='wall_ac'?17:8,y=o.k==='wall_ac'?19:15;
       for(let i=0;i<3;i++){
         const offset=(phase+i*2)%6;
         rect(ctx,x-i*3-offset,y+i*4+offset,7,2,'#b9ebfd');
         rect(ctx,x-i*3-offset-3,y+i*4+offset+2,4,1,'#79c7df');
       }
-    }else if(kind==='purifier'||kind==='styler'){
-      const color=kind==='purifier'?'#9fe0bd':'#eadcf3';
+    }else if(kind==='styler'){
+      drawSteam(ctx,s.w,(time%2100)/2100);
+    }else if(kind==='purifier'){
+      const color='#9fe0bd';
       for(let i=0;i<3;i++){
         const rise=(phase+i*2)%6;
         const x=Math.round(s.w/2)+(i-1)*5;
@@ -245,9 +271,86 @@ const catWatching=raster(23,27,c=>{
     }
     ctx.restore();
   }
-  function drawEffects(ctx,o,s,fx) {
+  function washerAngle(progress){
+    // The sock and the cat's gaze pause together at the far side of the drum.
+    const halfTurns=Math.min(1,progress/.55)+Math.max(0,(progress-.82)/.18);
+    return Math.PI*halfTurns;
+  }
+  function pulse(progress,start,end){
+    if(progress<=start||progress>=end)return 0;
+    return Math.sin(Math.PI*(progress-start)/(end-start))**2;
+  }
+  function drawSteam(ctx,width,progress){
+    // Stagger the wisps so one is always visible above the closed cabinet.
+    ctx.save();
+    for(let i=0;i<3;i++){
+      const rise=(progress+i/3)%1;
+      ctx.globalAlpha=.9*Math.sin(Math.PI*rise);
+      const x=Math.round(width/2+(i-1)*6+2*Math.sin(rise*2*Math.PI));
+      const y=-3-Math.round(rise*14);
+      rect(ctx,x-1,y,3,4,'#c8b4c6');
+      rect(ctx,x,y-1,3,4,'#fff2e9');
+      rect(ctx,x+2,y-3,2,3,'#fff2e9');
+    }
+    ctx.restore();
+  }
+  function drawTapEffect(ctx,o,s,fx,originX,originY){
+    const {progress,kind}=fx.reaction;
+    const localX=x=>o.f?s.w-x:x;
+    if(kind==='air'){
+      const ventX=localX(o.k==='wall_ac'?17:8),ventY=o.k==='wall_ac'?20:16;
+      const headX=fx.cat.x-originX,headY=fx.cat.y-originY-19;
+      for(let i=0;i<3;i++){
+        const t=(progress*2+i/3)%1;
+        const x=Math.round(ventX+(headX-ventX)*t),y=Math.round(ventY+(headY-ventY)*t-4*Math.sin(t*Math.PI));
+        rect(ctx,x,y,5,2,'#caeff6');rect(ctx,x+1,y-1,2,1,'#83bfce');
+      }
+    }else if(kind==='purifier'){
+      // Two little streams lift out of the grille, then fade as the cat lowers its chin.
+      ctx.save();ctx.globalAlpha=pulse(progress,.02,.98);
+      for(let i=0;i<2;i++){
+        const rise=(progress*1.5+i*.5)%1;
+        const x=localX(7+i*6+Math.round(2*Math.sin(2*Math.PI*rise)));
+        const y=1-Math.round(17*rise);
+        rect(ctx,x,y,2,4,'#acf0d1');rect(ctx,x+1,y-2,2,2,'#e0fff0');
+      }
+      ctx.restore();
+    }else if(kind==='styler'){
+      drawSteam(ctx,s.w,progress);
+    }else if(kind==='fridge'){
+      if(!rear(o)){
+        ctx.save();
+        ctx.globalAlpha=pulse(progress,.19,.78)*.85;
+        rect(ctx,localX(9),39,1,5,'#fff4cc');rect(ctx,localX(9),42,2,1,'#fff4cc');
+        ctx.restore();
+      }
+    }else if(kind==='vacuum'){
+      // Short vibration strokes at the motor, timed just before the cat recoils.
+      if(progress>.1&&progress<.39){
+        const shake=Math.floor(progress*30)%2;
+        for(const x of [-3-shake,s.w+1+shake]){
+          rect(ctx,x,13,1,4,'#655a70');rect(ctx,x+1,12,1,2,'#fff1d8');
+        }
+      }
+    }else if(kind==='robot_vacuum'){
+      const blink=Math.floor(progress*4)%2;
+      rect(ctx,localX(rear(o)?16:22),rear(o)?8:6,2,1,blink?'#a8e4d1':'#478882');
+    }else if(!rear(o)){
+      const angle=washerAngle(progress);
+      const x=Math.round(localX(10+4*Math.cos(angle))),y=Math.round(96-5*Math.sin(angle));
+      rect(ctx,x-1,y-2,3,5,'#f7c8ad');rect(ctx,x-2,y+1,3,2,'#eea0a5');
+      rect(ctx,x-1,y-2,3,1,'#fff3cf');
+    }else{
+      // The lower door is out of view. A brief movement at the edge reads from behind.
+      const x=localX(1),y=s.h-25-Math.round(2*Math.sin(progress*Math.PI*2));
+      rect(ctx,x-2,y,2,5,'#bbd5dc');
+    }
+  }
+  function drawEffects(ctx,o,s,fx,originX,originY) {
+    if(fx.reaction?.itemId===o.id)drawTapEffect(ctx,o,s,fx,originX,originY);
     const kind=fx.appliances?.[o.id];
-    if(kind&&!['light-off','light-dim','tv-on'].includes(kind))drawAppliance(ctx,o,s,kind,fx.time);
+    const robotAlreadyLit=kind==='robot_vacuum'&&fx.reaction?.itemId===o.id;
+    if(kind&&!robotAlreadyLit&&!['light-off','light-dim','tv-on'].includes(kind))drawAppliance(ctx,o,s,kind,fx.time);
     if((kind==='tv-on'||(o.id===fx.tv&&fx.playing))&&!rear(o)){
       const tv=o.k==='tvset',x=tv?17:2,y=tv?3:3,w=tv?39:25,h=tv?27:20;
       ctx.save();if(o.f){ctx.translate(s.w,0);ctx.scale(-1,1)}
@@ -255,8 +358,10 @@ const catWatching=raster(23,27,c=>{
       ctx.transform(1,.5,0,1,x,y);
       ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();ctx.fillStyle='#27375a';ctx.fillRect(0,0,w,h);
       ctx.fillStyle='#c18aaa';ctx.fillRect(0,h*.54,w,h*.46);
-      const t=fx.time/160;
-      ctx.fillStyle='#ffe8a7';ctx.fillRect((Math.floor(t*.45)%(w+7))-4,4,6,5);
+      const t=fx.time/100;
+      ctx.fillStyle='#ffe8a7';ctx.fillRect((Math.floor(t)%(w+7))-4,4,6,5);
+      const cloud=w-(Math.floor(t*.7)%(w+12));
+      rect(ctx,cloud,2,8,2,'#dae6ec');rect(ctx,cloud+3,1,3,1,'#dae6ec');
       for(let i=0;i<w;i++){const j=Math.round(h*.67+Math.sin((i+t)/6)*3);ctx.fillStyle='#648f9f';ctx.fillRect(i,j,1,h-j);ctx.fillStyle='#355971';ctx.fillRect(i,j+5,1,h)}
       ctx.restore();
     }
@@ -278,9 +383,59 @@ const catWatching=raster(23,27,c=>{
     const cat=fx.seat&&fx.facingSide?catWatching:fx.facingAway?catBack:catImage;
     ctx.save();ctx.translate(Math.round(p.x),Math.round(p.y)-(fx.walking?Math.floor(fx.time/110)%2:0));
     if(fx.facingLeft)ctx.scale(-1,1);
-    ctx.drawImage(cat,-11,-24);ctx.restore();
+    if(fx.reaction)drawReactingCat(ctx,fx.reaction);
+    else ctx.drawImage(cat,-11,-24);
+    ctx.restore();
   }
 
+  function drawReactingCat(ctx,{kind,progress,wall,settle=1,gazeX=0,gazeY=0}){
+    const ease=settle*settle*(3-2*settle);
+    if(kind==='styler'){
+      // Tuck the shoulders and lower the chin together, keeping the belly on the floor.
+      const tuck=Math.round(7*ease);
+      const breathe=Math.round(pulse(progress,.05,.85)*ease);
+      const shoulderY=-15+Math.round(tuck/2)-breathe;
+      ctx.drawImage(sleepingCoat,-6-tuck,shoulderY,13+tuck,-1-shoulderY);
+      const headX=-11+Math.round(2*ease),headY=-24+tuck-breathe;
+      const face=ease<.6?catWatching:sleepingHead;
+      ctx.drawImage(face,0,0,23,17,headX,headY,23,17);
+      ctx.drawImage(wrappedTail,-8-Math.round(5*ease),-6,9+tuck,6);
+      return;
+    }
+    let lean=0,lift=0,sprite=catWatching;
+    if(kind==='air'){
+      const gust=Math.sin(Math.PI*progress);
+      lift=(wall?2:0)+gust;
+      lean=-gust;
+      sprite=windCat;
+    }else if(kind==='purifier'){
+      const sniff=pulse(progress,.24,.46)+pulse(progress,.52,.77);
+      lift=pulse(progress,.03,.94)+sniff;
+      lean=2*sniff;
+    }else if(kind==='fridge'){
+      const look=Math.min(1,pulse(progress,.04,.94)*2);
+      lift=-1+4*look;lean=1+look;
+    }else if(kind==='vacuum'){
+      // The whole cat steps back quickly, then eases forward and peers at the nozzle.
+      const recoil=Math.min(1,Math.max(0,(progress-.15)/.12),Math.max(0,(.71-progress)/.32));
+      ctx.translate(-Math.round(6*recoil*ease),-Math.round(2*pulse(progress,.15,.32)*ease));
+      lean=2*pulse(progress,.63,.99)-recoil;lift=recoil;
+    }else if(kind==='robot_vacuum'){
+      lift=-1+gazeY;lean=1+gazeX;
+    }else{
+      const angle=washerAngle(progress);
+      lean=2*Math.cos(angle);lift=2*Math.sin(angle);
+    }
+    // Move the face as one piece. Between the chin and paws, sample every
+    // destination row so leaning never opens a transparent seam at the scarf.
+    lift=Math.round(lift*ease);
+    const chin=14,feet=23;
+    for(let y=-lift;y<sprite.height;y++){
+      const weight=Math.min(1,Math.max(0,(feet-y)/(feet-chin+lift)));
+      const sourceY=y+Math.round(lift*weight);
+      ctx.drawImage(sprite,0,sourceY,sprite.width,1,-11+Math.round(lean*ease*weight),y-24,sprite.width,1);
+    }
+  }
 
   function paint(ctx,room,tone,ordered,selected,fx) {
     ctx.imageSmoothingEnabled=false;
@@ -304,7 +459,7 @@ const catWatching=raster(23,27,c=>{
       }
       ctx.drawImage(o.f?s.flipped:s.im,x,y);
       if(fx){
-        ctx.save();ctx.translate(x,y);drawEffects(ctx,o,s,fx);ctx.restore();
+        ctx.save();ctx.translate(x,y);drawEffects(ctx,o,s,fx,x,y);ctx.restore();
         if(o===catLayer){
           drawCat(ctx,fx.cat,fx);catPainted=true;
           if(rear(sofa)){

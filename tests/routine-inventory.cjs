@@ -17,8 +17,8 @@ async function check(browser,viewport){
   const state=()=>p.evaluate(()=>JSON.parse(localStorage['lg-miniroom.state']||'{}'));
   const discoveries=()=>p.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith('lg-miniroom.discovered.')).sort());
   await p.goto(base+'/editor?space=dream');
-  await open();assert.equal(await bag.locator('article').count(),3);assert.match(await row('영화 보기').innerText(),/미발견/);await close();
-  for(const [name,key,routine] of [['TV+거실장','tvset','영화 보기'],['타워 에어컨','tower_ac','쾌적한 방'],['워시타워 민트','wash_m','의류 관리']]){
+  await open();assert.equal(await bag.locator('article').count(),4);assert.match(await row('영화 보기').innerText(),/미발견/);await close();
+  for(const [name,key,routine] of [['TV+거실장','tvset','영화 보기'],['타워 에어컨','tower_ac','쾌적한 방'],['워시타워 민트','wash_m','의류 관리'],['로봇청소기','robot_vacuum','청소 시간']]){
     await tap('가전 수집');const product=p.locator('[data-product="'+key+'"]');
     assert.match(await product.innerText(),new RegExp(routine));
     await tap(name+' 수집');assert.match(await p.locator('#collectedUse').innerText(),new RegExp(routine));
@@ -30,9 +30,9 @@ async function check(browser,viewport){
     await tap('배치 완료');await open();assert.match(await row(routine).innerText(),/체험 가능/);
     await press(routine,'미리보기');await btn('재생 종료').waitFor();await tap('재생 종료');await btn('재생 종료').waitFor({state:'hidden'});await close();
   }
-  assert.equal((await discoveries()).length,3);
+  assert.equal((await discoveries()).length,4);
   await p.locator('#myLink').tap();await btn('체험용 기기 사용').waitFor();await p.reload();await open();
-  for(const name of ['영화 보기','쾌적한 방','의류 관리']){
+  for(const name of ['영화 보기','쾌적한 방','의류 관리','청소 시간']){
     assert.match(await row(name).innerText(),/발견함/);
     await press(name,'다시 미리보기');await btn('인벤토리로 돌아가기').waitFor();
     assert.match(await p.locator('#lifeTitle').innerText(),new RegExp(name));
@@ -56,7 +56,7 @@ async function check(browser,viewport){
   const air=p.locator('#products [data-key=tower_ac]');assert.match(await air.innerText(),/놓을 수 있음/);
   await air.tap();assert.match(await air.innerText(),/배치됨/);
   assert.deepEqual(errors,[]);await p.context().close();
-  console.log('PASS',viewport.width+'x'+viewport.height,'all three discoveries, no-device replay, placement counts, legacy save, reconnection and registered-device status');
+  console.log('PASS',viewport.width+'x'+viewport.height,'all four discoveries, no-device replay, placement counts, legacy save, reconnection and registered-device status');
 }
 async function checkSharedDiscovery(browser){
   const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
@@ -82,7 +82,7 @@ async function checkSharedDiscovery(browser){
   assert.match(await btn('거실 TV').innerText(),/놓을 수 있음/);assert.match(await btn('침실 TV').innerText(),/배치됨/);
   assert.equal(await btn('거실 TV').getAttribute('aria-pressed'),'false');
   await page.reload();await btn('인벤토리').tap();await btn('다시 미리보기').waitFor();
-  assert.equal(await page.locator('#bagRows article').count(),3);
+  assert.equal(await page.locator('#bagRows article').count(),4);
   await page.context().close();console.log('PASS friend and dream deduplication, Back to inventory, shared discovery and independent same-model device labels');
 }
 (async()=>{const browser=await chromium.launch({channel:'chrome'});try{

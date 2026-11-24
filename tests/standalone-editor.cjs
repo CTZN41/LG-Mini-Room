@@ -43,7 +43,7 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
   const tapPoint=p=>phone?page.touchscreen.tap(p.x,p.y):page.mouse.click(p.x,p.y);
   await page.goto(url);await page.waitForSelector('.card');
   let s=await state();assert.equal(s.room,'B');
-  const counts=[15,16,6,3,4,1];
+  const counts=[16,16,6,3,4,1];
   for(const [i,b] of (await page.locator('[data-cat]').all()).entries()){await b.click();assert.equal(await page.locator('.card').count(),counts[i])}
   await click('[data-cat="가전"]');
   for(const r of ['A','B','C']){

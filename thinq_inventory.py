@@ -19,6 +19,7 @@ SPRITES = {
     "DEVICE_WASHTOWER": "wash_m",
     "DEVICE_WASHTOWER_WASHER": "wash_m",
     "DEVICE_STICK_CLEANER": "vacuum",
+    "DEVICE_ROBOT_CLEANER": "robot_vacuum",
     "DEVICE_TV": "tvset",
 }
 

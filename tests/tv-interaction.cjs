@@ -14,7 +14,21 @@ try{for(const space of ['my','dream']){
   await p.locator('#editMode').click();
  }
  // Use the real renderer and hit testing; capture the actual cat pose it was asked to draw.
- async function capture(){await p.evaluate(()=>{const paint=DotScene.paint;DotScene.paint=function(...args){window.pose=structuredClone(args[5]||null);return paint(...args)}})}
+ async function capture(){await p.evaluate(key=>{
+   const paint=DotScene.paint;
+   DotScene.paint=function(...args){window.pose=structuredClone(args[5]||null);return paint(...args)};
+   window.glassPixels=k=>{
+     const layout=JSON.parse(localStorage[key]),o=layout.layouts[layout.room].find(o=>o.k===k);
+     const {x,y,s}=DotScene.place(layout.room,layout.theme,o),left=k==='tvset'?17:2;
+     const ctx=document.querySelector('#scene').getContext('2d');
+     let hash=0;
+     for(let i=1;i<24;i++){
+       const px=o.f?s.w-1-left-i:left+i;
+       for(const value of ctx.getImageData(x+px,y+4+Math.round(i/2),1,18).data)hash=(31*hash+value)|0;
+     }
+     return hash;
+   };
+ },layoutKey)}
  async function tap(k){
   await p.evaluate(()=>new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done))));
   const coords=await p.evaluate(([key,k])=>{const data=JSON.parse(localStorage[key]);const ord=DotScene.sorted(data.room,data.layouts[data.room]),o=ord.find(o=>o.k===k),q=DotScene.place(data.room,data.theme,o),cv=document.querySelector('#scene'),r=cv.getBoundingClientRect(),s=r.width/cv.width;
@@ -27,14 +41,28 @@ try{for(const space of ['my','dream']){
  }
  await btn('배치 편집').waitFor();await capture();await tap('tvset');await p.waitForTimeout(850);
  let near=await p.evaluate(()=>pose);assert.ok(near.seat);assert.match(await p.locator('#lifeDetail').innerText(),/가까운 소파/);
+ async function expectMoving(k){
+   const before=await p.evaluate(k=>glassPixels(k),k);
+   await p.waitForFunction(([k,before])=>glassPixels(k)!==before,[k,before],{timeout:2500});
+ }
+ await expectMoving('tvset');assert.ok(!near.dim&&!near.curtain&&!near.lampLit);
+ await btn('TV 끄기').tap();const off=await p.evaluate(()=>glassPixels('tvset'));
+ await p.waitForTimeout(300);assert.equal(await p.evaluate(()=>glassPixels('tvset')),off);
+ await btn('TV 켜기').tap();await expectMoving('tvset');
  await tap('standbyme');let moving=await p.evaluate(()=>pose);assert.ok(moving.walking);
  await p.waitForTimeout(850);let far=await p.evaluate(()=>pose);assert.equal(far.seat,null);assert.equal(far.walking,false);assert.notDeepEqual(far.cat,near.cat);
+ await expectMoving('standbyme');assert.equal(await p.evaluate(()=>glassPixels('tvset')),off);
+ await p.emulateMedia({reducedMotion:'reduce'});
+ await p.waitForTimeout(150);
+ const frozen=await p.evaluate(()=>glassPixels('standbyme'));
+ await p.waitForTimeout(300);assert.equal(await p.evaluate(()=>glassPixels('standbyme')),frozen);
+ await p.emulateMedia({reducedMotion:'no-preference'});await expectMoving('standbyme');
  const expected=await p.evaluate(key=>{const s=JSON.parse(localStorage[key]),tv=s.layouts[s.room].find(o=>o.k==='standbyme'),{w,d}=DotScene.dims(tv),cx=tv.x+w/2,cy=tv.y+d+8,z=DotScene.roomData(s.room).zones.find(([x1,y1,x2,y2])=>cx>=x1&&cx<x2&&cy>=y1&&cy<y2)?.[4]||0;return DotScene.project(s.room,cx,cy,z)},layoutKey);
  assert.ok(Math.hypot(far.cat.x-expected[0],far.cat.y-expected[1])<10,'far='+JSON.stringify(far.cat)+' expected '+expected);
  assert.match(await p.locator('#lifeDetail').innerText(),/앞에 서서/);
  await btn('영화 보기').tap();await btn('재생 종료').waitFor();
  if(space==='my'){assert.match(await p.locator('#lifeDetail').innerText(),/침실 TV 재생/);await btn('내 루틴에 저장').tap();await btn('영화 보기').waitFor();
-  await tap('tvset');await btn('TV 켜기').waitFor();await btn('영화 보기').tap();assert.match(await p.locator('#lifeDetail').innerText(),/거실 TV 재생/);assert.equal(await p.evaluate(()=>JSON.parse(localStorage['lg-miniroom.state']).savedRoutines[0].bindings['tv-on']),'my-tv-2');
+  await tap('tvset');await btn('TV 끄기').waitFor();await btn('영화 보기').tap();assert.match(await p.locator('#lifeDetail').innerText(),/거실 TV 재생/);assert.equal(await p.evaluate(()=>JSON.parse(localStorage['lg-miniroom.state']).savedRoutines[0].bindings['tv-on']),'my-tv-2');
  }
  await p.evaluate(key=>{const r=JSON.parse(localStorage[key]);r.layouts[r.room]=r.layouts[r.room].filter(o=>o.k!=='sofa');localStorage[key]=JSON.stringify(r)},layoutKey);await p.reload();await btn('배치 편집').waitFor();await capture();await tap('tvset');await p.waitForTimeout(850);assert.equal(await p.evaluate(()=>pose.seat),null);await btn('영화 보기').tap();await btn('재생 종료').waitFor();
  console.log('PASS',space,'near seated, far walked and stood in front of selected screen, no-sofa playback');await p.context().close();

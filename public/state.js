@@ -46,16 +46,22 @@ export const applianceGroups={
   air:{label:'에어컨',keys:['tower_ac','wall_ac']},
   purifier:{label:'공기청정기',keys:['puri_p','puri_m','puri_b']},
   washer:{label:'워시타워',keys:['wash_m','wash_b','wash_s']},
-  styler:{label:'스타일러',keys:['styler']}
+  styler:{label:'스타일러',keys:['styler']},
+  robot_vacuum:{label:'로봇청소기',keys:['robot_vacuum']}
 };
+const purifyAir={actionId:'air-clean',kind:'purifier',capability:'mode.set',value:'auto',label:'자동 청정',required:false};
 export const applianceTemplates=[
   {id:'room-comfort',name:'쾌적한 방',anchor:'air',actions:[
     {actionId:'air-cool',kind:'air',capability:'mode.set',value:'cool',label:'냉방',required:true},
-    {actionId:'air-clean',kind:'purifier',capability:'mode.set',value:'auto',label:'자동 청정',required:false}
+    purifyAir
   ]},
   {id:'clothes-care',name:'의류 관리',anchor:'washer',actions:[
     {actionId:'wash-normal',kind:'washer',capability:'cycle.set',value:'normal',label:'표준 세탁',required:true},
     {actionId:'style-refresh',kind:'styler',capability:'cycle.set',value:'refresh',label:'리프레시',required:false}
+  ]},
+  {id:'cleaning-time',name:'청소 시간',anchor:'robot_vacuum',actions:[
+    {actionId:'robot-clean',kind:'robot_vacuum',capability:'operation.set',value:'start',label:'바닥 청소',required:true},
+    purifyAir
   ]}
 ];
 const empty = {schemaVersion:1,revision:0,collection:[],dreamLayout:{},myFixtureId:null,myLayout:{},savedRoutines:[]};
@@ -113,7 +119,7 @@ function sampleTvIds(home){
 }
 // This fixture represents the device list from ThinQ in the local MVP.
 // Product keys describe a sprite; device IDs identify individual registered units.
-const sampleModels = ['tower_ac','puri_p','wash_m','styler'];
+const sampleModels = ['tower_ac','wall_ac','puri_p','wash_m','styler','fridge_bm','fridge_pb','fridge_sg','vacuum','robot_vacuum'];
 export function registeredAppliances(){
   if(homeSource!=='demo')return accountDevices;
   return sampleAppliances(state);
@@ -197,7 +203,7 @@ const customActions=[
   {...actions[0],label:'TV 켜기'},
   {...actions[1],label:'밝기 30%'},
   {...actions[1],actionId:'light-off',value:0,label:'조명 끄기'},
-  ...applianceTemplates.flatMap(t=>t.actions)
+  ...new Set(applianceTemplates.flatMap(t=>t.actions))
 ];
 export function customOptions(device){
   const kind=device.k==='floor_lamp'?'light':['tvset','standbyme'].includes(device.k)?'tv':

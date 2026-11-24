@@ -28,12 +28,32 @@ const base=process.argv[2]||'http://127.0.0.1:4173';
     assert.equal(await page.evaluate(()=>JSON.parse(localStorage['lg-miniroom.state']).collectionSources.fridge_pb),'photo');
     await visit('my');await edit();assert.equal(await page.locator('#products .card').count(),0);
     await button('배치 완료').click();await button('체험용 기기 사용').click();await edit();
-    assert.equal(await card('fridge_pb').count(),0);assert.ok(await card('tvset').isDisabled());
+    const drawerKeys=['fridge_bm','robot_vacuum','vacuum','fridge_pb','fridge_sg'];
+    assert.deepEqual(await page.locator('#products .card').evaluateAll(cards=>cards.slice(0,5).map(b=>b.dataset.key)),drawerKeys);
+    assert.ok(await card('tvset').isDisabled());
+    for(const k of drawerKeys){await card(k).click();assert.ok(await card(k).isDisabled())}
+    await page.reload();await edit();
+    for(const k of drawerKeys){assert.ok(await card(k).isDisabled())}
     await card('tower_ac').click();assert.ok(await card('tower_ac').isDisabled());
     assert.ok(await button('복제').isDisabled());await page.keyboard.press('d');
+    await card('wall_ac').click();assert.ok(await card('wall_ac').isDisabled());
     const sample=await page.evaluate(()=>JSON.parse(localStorage['lg-miniroom.dot.my']));
     assert.equal(sample.layouts.B.filter(o=>o.k==='tower_ac').length,1);
+    const wall=sample.layouts.B.find(o=>o.k==='wall_ac');
+    assert.equal(wall.y,0);assert.notEqual(wall.deviceId,sample.layouts.B.find(o=>o.k==='tower_ac').deviceId);
+    await button('배치 완료').click();await page.locator('#view').focus();
+    for(let i=0;i<sample.layouts.B.length;i++){
+      await page.keyboard.press('ArrowRight');
+      if((await page.locator('#keyboardTarget').innerText()).includes('벽걸이 에어컨'))break;
+    }
+    await page.keyboard.press('Enter');
+    assert.equal(await page.getByRole('combobox',{name:'에어컨 · 필수'}).inputValue(),wall.deviceId);
+    await button('미리보기').click();assert.match(await page.locator('#lifeDetail').innerText(),/벽걸이 에어컨 냉방/);
+    await button('내 루틴에 저장').click();await button('쾌적한 방').waitFor();
+    await page.reload();await button('쾌적한 방').click();
+    assert.match(await page.locator('#lifeDetail').innerText(),/벽걸이 에어컨 냉방/);
     await visit('dream');await edit();assert.equal(await card('tower_ac').count(),0);
+    assert.equal(await card('wall_ac').count(),0);
     assert.equal(await card('standbyme').count(),0);assert.ok(await card('fridge_pb').isEnabled());
 
     // Replace the account endpoint only. Exercise the normal page, inventory and save paths.
