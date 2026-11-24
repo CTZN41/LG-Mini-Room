@@ -7,7 +7,12 @@ try{for(const space of ['my','dream']){
  await p.goto(base+'/editor?space='+space);
  const btn=n=>p.getByRole('button',{name:n,exact:true}),layoutKey=space==='my'?'lg-miniroom.dot.my':'dotroom';
  if(space==='my')await btn('체험용 기기 사용').tap();
- else {await p.locator('#editMode').click();await p.locator('[data-key=standbyme]').click();await p.locator('#editMode').click();}
+ else {
+  await btn('가전 수집').click();await btn('TV+거실장 수집').click();await btn('계속 수집').click();await btn('스탠바이미 수집').click();
+  await btn('가전 목록 닫기').click();await p.locator('#editMode').click();
+  for(const key of ['tvset','standbyme'])await p.locator('[data-key='+key+']').click();
+  await p.locator('#editMode').click();
+ }
  // Use the real renderer and hit testing; capture the actual cat pose it was asked to draw.
  async function capture(){await p.evaluate(()=>{const paint=DotScene.paint;DotScene.paint=function(...args){window.pose=structuredClone(args[5]||null);return paint(...args)}})}
  async function tap(k){
@@ -18,7 +23,7 @@ try{for(const space of ['my','dream']){
  }
  if(space==='dream'){
   // Separate the second screen from the sofa in an isolated test session.
-  await p.evaluate(key=>{const d=JSON.parse(localStorage[key]),a=d.layouts[d.room];d.layouts[d.room]=a.filter(x=>['standbyme','tvset','sofa','floor_lamp'].includes(x.k));Object.assign(a.find(x=>x.k==='standbyme'),{x:78,y:6,f:0});localStorage[key]=JSON.stringify(d)},layoutKey);await p.reload();
+  await p.evaluate(key=>{const d=JSON.parse(localStorage[key]),a=d.layouts[d.room];d.layouts[d.room]=a.filter(x=>['standbyme','tvset','sofa','floor_lamp'].includes(x.k));Object.assign(a.find(x=>x.k==='tvset'),{x:0,y:56,f:1});Object.assign(a.find(x=>x.k==='standbyme'),{x:78,y:6,f:0});localStorage[key]=JSON.stringify(d)},layoutKey);await p.reload();
  }
  await btn('배치 편집').waitFor();await capture();await tap('tvset');await p.waitForTimeout(850);
  let near=await p.evaluate(()=>pose);assert.ok(near.seat);assert.match(await p.locator('#lifeDetail').innerText(),/가까운 소파/);

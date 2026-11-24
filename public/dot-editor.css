@@ -86,6 +86,8 @@ dialog::backdrop{background:#150f20a8}dialog header{display:flex;align-items:cen
 #routineTools{grid-column:2;grid-row:1;display:flex;gap:6px;align-items:center}
 #routineTools button{min-height:36px;padding:4px 9px;font-size:13px}
 .routine-shelf > #lifeDetail:empty{display:none}
+.routine-shelf > #lifeDetail{grid-column:1/-1}
+.routine-shelf #lifeActions:empty{display:none}
 .routine-shelf #lifeActions{grid-column:1/-1;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);width:100%;margin:0;gap:8px}
 #lifeActions .routine-card{
   display:grid;align-content:center;justify-items:start;gap:4px;text-align:left;
@@ -124,3 +126,46 @@ dialog::backdrop{background:#150f20a8}dialog header{display:flex;align-items:cen
 .batch-fields button{justify-self:start}.batch-fields small,#batchStatus{color:var(--muted)}
 #batch footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
 #batchSave{background:var(--accent);min-height:42px;flex:none}
+#composer[open]{display:flex;flex-direction:column;gap:10px;overflow:hidden;max-height:88dvh}
+#composer header{margin:0}
+.composer-body{overflow:auto;overscroll-behavior:contain;min-height:0;padding:2px}
+.composer-name{display:grid;gap:4px}
+.composer-name input{width:100%;min-height:40px;background:var(--card);border:2px solid var(--line);font:inherit;color:var(--ink);padding:6px}
+#composer fieldset{min-width:0;border:0;padding:0;margin:14px 0 0}
+#composer legend{padding:0 0 6px}
+#composer footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#customStatus{color:var(--muted);font-size:13px}
+#customPreview{flex:none;background:var(--accent)}
+.routine-shelf #routineTools{flex-wrap:wrap;justify-content:flex-end}
+.routine-shelf #lifeActions{grid-auto-columns:minmax(105px,1fr);overflow-x:auto;padding:0 3px 4px 0}
+#lifeActions .routine-card{overflow-wrap:anywhere}
+@media(max-width:380px){.routine-shelf #routineTools button{padding-inline:5px}}
+#libraryNote,#libraryStatus{font-size:14px;line-height:1.45}
+#libraryItems>div{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+#libraryItems canvas{image-rendering:pixelated}
+#libraryItems button{min-height:36px}
+#collectionResult{text-align:center;padding:4px 0 2px}
+#collectedPic{width:96px;height:81px;image-rendering:pixelated}
+#collectedName{display:block;margin:6px 0 16px}
+#collectionResult>div{display:flex;justify-content:center;gap:10px}
+#collectionResult button{min-height:44px}
+#placeCollected{background:var(--accent)}
+#routineBagButton{font-size:13px;color:var(--ink)}
+#bagRows article{padding:12px 0;border-top:1px solid var(--edge)}
+#bagRows p,#collectedUse{font-size:14px;line-height:1.45;margin:4px 0 10px}
+#bagRows button{min-height:40px;margin:0 6px 4px 0}
+#libraryItems small,.card small{display:block;font-size:11px;line-height:1.3;color:var(--muted)}
+#libraryItems small{margin-top:3px}
+@media(max-width:840px) and (orientation:portrait){#drawer{height:calc(179px + env(safe-area-inset-bottom))}}
+@media(max-width:370px){#spaces{flex-wrap:wrap}#spaces button{padding-inline:5px}}
+#libraryButton{font-size:13px;color:var(--ink)}
+@media(min-width:841px){.selectedName{min-width:min(150px,100%)}}
+#collectionPhoto{margin:12px 0}
+#collectionPhoto input{display:block;width:100%;margin:6px 0}
+#photoPreview{width:100%;height:100px;object-fit:contain}
+#collectionPhoto select{display:block;width:100%;font:inherit;min-height:40px;margin:5px 0 8px}
+#photoManual,#photoRetry{min-height:40px}
+#libraryStatus:empty{display:none}
+#library header{position:sticky;top:-14px;z-index:1;background:var(--paper)}
+@media(max-height:640px){#photoPreview{height:66px}}
+@media(max-width:360px){#spaces a{padding-inline:5px}#spaces{padding-inline:5px;gap:3px}}

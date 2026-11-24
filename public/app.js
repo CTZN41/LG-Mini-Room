@@ -1,5 +1,5 @@
 import {paint,captureRoom,furnitureThumbnail,focusObject,furniturePose,placementIssue,setDragHandlers,previewDrag} from './room.js';
-import {model,state,update,actions,candidates,routine,storageMessage,observing,logObservation,exportObservation} from './state.js';
+import {model,state,update,collected,collect,addToCollection,actions,candidates,routine,storageMessage,observing,logObservation,logCollection,exportObservation} from './state.js';
 const $=s=>document.querySelector(s);
 const rooms={menu:'메뉴',dream:'드림룸',my:'마이룸',example:'예시 친구 방'};
 const labels={'tv-on':'TV 켜기','light-dim':'조명 밝기 30%','curtain-close':'커튼 닫기'};
@@ -145,7 +145,7 @@ function picker(){
   const themes=[['rose','핑크'],['sage','연두']].map(([k,label])=>'<button data-finish="'+k+'" aria-label="'+label+' 테마" aria-pressed="'+(finishForRoom()===k)+'"><i></i>'+label+'</button>').join('');
   const cards=categories[category].map(id=>{
     const needsSetup=ui.room==='my'&&!state.myFixtureId&&['tv','lamp'].includes(id);
-    const detail=items[id]?'배치됨':state.roomItems?.[ui.room]?.[id]===false?'수납됨':needsSetup?'체험용 기기':id==='tv'&&ui.room==='dream'&&!state.collection.includes(model)?'수집 후 배치':'배치 가능';
+    const detail=items[id]?'배치됨':state.roomItems?.[ui.room]?.[id]===false?'수납됨':needsSetup?'체험용 기기':id==='tv'&&ui.room==='dream'&&!collected(model)?'수집 후 배치':'배치 가능';
     return '<button data-pick="'+id+'"><img src="'+furnitureThumbnail(id)+'" alt="" draggable="false"><b>'+itemNames[id]+'</b><small>'+detail+'</small></button>';
   });
   return '<div class="inventory-tools"><div class="filters" role="group" aria-label="가구 종류">'+tabs+'</div><div class="finishes" role="group" aria-label="방 색상">'+themes+'</div></div><div class="items">'+cards.join('')+'</div>';
@@ -189,12 +189,12 @@ function finishPlacement(collectOnDrop=false){
   const {id,pose,install}=draft;
   const issue=placementIssue(layoutForRoom(),id,pose,roomItems());
   if(issue){notify(issue);return;}
-  const newlyCollected=collectOnDrop&&id==='tv'&&ui.room==='dream'&&!state.collection.includes(model);
+  const newlyCollected=collectOnDrop&&id==='tv'&&ui.room==='dream'&&!collected(model);
   rememberPlacement(s=>{
     const items=roomItems();
-    if(newlyCollected)s.collection.push(model);
+    if(newlyCollected)addToCollection(s,model,'catalog');
     if(install&&id==='tv'&&ui.room==='dream'){
-      if(ui.room!=='dream'||!s.collection.includes(model))throw Error('먼저 TV를 수집해 주세요.');
+      if(!collected(model,s.collection))throw Error('먼저 TV를 수집해 주세요.');
       s.dreamLayout['tv-slot']=model;
     }
     if(install&&ui.room==='my'&&['tv','lamp'].includes(id)){
@@ -204,7 +204,7 @@ function finishPlacement(collectOnDrop=false){
     s.roomItems??={};s.roomItems[ui.room]={...items,[id]:true};
     s.placements??={};s.placements[ui.room]??={};s.placements[ui.room][id]={...pose};
   });
-  if(newlyCollected)log('collection_added');
+  if(newlyCollected)logCollection(model);
   draft=null;render();notify(itemNames[id]+' 배치를 저장했어요');
 }
 function overStorage(e){
@@ -425,7 +425,7 @@ document.addEventListener('click',e=>{
     if(b.dataset.pick&&b.closest('#inventory')){
       const id=b.dataset.pick;
       if(ui.room==='my'&&!state.myFixtureId&&['tv','lamp'].includes(id)){openView('setup');return;}
-      if(id==='tv'&&ui.room==='dream'&&!state.collection.includes(model)){openView('collect-tv');return;}
+      if(id==='tv'&&ui.room==='dream'&&!collected(model)){openView('collect-tv');return;}
       beginPlacement(id,!roomItems()[id]);return;
     }
     if(ui.view==='layout'&&b.dataset.furniture){beginPlacement(b.dataset.furniture);return;}
@@ -470,7 +470,7 @@ document.addEventListener('click',e=>{
         else openView('catalog',{editorOpen:ui.view==='layout'});
         break;
       case 'add-sofa':beginPlacement('sofa',true);break;
-      case 'collect':if(!state.collection.includes(model)){update(s=>s.collection.push(model));log('collection_added');}beginPlacement('tv',true);break;
+      case 'collect':collect(model,'catalog');beginPlacement('tv',true);break;
       case 'light':
         if(ui.view==='connect')bind('light-dim');
         else switchProduct('lamp');

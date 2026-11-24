@@ -247,8 +247,8 @@ const catWatching=raster(23,27,c=>{
   }
   function drawEffects(ctx,o,s,fx) {
     const kind=fx.appliances?.[o.id];
-    if(kind)drawAppliance(ctx,o,s,kind,fx.time);
-    if(o.id===fx.tv && fx.playing && !rear(o)){
+    if(kind&&!['light-off','light-dim','tv-on'].includes(kind))drawAppliance(ctx,o,s,kind,fx.time);
+    if((kind==='tv-on'||(o.id===fx.tv&&fx.playing))&&!rear(o)){
       const tv=o.k==='tvset',x=tv?17:2,y=tv?3:3,w=tv?39:25,h=tv?27:20;
       ctx.save();if(o.f){ctx.translate(s.w,0);ctx.scale(-1,1)}
       // Paint the film into the sloping glass, inside the bezel.
@@ -260,7 +260,7 @@ const catWatching=raster(23,27,c=>{
       for(let i=0;i<w;i++){const j=Math.round(h*.67+Math.sin((i+t)/6)*3);ctx.fillStyle='#648f9f';ctx.fillRect(i,j,1,h-j);ctx.fillStyle='#355971';ctx.fillRect(i,j+5,1,h)}
       ctx.restore();
     }
-    if(o.k==='floor_lamp'&&fx.lampLit){
+    if(o.k==='floor_lamp'&&kind!=='light-off'&&(kind==='light-dim'||fx.lampLit)){
       const x=s.w/2,y=12;
       const glow=ctx.createRadialGradient(x,y,2,x,y,24);
       glow.addColorStop(0,fx.dim?'rgba(255,209,108,.65)':'rgba(255,225,166,.95)');glow.addColorStop(1,'rgba(255,210,115,0)');

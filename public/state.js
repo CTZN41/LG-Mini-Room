@@ -1,5 +1,36 @@
-const key = 'lg-miniroom.state';
+let key = 'lg-miniroom.state';
 export const model = 'demo-tv-01';
+// The older single-TV interface does not load the dot-room asset catalog.
+const collectionKeys=new Set(typeof DOT_ASSETS==='undefined'?['tvset']:
+  DOT_ASSETS.items.filter(item=>item.c==='가전'||item.k==='floor_lamp').map(item=>item.k));
+export function isCollectibleProduct(k){
+  return collectionKeys.has(k);
+}
+// Adapter boundary: a selected File in, an ordered list of catalog product keys out.
+// The examples are independent of the file contents. No image leaves the browser.
+export const photoProvider='example';
+
+const photoExamples={
+  single:['tvset'],
+  multiple:['fridge_pb','fridge_bm','fridge_sg'],
+  none:[]
+};
+
+export async function recognizePhoto(file,{example,signal}){
+  if(!(file instanceof File))throw new TypeError('제품 사진을 선택해 주세요.');
+  signal.throwIfAborted();
+  await new Promise((resolve,reject)=>{
+    function cancel(){clearTimeout(timer);reject(signal.reason)}
+    const timer=setTimeout(()=>{
+      signal.removeEventListener('abort',cancel);
+      resolve();
+    },450);
+    signal.addEventListener('abort',cancel,{once:true});
+  });
+  if(!Object.hasOwn(photoExamples,example))throw Error('후보 조회 실패');
+  return photoExamples[example];
+}
+
 export const actions = [
   {actionId:'tv-on',kind:'tv',capability:'power.set',value:true,required:true},
   {actionId:'light-dim',kind:'light',capability:'brightness.set',value:30,required:false},
@@ -31,16 +62,38 @@ const empty = {schemaVersion:1,revision:0,collection:[],dreamLayout:{},myFixture
 export let state=structuredClone(empty);
 let previous, blocked=false;
 export let storageMessage='';
-try {
-  previous=localStorage.getItem(key);
-  if(previous!==null){
-    const s=JSON.parse(previous);
-    if(s?.schemaVersion!==1 || !Number.isInteger(s.revision) || !Array.isArray(s.collection) ||
-      !s.dreamLayout || !s.myLayout || !Array.isArray(s.savedRoutines) ||
-      s.savedRoutines.some(r=>!r || !r.bindings || !r.exclusions)) throw Error();
-    state=s;
-  }
-} catch {blocked=true; storageMessage='저장 데이터를 열 수 없어요. 예시 방을 둘러볼 수 있어요.';}
+function readState(){
+  blocked=false;storageMessage='';state=structuredClone(empty);
+  try {
+    previous=localStorage.getItem(key);
+    if(previous!==null){
+      const s=JSON.parse(previous);
+      if(s?.schemaVersion!==1 || !Number.isInteger(s.revision) || !Array.isArray(s.collection) ||
+        !s.dreamLayout || !s.myLayout || !Array.isArray(s.savedRoutines) ||
+        s.savedRoutines.some(r=>!r || !r.bindings || !r.exclusions)) throw Error();
+      state=s;
+    }
+  } catch {blocked=true; storageMessage='저장 데이터를 열 수 없어요. 예시 방을 둘러볼 수 있어요.';}
+}
+readState();
+export let homeSource='demo';
+let accountDevices=[];
+async function fetchHome(){
+  const response=await fetch('/api/my-appliances',{cache:'no-store'});
+  if(!response.ok)throw Error();
+  const result=await response.json();
+  if(result.mode!=='demo'&&(result.mode!=='thinq'||!Array.isArray(result.devices)))throw Error();
+  return result;
+}
+export async function loadHome(){
+  try{
+    const result=await fetchHome();
+    if(result.mode==='demo')return;
+    accountDevices=result.devices.map(d=>d.k==='tvset'?{...d,kind:'tv',capability:'power.set'}:d);
+    homeSource='thinq';
+    key='lg-miniroom.state.thinq';readState();
+  }catch{homeSource='unavailable';accountDevices=[]}
+}
 export function update(change){
   if(blocked) throw Error(storageMessage);
   if(localStorage.getItem(key)!==previous) throw Error('저장본이 바뀌었어요. 새로고침해 주세요.');
@@ -51,8 +104,71 @@ export function update(change){
   previous=raw;state=next;
 }
 export function registeredTVs(){
+  if(homeSource!=='demo')return registeredAppliances().filter(d=>d.kind==='tv').map(d=>d.id);
   // Version-one homes shipped with the living-room TV as their only registered TV.
-  return state.myFixtureId==='sample-home-v1'?(state.registeredTvIds??['my-tv-1']):[];
+  return sampleTvIds(state);
+}
+function sampleTvIds(home){
+  return home?.myFixtureId==='sample-home-v1'?(home.registeredTvIds??['my-tv-1']):[];
+}
+// This fixture represents the device list from ThinQ in the local MVP.
+// Product keys describe a sprite; device IDs identify individual registered units.
+const sampleModels = ['tower_ac','puri_p','wash_m','styler'];
+export function registeredAppliances(){
+  if(homeSource!=='demo')return accountDevices;
+  return sampleAppliances(state);
+}
+function sampleAppliances(home){
+  if(home?.myFixtureId!=='sample-home-v1')return [];
+  const keys={'my-tv-1':'tvset','my-tv-2':'standbyme','my-light-1':'floor_lamp'};
+  const fixed=devices.filter(d=>d.kind==='tv'?sampleTvIds(home).includes(d.id):home.myLayout['light-slot']===d.id);
+  return [...fixed.map(d=>({...d,k:keys[d.id]})),
+    ...sampleModels.map(k=>({k,id:home.sampleDeviceIds?.[k]||'sample-'+k}))];
+}
+// Discoveries are shared across rooms. One key per template makes concurrent discoveries independent.
+export const discoveryPrefix='lg-miniroom.discovered.';
+export function discovery(id){return localStorage.getItem(discoveryPrefix+id)}
+export function rememberPreview(id,source){
+  if(!discovery(id))localStorage.setItem(discoveryPrefix+id,source);
+}
+export async function inventoryHome(){
+  const read=key=>JSON.parse(localStorage.getItem(key)||'null');
+  const demo=read('lg-miniroom.state'),thinq=read('lg-miniroom.state.thinq');
+  if(!demo?.savedRoutines?.length&&!thinq?.savedRoutines?.length)return {records:[],placed:[]};
+  const home=await fetchHome();
+  const suffix=home.mode==='demo'?'':'.thinq';
+  const stored=home.mode==='demo'?demo:thinq;
+  const layout=read('lg-miniroom.dot.my'+suffix);
+  if(!layout)return {records:stored?.savedRoutines||[],placed:null};
+  const placed=layout?.layouts?.[layout.room]||[];
+  const registered=home.mode==='demo'?sampleAppliances(stored):home.devices;
+  return {records:stored?.savedRoutines||[],placed:placed.filter(o=>registered.some(d=>d.id===o.deviceId&&d.k===o.k))};
+}
+function catalogKey(k){
+  return k===model?'tvset':k;
+}
+export function collected(k,collection=state.collection){
+  const product=catalogKey(k);
+  return isCollectibleProduct(product)&&collection.some(entry=>catalogKey(entry)===product);
+}
+// Also used by the older editor when collection and placement share one transaction.
+export function addToCollection(draft,k,source){
+  const product=catalogKey(k);
+  if(!isCollectibleProduct(product))throw Error('수집 카탈로그에 없는 제품이에요. 목록에서 제품을 골라 주세요.');
+  if(collected(product,draft.collection))return;
+  draft.collection.push(product);
+  draft.collectionSources??={};draft.collectionSources[product]=source;
+}
+export function collect(k,source,photoSelection){
+  if(collected(k))return;
+  update(s=>{
+    addToCollection(s,k,source);
+    if(source==='photo'&&photoSelection){
+      s.photoSelections??={};
+      s.photoSelections[catalogKey(k)]=photoSelection;
+    }
+  });
+  logCollection(k);
 }
 export function saveRoutines(records){
   update(s=>{
@@ -63,9 +179,7 @@ export function saveRoutines(records){
   });
 }
 export function candidates(action){
-  if(state.myFixtureId!=='sample-home-v1')return [];
-  return devices.filter(d=>d.kind===action.kind && d.capability===action.capability &&
-    (d.kind!=='tv'||registeredTVs().includes(d.id)));
+  return registeredAppliances().filter(d=>d.kind===action.kind && d.capability===action.capability);
 }
 export function routine(bindings,template=movieTemplate,deviceOptions=candidates){
   const applied={},exclusions={};
@@ -78,6 +192,36 @@ export function routine(bindings,template=movieTemplate,deviceOptions=candidates
   return {templateId:template.id,templateVersion:1,anchorId:template.anchor,actions:structuredClone(template.actions),bindings:applied,exclusions};
 }
 
+// These actions simulate the room sprites. The inventory supplies the individual unit IDs.
+const customActions=[
+  {...actions[0],label:'TV 켜기'},
+  {...actions[1],label:'밝기 30%'},
+  {...actions[1],actionId:'light-off',value:0,label:'조명 끄기'},
+  ...applianceTemplates.flatMap(t=>t.actions)
+];
+export function customOptions(device){
+  const kind=device.k==='floor_lamp'?'light':['tvset','standbyme'].includes(device.k)?'tv':
+    Object.keys(applianceGroups).find(group=>applianceGroups[group].keys.includes(device.k));
+  return customActions.filter(a=>a.kind===kind&&(!device.capability||device.capability===a.capability));
+}
+export function customRoutine(name,steps,recordId){
+  name=name.trim();
+  if(!name||name.length>32)throw Error('루틴 이름을 1~32자로 입력해 주세요.');
+  if(!steps.length)throw Error('기기 동작을 하나 이상 골라 주세요.');
+  const devices=registeredAppliances(),bindings={},selected=[],used=new Set();
+  for(const {deviceId,operation} of steps){
+    const device=devices.find(d=>d.id===deviceId);
+    const action=device&&customOptions(device).find(a=>a.actionId===operation);
+    if(!action||used.has(deviceId))throw Error('등록 기기와 동작을 다시 선택해 주세요.');
+    used.add(deviceId);
+    const actionId='step-'+selected.length;
+    selected.push({...action,operation,actionId,required:true});
+    bindings[actionId]=deviceId;
+  }
+  const template={id:recordId||'custom-'+Array.from(crypto.getRandomValues(new Uint32Array(4)),n=>n.toString(16).padStart(8,'0')).join(''),anchor:'my-room',actions:selected};
+  return {...routine(bindings,template,a=>devices.filter(d=>customOptions(d).some(o=>o.actionId===a.operation))),name,custom:true};
+}
+
 // Observation is opt-in and scoped to the current browser tab.
 export const observing = new URLSearchParams(location.search).get('observe') === '1';
 const observationKey = 'lg-miniroom.events';
@@ -86,7 +230,10 @@ function observationRows(){
   if(!Array.isArray(rows))throw Error('관찰 기록을 열 수 없어요.');
   return rows;
 }
-export function logObservation(event,room,source,templateId='movie-night'){
+export function logCollection(k){
+  logObservation('collection_added','dream','collection',null,catalogKey(k));
+}
+export function logObservation(event,room,source,templateId='movie-night',productKey){
   if(!observing)return;
   try{
     const rows=observationRows();
@@ -95,7 +242,10 @@ export function logObservation(event,room,source,templateId='movie-night'){
       sessionId=Array.from(crypto.getRandomValues(new Uint32Array(4)),n=>n.toString(16).padStart(8,'0')).join('');
       sessionStorage.setItem('lg-miniroom.session',sessionId);
     }
-    rows.push({event,sessionId,time:new Date().toISOString(),room,source,templateId});
+    const row={event,sessionId,time:new Date().toISOString(),room,source};
+    if(templateId)row.templateId=templateId;
+    if(productKey)row.productKey=productKey;
+    rows.push(row);
     sessionStorage.setItem(observationKey,JSON.stringify(rows));
   }catch{/* Observation storage is independent of room and routine storage. */}
 }
@@ -107,7 +257,7 @@ export function savedObservationSource(fallback,templateId='movie-night'){
 }
 export function exportObservation(){
   if(!observing)return;
-  const events=observationRows().map(({event,sessionId,time,room,source,templateId})=>({event,sessionId,time,room,source,templateId}));
+  const events=observationRows().map(({event,sessionId,time,room,source,templateId,productKey})=>({event,sessionId,time,room,source,templateId,productKey}));
   const file=new Blob([JSON.stringify({version:1,events},null,2)],{type:'application/json'});
   const link=document.createElement('a'),url=URL.createObjectURL(file);
   link.href=url;link.download='miniroom-observation-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';

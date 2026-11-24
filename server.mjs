@@ -1,5 +1,24 @@
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
+
+const runFile=promisify(execFile);
+let pendingInventory;
+async function sendInventory(request,response){
+  const json=(status,body)=>response.writeHead(status,{"Content-Type":"application/json","Cache-Control":"no-store"}).end(JSON.stringify(body));
+  if(!process.env.THINQ_PAT)return json(200,{mode:"demo"});
+  const localAddresses=["127.0.0.1","::1","::ffff:127.0.0.1"];
+  if(!localAddresses.includes(request.socket.remoteAddress)||
+    !/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(request.headers.host||""))
+    return json(403,{mode:"unavailable"});
+  try{
+    pendingInventory??=runFile(process.env.MINIROOM_PYTHON||"python",[fileURLToPath(new URL("./thinq_inventory.py",import.meta.url))],{timeout:20000,windowsHide:true})
+      .then(({stdout})=>JSON.parse(stdout)).finally(()=>{pendingInventory=undefined});
+    return json(200,{mode:"thinq",devices:await pendingInventory});
+  }catch{return json(503,{mode:"unavailable"})}
+}
 
 const host = process.env.LG_MINI_ROOM_HOST || "127.0.0.1";
 const port = Number(process.env.LG_MINI_ROOM_PORT ?? "4173");
@@ -24,6 +43,7 @@ const server = createServer(async (request, response) => {
   }
 
   const path = (request.url ?? "").split("?", 1)[0];
+  if(path==="/api/my-appliances")return sendInventory(request,response);
   const page = pages.get(path);
 
   if (!page) {
