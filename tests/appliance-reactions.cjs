@@ -22,7 +22,7 @@ async function exercise(browser,space,width,height,reduced){
   const layoutKey=space==='my'?key+'.thinq':key;
   await page.goto(base+'/editor?space='+space+'&observe=1');await btn('배치 편집').waitFor();
   await page.evaluate(({layoutKey,devices})=>{
-    localStorage.setItem(layoutKey,JSON.stringify({room:'B',theme:'pink',layouts:{B:devices}}));
+    localStorage.setItem(layoutKey,JSON.stringify({layoutVersion:1,room:'B',theme:'pink',layouts:{B:devices}}));
     localStorage.setItem('lg-miniroom.state',JSON.stringify({schemaVersion:1,revision:1,
       collection:devices.map(o=>o.k),dreamLayout:{},myLayout:{},savedRoutines:[]}));
   },{layoutKey,devices});
@@ -155,7 +155,7 @@ async function exercise(browser,space,width,height,reduced){
     k,id:10+i,deviceId:'pet-'+i,x:locations[i][0],y:locations[i][1],f:0,e:0
   })));
   await page.evaluate(({layoutKey,devices})=>{
-    localStorage[layoutKey]=JSON.stringify({room:'B',theme:'pink',layouts:{B:devices}});
+    localStorage[layoutKey]=JSON.stringify({layoutVersion:1,room:'B',theme:'pink',layouts:{B:devices}});
     const state=JSON.parse(localStorage['lg-miniroom.state']);state.collection=devices.map(d=>d.k);
     localStorage['lg-miniroom.state']=JSON.stringify(state);
   },{layoutKey,devices});

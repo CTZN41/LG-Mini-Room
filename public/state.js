@@ -1,18 +1,15 @@
 let key = 'lg-miniroom.state';
 export const model = 'demo-tv-01';
-// The older single-TV interface does not load the dot-room asset catalog.
-const collectionKeys=new Set(typeof DOT_ASSETS==='undefined'?['tvset']:
-  DOT_ASSETS.items.filter(item=>item.c==='가전'||item.k==='floor_lamp').map(item=>item.k));
 export function isCollectibleProduct(k){
-  return collectionKeys.has(k);
+  return typeof ProductCatalog!=='undefined'&&ProductCatalog.hasModel(k);
 }
 // Adapter boundary: a selected File in, an ordered list of catalog product keys out.
 // The examples are independent of the file contents. No image leaves the browser.
 export const photoProvider='example';
 
 const photoExamples={
-  single:['tvset'],
-  multiple:['fridge_pb','fridge_bm','fridge_sg'],
+  single:['catalog:tv:55LX1QKNA'],
+  multiple:['catalog:fridge:M876GBC472','catalog:fridge:B315DS11','catalog:fridge:S836MDS002'],
   none:[]
 };
 
@@ -45,7 +42,7 @@ export const movieTemplate={id:'movie-night',name:'영화 보기',anchor:'sofa',
 export const applianceGroups={
   air:{label:'에어컨',keys:['tower_ac','wall_ac']},
   purifier:{label:'공기청정기',keys:['puri_p','puri_m','puri_b']},
-  washer:{label:'워시타워',keys:['wash_m','wash_b','wash_s']},
+  washer:{label:'세탁기',keys:['wash_m','wash_b','wash_s',...(typeof DOT_ASSETS==='undefined'?[]:DOT_ASSETS.items.filter(p=>p.washerStyle&&p.washerStyle!=='drawer').map(p=>p.k))]},
   styler:{label:'스타일러',keys:['styler']},
   robot_vacuum:{label:'로봇청소기',keys:['robot_vacuum']}
 };
@@ -95,7 +92,7 @@ export async function loadHome(){
   try{
     const result=await fetchHome();
     if(result.mode==='demo')return;
-    accountDevices=result.devices.map(d=>d.k==='tvset'?{...d,kind:'tv',capability:'power.set'}:d);
+    accountDevices=matchedAccountDevices(result.devices);
     homeSource='thinq';
     key='lg-miniroom.state.thinq';readState();
   }catch{homeSource='unavailable';accountDevices=[]}
@@ -119,17 +116,44 @@ function sampleTvIds(home){
 }
 // This fixture represents the device list from ThinQ in the local MVP.
 // Product keys describe a sprite; device IDs identify individual registered units.
-const sampleModels = ['tower_ac','wall_ac','puri_p','wash_m','styler','fridge_bm','fridge_pb','fridge_sg','vacuum','robot_vacuum'];
+// Device IDs remain stable when the demo account moves from generic sprites to DB models.
+export const demoModels={
+  tvset:'catalog:tv:55LX1QKNA',standbyme:'catalog:tv:27LX6TPGA',
+  puri_p:'catalog:purifier:AS206NGHA',wash_m:'washer_wl2521wdur',
+  fridge_bm:'catalog:fridge:M876GBC472',fridge_pb:'catalog:fridge:B315DS11',
+  fridge_sg:'catalog:fridge:S836MDS002',vacuum:'catalog:stick:A727TA',robot_vacuum:'catalog:robot:R560BL1'
+};
+function matchedAccountDevices(devices){
+  return devices.flatMap(d=>{
+    const k=ProductCatalog.matchModel(d.category,d.modelCode);
+    if(!k)return [];
+    return [{...d,k,...(d.category==='TV'?{kind:'tv',capability:'power.set'}:{})}];
+  });
+}
+export function pruneRetiredCollection(){
+  if(blocked)return;
+  const retired=k=>!isCollectibleProduct(k);
+  if(!state.collection.some(retired)&&!['collectionSources','photoSelections'].some(field=>
+    Object.keys(state[field]||{}).some(retired)))return;
+  update(s=>{
+    s.collection=s.collection.filter(isCollectibleProduct);
+    for(const field of ['collectionSources','photoSelections']){
+      for(const k of Object.keys(s[field]||{}))if(retired(k))delete s[field][k];
+    }
+  });
+}
 export function registeredAppliances(){
   if(homeSource!=='demo')return accountDevices;
   return sampleAppliances(state);
 }
 function sampleAppliances(home){
   if(home?.myFixtureId!=='sample-home-v1')return [];
-  const keys={'my-tv-1':'tvset','my-tv-2':'standbyme','my-light-1':'floor_lamp'};
+  const keys={'my-tv-1':demoModels.tvset,'my-tv-2':demoModels.standbyme,'my-light-1':'floor_lamp'};
   const fixed=devices.filter(d=>d.kind==='tv'?sampleTvIds(home).includes(d.id):home.myLayout['light-slot']===d.id);
   return [...fixed.map(d=>({...d,k:keys[d.id]})),
-    ...sampleModels.map(k=>({k,id:home.sampleDeviceIds?.[k]||'sample-'+k}))];
+    ...Object.entries(demoModels).filter(([old])=>!['tvset','standbyme'].includes(old))
+      .map(([old,k])=>({k,id:home.sampleDeviceIds?.[k]||home.sampleDeviceIds?.[old]||'sample-'+old}))]
+    .filter(d=>d.k==='floor_lamp'||isCollectibleProduct(d.k));
 }
 // Discoveries are shared across rooms. One key per template makes concurrent discoveries independent.
 export const discoveryPrefix='lg-miniroom.discovered.';
@@ -145,10 +169,9 @@ export async function inventoryHome(){
   const suffix=home.mode==='demo'?'':'.thinq';
   const stored=home.mode==='demo'?demo:thinq;
   const layout=read('lg-miniroom.dot.my'+suffix);
-  if(!layout)return {records:stored?.savedRoutines||[],placed:null};
-  const placed=layout?.layouts?.[layout.room]||[];
-  const registered=home.mode==='demo'?sampleAppliances(stored):home.devices;
-  return {records:stored?.savedRoutines||[],placed:placed.filter(o=>registered.some(d=>d.id===o.deviceId&&d.k===o.k))};
+  const registered=home.mode==='demo'?sampleAppliances(stored):matchedAccountDevices(home.devices);
+  const placed=layout?(layout.layouts?.[layout.room]||[]).filter(o=>registered.some(d=>d.id===o.deviceId&&d.k===o.k)):null;
+  return {records:stored?.savedRoutines||[],placed,registered};
 }
 function catalogKey(k){
   return k===model?'tvset':k;
@@ -206,8 +229,9 @@ const customActions=[
   ...new Set(applianceTemplates.flatMap(t=>t.actions))
 ];
 export function customOptions(device){
-  const kind=device.k==='floor_lamp'?'light':['tvset','standbyme'].includes(device.k)?'tv':
-    Object.keys(applianceGroups).find(group=>applianceGroups[group].keys.includes(device.k));
+  const key=typeof DotScene!=='undefined'?(DotScene.products[device.k]?.behaviorKey||device.k):device.k;
+  const kind=key==='floor_lamp'?'light':['tvset','standbyme'].includes(key)?'tv':
+    Object.keys(applianceGroups).find(group=>applianceGroups[group].keys.includes(key));
   return customActions.filter(a=>a.kind===kind&&(!device.capability||device.capability===a.capability));
 }
 export function customRoutine(name,steps,recordId){

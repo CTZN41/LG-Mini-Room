@@ -1,0 +1,30 @@
+{
+  "AS153HWFS": {
+    "category": "공기청정기",
+    "group": "V0013",
+    "decision": "형태 수정",
+    "before": "db_purifier",
+    "reason": "짧은 단층 원통, 수평의 짙은 토출 그릴과 하단 흡입 면"
+  },
+  "AS356NSMA": {
+    "category": "공기청정기",
+    "group": "V0005",
+    "decision": "형태 수정",
+    "before": "db_purifier",
+    "reason": "두 원통 사이의 어두운 띠, 최상단의 독립된 둥근 헤드"
+  },
+  "RD19ENC": {
+    "category": "건조기",
+    "group": "V1370",
+    "decision": "형태 수정",
+    "before": "body:dryer:beige:beige:",
+    "reason": "검정 상판과 넓은 검정 유리 도어, 전면 오른쪽 아래의 작은 덮개"
+  },
+  "RV12SBD": {
+    "category": "건조기",
+    "group": "V1397",
+    "decision": "형태 수정",
+    "before": "body:dryer:neutral:neutral:",
+    "reason": "은색 도어 링과 수평 조작부, 오른쪽 상단 돌출부"
+  }
+}

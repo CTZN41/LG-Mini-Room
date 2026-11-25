@@ -15,7 +15,7 @@ async function exercise(browser,space,width,height){
   await page.getByRole('button',{name:'배치 편집',exact:true}).waitFor();
   async function load(items){
     await page.evaluate(({key,items})=>{
-      localStorage.setItem(key,JSON.stringify({room:'B',theme:'pink',layouts:{B:items}}));
+      localStorage.setItem(key,JSON.stringify({layoutVersion:1,room:'B',theme:'pink',layouts:{B:items}}));
       if(key==='dotroom'){
         localStorage['lg-miniroom.state']=JSON.stringify({schemaVersion:1,revision:1,
           collection:['tvset'],dreamLayout:{},myLayout:{},savedRoutines:[]});

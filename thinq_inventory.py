@@ -10,17 +10,12 @@ from aiohttp import ClientSession
 from thinqconnect.thinq_api import ThinQApi
 
 
-# These are representative room sprites, not exact model or colour matches.
-SPRITES = {
-    "DEVICE_REFRIGERATOR": "fridge_sg",
-    "DEVICE_AIR_CONDITIONER": "tower_ac",
-    "DEVICE_AIR_PURIFIER": "puri_p",
-    "DEVICE_STYLER": "styler",
-    "DEVICE_WASHTOWER": "wash_m",
-    "DEVICE_WASHTOWER_WASHER": "wash_m",
-    "DEVICE_STICK_CLEANER": "vacuum",
-    "DEVICE_ROBOT_CLEANER": "robot_vacuum",
-    "DEVICE_TV": "tvset",
+CATEGORIES = {
+    "DEVICE_REFRIGERATOR": "냉장고", "DEVICE_AIR_PURIFIER": "공기청정기",
+    "DEVICE_WASHER": "세탁기", "DEVICE_WASHTOWER": "세탁기",
+    "DEVICE_WASHTOWER_WASHER": "세탁기", "DEVICE_DRYER": "건조기",
+    "DEVICE_STICK_CLEANER": "무선청소기", "DEVICE_ROBOT_CLEANER": "로봇청소기",
+    "DEVICE_HUMIDIFIER": "가습기", "DEVICE_DEHUMIDIFIER": "제습기", "DEVICE_TV": "TV",
 }
 
 
@@ -37,7 +32,8 @@ async def inventory():
         info = row["deviceInfo"]
         identifier = hashlib.sha256(row["deviceId"].encode()).hexdigest()
         devices[identifier] = {"id": "thinq-" + identifier,
-                               "k": SPRITES.get(info["deviceType"]),
+                               "category": CATEGORIES.get(info["deviceType"]),
+                               "modelCode": info.get("modelName") or info.get("modelCode"),
                                "name": info.get("alias") or info["deviceType"]}
     return list(devices.values())
 

@@ -43,7 +43,29 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
   const tapPoint=p=>phone?page.touchscreen.tap(p.x,p.y):page.mouse.click(p.x,p.y);
   await page.goto(url);await page.waitForSelector('.card');
   let s=await state();assert.equal(s.room,'B');
-  const counts=[16,16,6,3,4,1];
+  for(const items of Object.values(s.layouts))assert.deepEqual(items.map(o=>o.k),['sofa']);
+  assert.deepEqual(s.woodRooms,['A','B','C']);
+  // Use a furnished pre-update layout to exercise occlusion, overlap and legacy restore.
+  await page.evaluate(()=>{
+    let n=0;const layouts={};
+    for(const r of Object.keys(DotScene.names))layouts[r]=DotScene.defaults(r,()=>++n);
+    localStorage.dotroom=JSON.stringify({room:'B',theme:'pink',layouts});
+  });
+  await page.reload();await page.waitForSelector('.card');
+  const previousLayout=await page.evaluate(()=>localStorage.getItem('dotroom.before-wood'));
+  assert.ok(JSON.parse(previousLayout).layouts.B.length>1);
+  assert.deepEqual((await state()).layouts.B.map(item=>item.k),['sofa']);
+  await click('#more');
+  const download=page.waitForEvent('download');await click('#previousLayout');
+  const backupPath=await (await download).path();
+  assert.equal(require('node:fs').readFileSync(backupPath,'utf8'),previousLayout);
+  page.once('dialog',d=>d.accept());
+  await page.locator('#layoutFile').setInputFiles(backupPath);
+  await page.waitForFunction(()=>!document.querySelector('#menu').open);
+  await page.reload();await page.waitForSelector('.card');
+  assert.equal((await state()).layoutVersion,1);
+  assert.deepEqual((await state()).layouts.B,JSON.parse(previousLayout).layouts.B);
+  const counts=[26,16,6,3,4,1];
   for(const [i,b] of (await page.locator('[data-cat]').all()).entries()){await b.click();assert.equal(await page.locator('.card').count(),counts[i])}
   await click('[data-cat="가전"]');
   for(const r of ['A','B','C']){
@@ -56,7 +78,7 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
      return {noPageScroll:document.documentElement.scrollHeight===innerHeight,top:a.bottom,view:b.top,canvasB:b.bottom,tray:d.top,side:d.width,stageWidth:b.width};
     });
     assert.ok(geom.noPageScroll);assert.ok(geom.top<=geom.view+1);
-    if(phone)assert.ok(geom.canvasB<geom.tray);else assert.equal(geom.side,340);
+    assert.ok(geom.canvasB<geom.tray);assert.ok(Math.abs(geom.side-geom.stageWidth)<1);
    }
   }
   let p=await point({mode:'transparent'});await tapPoint(p);assert.ok((await page.locator('#name').innerText()).startsWith(p.names[0]));
@@ -98,11 +120,11 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
   await click('[data-cat="소품"]');await click('[data-key=plant_small]');
   obj=(await state()).layouts.B.at(-1);const original={...obj};
   p=await point({id:obj.id});
-  // Open platform beside the bed. (64,21) is inside the bed's footprint.
+  // Open floor beside the bed. (64,21) is inside the bed's footprint.
   let dx=55-obj.x,dy=21-obj.y;
   await drag(p.x,p.y,2*(dx-dy)*p.k,(dx+dy)*p.k);
   obj=(await state()).layouts.B.at(-1);
-  assert.equal(await page.evaluate(o=>DotScene.zone('B',o),obj),4);
+  assert.equal(await page.evaluate(o=>DotScene.zone('B',o),obj),0);
   assert.deepEqual([obj.x,obj.y],[55,21]);
   await click('#undo');assert.deepEqual((await state()).layouts.B.at(-1),original);
   await click('[data-cat="벽"]');await click('[data-key=frame2]');await click('#in');
@@ -125,7 +147,9 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
    const x=c.getContext('2d');x.scale(4,4);DotScene.paint(x,s.room,s.theme,DotScene.sorted(s.room,s.layouts[s.room]),null);return c.toDataURL()===im.src;
   });assert.ok(match);await click('#picture .close');await click('#more');await click('#clear');assert.equal((await state()).layouts.B.length,0);
   await click('#undo');assert.deepEqual((await state()).layouts.B,saved.layouts.B);
-  await click('#more');await click('#reset');assert.equal((await state()).layouts.B.length,23);
+  await click('#more');await click('#reset');assert.deepEqual((await state()).layouts.B.map(o=>o.k),['sofa']);
+  assert.deepEqual((await state()).woodRooms,['B']);
+  await click('#undo');assert.deepEqual(await state(),saved);
   // Exercise all four headings in open space; the collision suite covers rejected turns.
   await click('#more');await click('#clear');
   await click('[data-cat="가구"]');await click('[data-key=sofa]');
@@ -139,7 +163,7 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
   }
   assert.equal(headings.size,4);assert.equal(previews.size,4);
   assert.equal((await state()).layouts.B.find(o=>o.id===sofaId).turn,0);
-  assert.deepEqual(errors,[]);console.log(width+'x'+height+' | six palettes, inventory, passes through alpha, occlusion, zoom/pan, place, grid drag, raised floor, wall, undo, export and restore OK');
+  assert.deepEqual(errors,[]);console.log(width+'x'+height+' | six palettes, inventory, passes through alpha, occlusion, zoom/pan, place, grid drag, flat floor, wall, undo, export and restore OK');
   await context.close();
  }
  }finally{await browser.close()}

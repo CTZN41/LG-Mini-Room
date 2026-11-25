@@ -11,7 +11,7 @@ async function exercise(browser,space,width,height){
   await p.goto(base+'/editor?space='+space);
   await p.getByRole('button',{name:'배치 편집',exact:true}).waitFor();
   await p.evaluate(({key,products})=>{
-    localStorage.setItem(key,JSON.stringify({room:'B',theme:'pink',layouts:{B:[]}}));
+    localStorage.setItem(key,JSON.stringify({layoutVersion:1,room:'B',theme:'pink',layouts:{B:[]}}));
     localStorage.setItem('lg-miniroom.state',JSON.stringify({schemaVersion:1,revision:1,
       collection:products,dreamLayout:{},myLayout:{},savedRoutines:[]}));
   },{key,products});
@@ -32,7 +32,7 @@ async function exercise(browser,space,width,height){
   }
   for(const k of products){
     await p.locator('[data-key="'+k+'"]').click();
-    // Floor B's central spawn is beside the raised bedroom. Test all headings in open floor.
+    // Test all headings in open floor away from other furniture.
     if(k==='robot_vacuum')for(let i=0;i<10;i++)await p.keyboard.press('ArrowLeft');
     for(const quadrant of [[-1,1],[-1,-1],[1,-1],[1,1]]){
       assert.deepEqual(await arrow(),quadrant,k+' points out of the front edge');

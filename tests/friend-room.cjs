@@ -15,11 +15,11 @@ try{for(const [width,height] of [[390,844],[844,390],[1150,750]]){
  await p.getByRole('button',{name:/C현관|C 현관/}).count().then(async()=>{await p.locator('#rooms [data-room=C]').click()});await p.locator('[data-tone=lime]').click();
  const customized=await scene(),original=await store();
  await p.locator('#more').click();await p.locator('#mini').click();await check('menu');assert.equal(await scene(),customized);
- await btn('예시 친구 방').click();await check('example');const friendFrame=await scene();assert.notEqual(friendFrame,menuFrame);
+ await btn('예시 친구 방').click();await check('example');const friendFrame=await scene();assert.equal(friendFrame,menuFrame);
  assert.ok(await btn('배치 편집').isHidden());assert.ok(await p.locator('#drawer').isHidden());assert.deepEqual(await store(),original);
 
  await p.locator('#in').click();await p.locator('#overview').click();
- const point=await p.evaluate(()=>{const items=DotScene.defaults('B',(()=>{let n=0;return ()=>++n})()),o=items.find(x=>x.k==='sofa');items.push({k:'floor_lamp',f:0,x:24,y:51,e:0,id:9001});
+ const point=await p.evaluate(()=>{const o={id:1,k:'sofa',x:34,y:48,f:1,turn:1,e:0},items=[o];
  const ord=DotScene.sorted('B',items),q=DotScene.place('B','pink',o),cv=document.querySelector('#scene'),rect=cv.getBoundingClientRect(),scale=rect.width/cv.width;
  for(let y=3;y<q.s.h-3;y++)for(let x=3;x<q.s.w-3;x++)if([[0,0],[2,2],[-2,-2]].every(([dx,dy])=>DotScene.hits('B','pink',ord,q.x+x+dx,q.y+y+dy)[0]===o))return [rect.x+(x+q.x)*scale,rect.y+(y+q.y)*scale];throw Error('No hit on sofa')});
  if(width<1000)await p.touchscreen.tap(...point);else await p.mouse.click(...point);

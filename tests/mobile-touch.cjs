@@ -12,9 +12,19 @@ async function check(browser,width,height){
     if(dx)await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx,y}]});
     await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   }
-  await page.goto(base+'/editor?space=dream');
+  await page.route('**/api/my-appliances',r=>r.fulfill({json:{mode:'demo'}}));
+  for(const [space,key] of [['my','lg-miniroom.dot.my'],['dream','dotroom']]){
+    await page.goto(base+'/editor?space='+space);
+    await page.waitForFunction(key=>localStorage.getItem(key),key);
+    const starter=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
+    assert.deepEqual(starter.woodRooms,['A','B','C']);
+    for(const [room,items] of Object.entries(starter.layouts)){
+      if(space==='dream'&&room==='C')assert.ok(items.length&&items.every(o=>o.exhibit));
+      else assert.deepEqual(items.map(o=>o.k),['sofa']);
+    }
+  }
   await button('가전 수집').tap();
-  await button('로봇청소기 수집').tap();
+  await button('로봇청소기 R560BL1 수집').tap();
   await button('방에 놓기').tap();
   const collapsed=(await view.boundingBox()).height;
   await page.locator('#expand').tap();
@@ -27,7 +37,7 @@ async function check(browser,width,height){
     const layout=JSON.parse(localStorage.dotroom),scene=document.querySelector('#scene');
     const box=scene.getBoundingClientRect(),scale=box.width/scene.width;
     const order=DotScene.sorted(layout.room,layout.layouts[layout.room]);
-    const robot=order.find(o=>o.k==='robot_vacuum');
+    const robot=order.find(o=>o.k==='catalog:robot:R560BL1');
     const loc=DotScene.place(layout.room,layout.theme,robot);
     const hit=(x,y)=>DotScene.hits(layout.room,layout.theme,order,x,y)[0];
     // Follow the centre column down to the edge of the visible robot.
@@ -43,19 +53,19 @@ async function check(browser,width,height){
   });
   await stroke(points.x,points.inside,6);
   await button('청소 시간').waitFor();
-  assert.equal(await page.locator('#lifeTitle').innerText(),'로봇청소기');
+  assert.equal(await page.locator('#lifeTitle').innerText(),'R560BL1');
   assert.deepEqual(await view.boundingBox(),before,'Room stays still on product tap');
   await button('닫기').tap();
   await stroke(points.x,points.near,0);
   await button('청소 시간').waitFor();
-  assert.equal(await page.locator('#lifeTitle').innerText(),'로봇청소기');
+  assert.equal(await page.locator('#lifeTitle').innerText(),'R560BL1');
   await button('닫기').tap();
   await stroke(points.x,points.inside,24);
   assert.equal(await page.locator('#lifeTitle').innerText(),'드림룸');
   await stroke(before.x+5,before.y+5,0);
   assert.equal(await page.locator('#lifeTitle').innerText(),'드림룸');
   await page.reload();await button('배치 편집').waitFor();
-  assert.ok(await page.evaluate(()=>JSON.parse(localStorage.dotroom).layouts.B.some(o=>o.k==='robot_vacuum')));
+  assert.ok(await page.evaluate(()=>JSON.parse(localStorage.dotroom).layouts.B.some(o=>o.k==='catalog:robot:R560BL1')));
   console.log(width+'×'+height+' edit canvas '+collapsed+'px / expanded '+expanded+'px; edge tap, finger drift, pan, stable room, reload passed');
   await page.context().close();
 }

@@ -14,7 +14,7 @@ const {chromium}=require('playwright');
   await p.locator('#batch-room-comfort').getByRole('button',{name:'체험용 공기청정기 배치'}).click();
   const cleaningPurifier=p.locator('#batch-cleaning-time').getByLabel('공기청정기 자동 청정 · 선택');
   assert.equal(await cleaningPurifier.inputValue(),'');
-  await go('체험용 로봇청소기 배치');assert.ok(await p.locator('#batchSave').isDisabled());await go('체험용 워시타워 배치');
+  await go('체험용 로봇청소기 배치');assert.ok(await p.locator('#batchSave').isDisabled());await go('체험용 세탁기 배치');
   await checkbox('영화 보기').uncheck();await checkbox('영화 보기').check();assert.equal(await sel('TV 켜기 · 필수').inputValue(),'my-tv-2');
   const rect=await p.locator('#batchSave').boundingBox();assert.ok(rect.x>=0&&rect.y>=0&&rect.y+rect.height<=height);
   const before=await state();assert.equal(before.savedRoutines.length,0);

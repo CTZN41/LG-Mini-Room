@@ -26,7 +26,7 @@ async function checkDream(browser){
   console.log('PASS Dream collection, product-only tap, discovery, My Room setup, required robot, optional purifier and shelf');
 }
 
-async function checkPlayback(browser,withSofa,reducedMotion){
+async function checkPlayback(browser,withSofa,reducedMotion,obstructed=false){
   const viewport=withSofa?{width:390,height:844}:{width:320,height:568};
   const p=await browser.newPage({viewport,hasTouch:true,isMobile:true,reducedMotion});
   p.setDefaultTimeout(5500);
@@ -37,11 +37,11 @@ async function checkPlayback(browser,withSofa,reducedMotion){
     {id:2,k:'robot_vacuum',x:16,y:19,deviceId:'robot-b'},
     {id:3,k:'puri_p',x:5,y:50,deviceId:'purifier'}
   ];
-  if(withSofa)items.push({id:4,k:'sofa',x:26,y:32});
+  if(withSofa)items.push({id:4,k:'sofa',x:obstructed?26:39,y:obstructed?32:17});
   await p.route('**/api/my-appliances',r=>r.fulfill({json:{mode:'thinq',
     devices:items.filter(o=>o.deviceId).map(o=>({id:o.deviceId,k:o.k,name:o.deviceId}))}}));
   await p.goto(base+'/editor?space=my');
-  await p.evaluate(({key,items})=>localStorage.setItem(key,JSON.stringify({room:'B',theme:'pink',
+  await p.evaluate(({key,items})=>localStorage.setItem(key,JSON.stringify({layoutVersion:1,room:'B',theme:'pink',
     layouts:{B:items.map(o=>({...o,e:0,f:0}))}})),{key,items});
   await p.addInitScript(()=>{
     // Observe the frames sent to the real canvas renderer, including transient positions.
@@ -64,7 +64,7 @@ async function checkPlayback(browser,withSofa,reducedMotion){
   const originalCat=await cat();
   async function assertScene(){
     await p.waitForFunction(()=>window.cleaningFrame?.reaction?.itemId===2);
-    assert.equal(await p.evaluate(()=>cleaningFrame.seat),withSofa?4:null);
+    assert.equal(await p.evaluate(()=>cleaningFrame.seat),withSofa&&!obstructed?4:null);
     assert.notDeepEqual(await cat(),originalCat);
     assert.deepEqual(await p.evaluate(()=>cleaningFrame.appliances),{2:'robot_vacuum',3:'purifier'});
     if(reducedMotion==='reduce'){
@@ -83,13 +83,14 @@ async function checkPlayback(browser,withSofa,reducedMotion){
   await tap('미리보기');await assertScene();await tap('내 루틴에 저장');await restored();
   await p.reload();await tap('청소 시간');await assertScene();await tap('재생 종료');await restored();
   assert.deepEqual(errors,[]);await p.context().close();
-  console.log('PASS',viewport,reducedMotion,'selected robot + purifier,',withSofa?'sofa':'floor','Back, save, reload and stop restore the room');
+  console.log('PASS',viewport,reducedMotion,'selected robot + purifier,',obstructed?'blocked sofa':withSofa?'sofa':'floor','Back, save, reload and stop restore the room');
 }
 (async()=>{
   const browser=await chromium.launch({channel:'chrome'});
   try{
     await checkDream(browser);
     await checkPlayback(browser,true,'no-preference');
+    await checkPlayback(browser,true,'no-preference',true);
     await checkPlayback(browser,false,'no-preference');
     await checkPlayback(browser,false,'reduce');
   }finally{await browser.close()}

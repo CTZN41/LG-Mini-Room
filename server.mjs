@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { serveCatalog } from "./catalog.mjs";
 
 const runFile=promisify(execFile);
 let pendingInventory;
@@ -28,6 +29,8 @@ const pages = new Map([
   ["/dot-room.html", ["dot-room.html", "text/html; charset=utf-8"]],
   ["/dot-editor.css", ["dot-editor.css", "text/css; charset=utf-8"]],
   ["/dot-assets.js", ["dot-assets.js", "text/javascript; charset=utf-8"]],
+  ["/catalog-art.js", ["catalog-art.js", "text/javascript; charset=utf-8"]],
+  ["/product-catalog.js", ["product-catalog.js", "text/javascript; charset=utf-8"]],
   ["/dot-scene.js", ["dot-scene.js", "text/javascript; charset=utf-8"]],
   ["/dot-editor.js", ["dot-editor.js", "text/javascript; charset=utf-8"]],
   ["/styles.css", ["styles.css", "text/css; charset=utf-8"]],
@@ -43,6 +46,8 @@ const server = createServer(async (request, response) => {
   }
 
   const path = (request.url ?? "").split("?", 1)[0];
+  if(path==="/api/catalog/models"||path==="/api/catalog/bundles"||path==="/api/catalog/bodies"||path==="/api/catalog"||path==="/api/catalog/photo"||path==="/api/catalog/product")
+    return serveCatalog(new URL(request.url,'http://localhost'),response);
   if(path==="/api/my-appliances")return sendInventory(request,response);
   const page = pages.get(path);
 

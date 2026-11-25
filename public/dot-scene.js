@@ -2,7 +2,7 @@
 const DotScene = (() => {
   const data = DOT_ASSETS;
   const products = Object.fromEntries(data.items.map(item => [item.k, item]));
-  const names = {A:'롱 스튜디오', B:'L자 + 단차', C:'현관 투존'};
+  const names = {A:'롱 스튜디오', B:'L자 거실', C:'현관 투존'};
   const images = new Map();
   const wallDisplay = [
     ['standbyme',2,24], ['styler',14,1], ['wash_b',26,1], ['wash_m',40,1],
@@ -26,35 +26,74 @@ const DotScene = (() => {
     await im.decode();
     return im;
   }
+  // Match the supplied Retro AA sprites at their native pixel pitch. Work inside
+  // the existing silhouette so slender handles, vents and touch masks stay intact.
+  function finishAppliance(brush,w,h){
+    const image=brush.getImageData(0,0,w,h), pixels=image.data;
+    let left=w,right=0,top=h,bottom=0;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      if(!pixels[(y*w+x)*4+3])continue;
+      left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+    }
+    const width=Math.max(1,right-left),height=Math.max(1,bottom-top);
+    const ink=[30,20,36],paper=[251,245,226],shade=[.9,.875,.96];
+    for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++){
+      const i=(y*w+x)*4;
+      if(!pixels[i+3])continue;
+      const edge=x===left||x===right||y===top||y===bottom||
+        !pixels[i-4+3]||!pixels[i+4+3]||!pixels[i-4*w+3]||!pixels[i+4*w+3];
+      if(edge){pixels.set(ink,i);continue}
+      const r=pixels[i],g=pixels[i+1],b=pixels[i+2],luma=.299*r+.587*g+.114*b;
+      const light=(x-left)/width*.42+(y-top)/height*.58+((x+y)%2 ? .045 : -.045);
+      // Three stepped tones, with a one-pixel checker transition on the diagonal.
+      const highlight=light<.32,shadow=light>.64;
+      for(let channel=0;channel<3;channel++){
+        let color=(luma-128)*1.16+131+(pixels[i+channel]-luma)*1.3;
+        if(shadow)color=color*shade[channel]+(channel===2?4:0);
+        if(highlight)color=color*.77+paper[channel]*.23;
+        pixels[i+channel]=Math.max(ink[channel],color);
+      }
+    }
+    brush.putImageData(image,0,0);
+  }
+  function prepareSprite(im,sp,finish){
+    const w=im.width,h=im.height;
+    const copy=canvas(w,h).getContext('2d');
+    copy.drawImage(im,0,0);
+    if(finish&&!sp.retroAA)finishAppliance(copy,w,h);
+    const art=copy.canvas, flipped=canvas(w,h), fx=flipped.getContext('2d');
+    fx.translate(w,0); fx.scale(-1,1); fx.drawImage(art,0,0);
+    const pixels=copy.getImageData(0,0,w,h).data;
+    // A hollow two-colour outline remains visible through foreground furniture.
+    const ring=canvas(w+6,h+6), rc=ring.getContext('2d');
+    const outline=rc.createImageData(ring.width,ring.height);
+    const opaque=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&pixels[(y*w+x)*4+3]>10;
+    for(let y=-3;y<h+3;y++) for(let x=-3;x<w+3;x++){
+      if(opaque(x,y)) continue;
+      let distance=4;
+      for(let j=-3;j<=3;j++) for(let i=-3;i<=3;i++)
+        if(opaque(x+i,y+j)) distance=Math.min(distance,Math.max(Math.abs(i),Math.abs(j)));
+      if(distance<4) outline.data.set(distance<3?[255,234,148,255]:[62,32,53,255],((y+3)*ring.width+x+3)*4);
+    }
+    rc.putImageData(outline,0,0);
+    return {im:art,flipped,ring,pixels,w,h,ax:sp.ax,ay:sp.ay,mistOutlet:sp.mistOutlet,outlet:sp.outlet,drumCenter:sp.drumCenter,lid:sp.lid,screen:sp.screen};
+  }
   async function load() {
     const jobs=[];
     for (const [group,entries] of Object.entries(data.sprites)) {
       for (const [key,sp] of Object.entries(entries)) jobs.push((async()=>{
-        const im=await loadPNG(sp.src), w=im.width, h=im.height;
-        const flipped=canvas(w,h), fx=flipped.getContext('2d');
-        fx.translate(w,0); fx.scale(-1,1); fx.drawImage(im,0,0);
-        const copy=canvas(w,h).getContext('2d');
-        copy.drawImage(im,0,0);
-        const pixels=copy.getImageData(0,0,w,h).data;
-        // A hollow two-colour outline remains visible through foreground furniture.
-        const ring=canvas(w+6,h+6), rc=ring.getContext('2d');
-        const outline=rc.createImageData(ring.width,ring.height);
-        const opaque=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&pixels[(y*w+x)*4+3]>10;
-        for(let y=-3;y<h+3;y++) for(let x=-3;x<w+3;x++){
-          if(opaque(x,y)) continue;
-          let distance=4;
-          for(let j=-3;j<=3;j++) for(let i=-3;i<=3;i++)
-            if(opaque(x+i,y+j)) distance=Math.min(distance,Math.max(Math.abs(i),Math.abs(j)));
-          if(distance<4) outline.data.set(distance<3?[255,234,148,255]:[62,32,53,255],((y+3)*ring.width+x+3)*4);
-        }
-        rc.putImageData(outline,0,0);
-        images.set(group+':'+key,{im,flipped,ring,pixels,w,h,ax:sp.ax,ay:sp.ay});
+        const im=await loadPNG(sp.src);
+        const appliance=group==='appl'||products[key.replace(/_rear$/,'')]?.c==='가전';
+        images.set(group+':'+key,prepareSprite(im,sp,appliance));
       })());
     }
-    for (const [room,tones] of Object.entries(data.rooms))
+    for (const [room,tones] of Object.entries(data.rooms)){
+      const overlay=loadPNG(tones.pink.woodOverlay);
       for (const [tone,entry] of Object.entries(tones)) jobs.push((async()=>{
         const im=await loadPNG(entry.src);
         images.set(room+':'+tone,im);
+        const wood=canvas(im.width,im.height),wc=wood.getContext('2d');
+        wc.drawImage(im,0,0);wc.drawImage(await overlay,0,0);images.set('wood:'+room+':'+tone,wood);
         const shade=canvas(im.width,im.height),sc=shade.getContext('2d');
         sc.drawImage(im,0,0);const pixels=sc.getImageData(0,0,im.width,im.height),a=pixels.data;
         const base=[a[0],a[1],a[2]];
@@ -64,6 +103,7 @@ const DotScene = (() => {
         }
         sc.putImageData(pixels,0,0);images.set('shade:'+room+':'+tone,shade);
       })());
+    }
     await Promise.all(jobs);
   }
   const sprite=(k,t)=>images.get(t+':'+k)||images.get('appl:'+k);
@@ -76,7 +116,19 @@ const DotScene = (() => {
   const robotTravel=8;
   const directionGuideProducts=new Set(['vacuum','robot_vacuum','puri_p','puri_m','puri_b','tower_ac']);
   const rear=o=>heading(o)===1||heading(o)===2;
-  const orientedSprite=(o,t)=>rear(o)?sprite(o.k+'_rear',t)||sprite(o.k,t):sprite(o.k,t);
+  function orientedSprite(o,t){
+    const item=products[o.k],part=item.hasDock&&(o.robotPart==='station'||o.robotPart==='mobile')?'_'+o.robotPart:'';
+    const key=(item.spriteKey||o.k)+part;
+    if(item.body){
+      const back=rear(o),cacheKey=key+(back?'_rear':'');
+      if(!images.has(cacheKey)){
+        const raw=CatalogArt.renderBody(item,back);
+        images.set(cacheKey,prepareSprite(raw.canvas,raw,false));
+      }
+      return images.get(cacheKey);
+    }
+    return (rear(o)&&sprite(key+'_rear',t))||sprite(key,t);
+  }
   function turnTo(room,o,turn){
     const old=dims(o);
     const origin=o.rotationOrigin;
@@ -101,7 +153,7 @@ const DotScene = (() => {
     const p=center(o);
     let delta=null,best=Infinity;
     for(const tv of items){
-      if(!['tvset','standbyme'].includes(tv.k))continue;
+      if(!['tvset','standbyme'].includes(products[tv.k].behaviorKey||tv.k))continue;
       const q=center(tv),dx=q.x-p.x,dy=q.y-p.y,dist=dx*dx+dy*dy;
       if(dist<best){best=dist;delta={dx,dy}}
     }
@@ -110,12 +162,14 @@ const DotScene = (() => {
     return Math.abs(dx)>Math.abs(dy)?(dx<0?1:3):(dy<0?2:0);
   }
   function dims(o) {
-    const {w,d}=products[o.k];
+    const item=products[o.k];
+    const {w,d}=item.previousFootprint&&o.id!=null&&!o.artVersion?item.previousFootprint:item;
     return o.f ? {w:d,d:w} : {w,d};
   }
   function placementBlocker(o,items){
     const product=products[o.k],{w,d}=dims(o);
     return items.find(p=>{
+      if(ProductCatalog.componentOnly(p.k))return false;
       if(p.id===o.id)return false;
       const other=products[p.k];
       // Flat decorations can go under furniture. Each wall has its own mounting strip.
@@ -147,7 +201,11 @@ const DotScene = (() => {
     return [Math.round(ox+2*(x-y)),Math.round(oy+x+y-z*data.zf)];
   }
   function place(room,tone,o) {
-    const s=orientedSprite(o,tone), [px,py]=project(room,o.x,o.y,elevation(room,o));
+    const s=orientedSprite(o,tone), item=products[o.k], footprint=dims(o);
+    // Centre the current model on the same floor point in pre-catalog saves.
+    const x=o.x+(footprint.w-(o.f?item.d:item.w))/2;
+    const y=o.y+(footprint.d-(o.f?item.w:item.d))/2;
+    const [px,py]=project(room,x,y,elevation(room,o));
     return {s,x:px-(o.f?s.w-s.ax:s.ax),y:py-s.ay};
   }
   function clamp(room,o) {
@@ -161,6 +219,7 @@ const DotScene = (() => {
     }
   }
   function sorted(room,list) {
+    list=list.filter(o=>!ProductCatalog.componentOnly(o.k));
     const floors=list.filter(o=>!products[o.k].layer).sort((a,b)=>a.x+a.y-b.x-b.y);
     const walls=list.filter(o=>products[o.k].layer&&products[o.k].wall);
     const rest=list.filter(o=>products[o.k].layer&&!products[o.k].wall)
@@ -291,7 +350,7 @@ const catWatching=raster(23,27,c=>{
 });
 
   // A low haunch, planted front paws and a visible muzzle give the seated watcher a profile.
-  const cleanerWatcher=raster(26,27,c=>{
+  const seatedWatcher=raster(26,27,c=>{
     steps(c,3,16,13,9,3,ink);steps(c,4,17,12,7,3,'#edc195');
     steps(c,11,14,8,11,2,ink);steps(c,12,15,6,9,1,'#ffdaad');
     rect(c,13,23,4,2,'#bd8b70');rect(c,18,23,3,2,ink);
@@ -322,8 +381,22 @@ const catWatching=raster(23,27,c=>{
   });
 
   function drawRobotLight(ctx,o,s,lit){
-    const back=rear(o),x=back?20:13;
-    rect(ctx,o.f?s.w-x-2:x,back?16:19,2,1,lit?'#a8e4d1':'#478882');
+    const back=rear(o),item=products[o.k];
+    let x=back?20:13,y=back?16:19;
+    if(item.catalogFamily==='로봇청소기'){
+      if(item.hasDock&&back&&!o.robotPart)return;
+      const depth=item.hasDock?(back?2:6):4;
+      x=s.ax+2*(4-depth)+(back?2:-2);
+      y=s.ay+4+depth-(item.spriteKey.includes('nozzle')?12:8);
+    }
+    rect(ctx,o.f?s.w-x-2:x,y,2,1,lit?'#a8e4d1':'#478882');
+  }
+  function topOpeningWasher(item){return item.washerStyle==='top'||item.washerStyle==='drawer'}
+  function drawLidIndicator(ctx,o,s,lit){
+    if(s.lid){rect(ctx,...s.lid,2,1,lit?'#a5dad4':'#626d77');return}
+    // Rear drawings turn the top panel with the cabinet. The caller handles mirroring.
+    const pad=products[o.k].washerStyle==='drawer'?4:0;
+    rect(ctx,rear(o)?7:36,pad+(rear(o)?11:10),2,1,lit?'#a5dad4':'#626d77');
   }
   function drawAppliance(ctx,o,s,kind,time){
     if(kind==='robot_vacuum'){
@@ -345,19 +418,24 @@ const catWatching=raster(23,27,c=>{
       const color='#9fe0bd';
       for(let i=0;i<3;i++){
         const rise=(phase+i*2)%6;
-        const x=Math.round(s.w/2)+(i-1)*5;
-        rect(ctx,x,3-rise*2,2,3,color);
-        rect(ctx,x+1,2-rise*2,2,1,color);
+        const [cx,cy]=s.outlet||[Math.round(s.w/2),3];
+        const x=cx+(i-1)*5;
+        rect(ctx,x,cy-rise*2,2,3,color);
+        rect(ctx,x+1,cy-1-rise*2,2,1,color);
       }
     }else if(kind==='washer'){
-      if(!rear(o)){
+      const item=products[o.k], [drumX,drumY]=s.drumCenter||[item.modelCode?12:10,item.drumY??96];
+      if(topOpeningWasher(item)){
+        drawLidIndicator(ctx,o,s,phase<3);
+      }else if(!rear(o)){
         const angle=phase*Math.PI/3;
         for(let i=0;i<3;i++){
           const a=angle+i*2*Math.PI/3;
-          rect(ctx,Math.round(10+4*Math.cos(a)),Math.round(96+6*Math.sin(a)+2*Math.cos(a)),2,2,'#a7d6e6');
+          rect(ctx,Math.round(drumX+4*Math.cos(a)),Math.round(drumY+6*Math.sin(a)+2*Math.cos(a)),2,2,'#a7d6e6');
         }
       }
-      rect(ctx,-3-(phase%2),86,1,6,'#a5c2cd');rect(ctx,s.w+1+(phase%2),88,1,6,'#a5c2cd');
+      const shakeY=item.modelCode?s.h-21:86;
+      rect(ctx,-3-(phase%2),shakeY,1,6,'#a5c2cd');rect(ctx,s.w+1+(phase%2),shakeY+2,1,6,'#a5c2cd');
     }
     ctx.restore();
   }
@@ -386,8 +464,13 @@ const catWatching=raster(23,27,c=>{
   }
   function drawTapEffect(ctx,o,s,fx,originX,originY){
     const {progress,kind}=fx.reaction;
-    if(kind==='lamp')return; // The lamp itself is drawn from its power state.
+    if(kind==='lamp'||kind==='humidifier')return; // These effects also apply during the approach.
     const localX=x=>o.f?s.w-x:x;
+    if(kind==='dehumidifier'){
+      const [x,y]=s.outlet||[s.ax,s.ay-29];
+      rect(ctx,localX(x)-(o.f?2:0),y,2,1,progress<.5?'#c1f2cd':'#8ccba9');
+      return;
+    }
     if(kind==='air'){
       const ventX=localX(o.k==='wall_ac'?17:8),ventY=o.k==='wall_ac'?20:16;
       const headX=fx.cat.x-originX,headY=fx.cat.y-originY-19;
@@ -401,8 +484,9 @@ const catWatching=raster(23,27,c=>{
       ctx.save();ctx.globalAlpha=pulse(progress,.02,.98);
       for(let i=0;i<2;i++){
         const rise=(progress*1.5+i*.5)%1;
-        const x=localX(7+i*6+Math.round(2*Math.sin(2*Math.PI*rise)));
-        const y=1-Math.round(17*rise);
+        const [cx,cy]=s.outlet||[10,1];
+        const x=localX(cx-3+i*6+Math.round(2*Math.sin(2*Math.PI*rise)));
+        const y=cy-Math.round(17*rise);
         rect(ctx,x,y,2,4,'#acf0d1');rect(ctx,x+1,y-2,2,2,'#e0fff0');
       }
       ctx.restore();
@@ -425,9 +509,16 @@ const catWatching=raster(23,27,c=>{
       }
     }else if(kind==='robot_vacuum'){
       drawRobotLight(ctx,o,s,Math.floor(progress*4)%2===1);
+    }else if(topOpeningWasher(products[o.k])){
+      ctx.save();
+      if(o.f){ctx.translate(s.w,0);ctx.scale(-1,1)}
+      drawLidIndicator(ctx,o,s,progress<.5);
+      ctx.restore();
     }else if(!rear(o)){
       const angle=washerAngle(progress);
-      const x=Math.round(localX(10+4*Math.cos(angle))),y=Math.round(96-5*Math.sin(angle));
+      const item=products[o.k];
+      const [cx,cy]=s.drumCenter||[item.modelCode?12:10,item.drumY??96];
+      const x=Math.round(localX(cx+4*Math.cos(angle))),y=Math.round(cy-5*Math.sin(angle));
       rect(ctx,x-1,y-2,3,5,'#f7c8ad');rect(ctx,x-2,y+1,3,2,'#eea0a5');
       rect(ctx,x-1,y-2,3,1,'#fff3cf');
     }else{
@@ -437,12 +528,29 @@ const catWatching=raster(23,27,c=>{
     }
   }
   function drawEffects(ctx,o,s,fx,originX,originY) {
+    if(o.robotPart==='station')return;
+    if(fx.mist?.itemId===o.id){
+      const [x,y]=s.mistOutlet,vent=o.f?s.w-1-x:x;
+      ctx.save();
+      const sway=Math.sin(2*Math.PI*fx.mist.phase);
+      ctx.globalAlpha=.62;
+      rect(ctx,vent-1,y-3,2,3,'#e2f3f4');rect(ctx,vent-1+Math.round(sway),y-5,2,2,'#daeff1');
+      for(const offset of [0,1/3,2/3]){
+        const rise=(fx.mist.phase+offset)%1;
+        const px=vent+Math.round(2*Math.sin(rise*Math.PI*2));
+        const py=y-1-Math.round(rise*19);
+        ctx.globalAlpha=.85*Math.sin(rise*Math.PI);
+        rect(ctx,px-1,py,2,4,'#c1d9df');rect(ctx,px,py-2,2,4,'#f4ffff');
+        if(rise>.35)rect(ctx,px+1,py-3,3,2,'#e4f4f7');
+      }
+      ctx.restore();
+    }
     if(fx.reaction?.itemId===o.id)drawTapEffect(ctx,o,s,fx,originX,originY);
     const kind=fx.appliances?.[o.id];
     const robotAlreadyLit=kind==='robot_vacuum'&&fx.reaction?.itemId===o.id;
     if(kind&&!robotAlreadyLit&&!['light-off','light-dim','tv-on'].includes(kind))drawAppliance(ctx,o,s,kind,fx.time);
     if((kind==='tv-on'||(o.id===fx.tv&&fx.playing))&&!rear(o)){
-      const tv=o.k==='tvset',x=tv?17:2,y=tv?3:3,w=tv?39:25,h=tv?27:20;
+      const tv=o.k==='tvset',[x,y,w,h]=s.screen||products[o.k].screen||(tv?[17,3,39,27]:[2,3,25,20]);
       ctx.save();if(o.f){ctx.translate(s.w,0);ctx.scale(-1,1)}
       // Paint the film into the sloping glass, inside the bezel.
       ctx.transform(1,.5,0,1,x,y);
@@ -492,6 +600,10 @@ const catWatching=raster(23,27,c=>{
       ctx.drawImage(wrappedTail,-8-Math.round(5*ease),-6,9+tuck,6);
       return;
     }
+    if(kind==='humidifier'||kind==='dehumidifier'){
+      ctx.drawImage(seatedWatcher,-11,-24);
+      return;
+    }
     let lean=0,lift=0,sprite=catWatching;
     if(kind==='air'){
       const gust=Math.sin(Math.PI*progress);
@@ -513,7 +625,7 @@ const catWatching=raster(23,27,c=>{
       ctx.translate(-Math.round(6*recoil*ease),-Math.round(2*pulse(progress,.15,.32)*ease));
       lean=2*pulse(progress,.63,.99)-recoil;lift=recoil;
     }else if(kind==='robot_vacuum'){
-      if(watchingCleaner)sprite=cleanerWatcher;
+      if(watchingCleaner)sprite=seatedWatcher;
       lift=-1+gazeY;lean=1+gazeX;
     }else{
       const angle=washerAngle(progress);
@@ -530,11 +642,24 @@ const catWatching=raster(23,27,c=>{
     }
   }
 
-  function paint(ctx,room,tone,ordered,selected,fx,blocked=false) {
+  function bedPoint(room,tone,o){
+    const loc=place(room,tone,o),back=rear(o),x=back?63:80;
+    return {x:loc.x+(o.f?loc.s.w-x:x),y:loc.y+(back?71:37),depth:o.x+o.y};
+  }
+  function drawBedSleeper(ctx,p,o,tone,tucked){
+    ctx.save();ctx.translate(p.x,p.y);if(o.f)ctx.scale(-1,1);
+    ctx.drawImage(sleepingCoat,-13,-6);ctx.drawImage(sleepingHead,-8,-17);
+    const y=2-Math.round(5*tucked),lime=tone==='lime';
+    steps(ctx,-14,y,27,8,3,lime?'#89946b':'#bd8396');
+    steps(ctx,-13,y,25,6,2,lime?'#d4dfa7':'#f3b5c9');
+    rect(ctx,-10,y,19,1,lime?'#edf2d0':'#ffe5ed');
+    ctx.restore();
+  }
+  function paint(ctx,room,tone,ordered,selected,fx,blocked=false,wood=false) {
     ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(bg(room,tone),0,0);
+    ctx.drawImage(wood?images.get('wood:'+room+':'+tone):bg(room,tone),0,0);
     if(fx?.dim) ctx.drawImage(images.get('shade:'+room+':'+tone),0,0);
-    let catPainted=false;
+    let catPainted=fx?.sleepBed!=null;
     // Draw the seated cat above loose cushions resting on its own seat.
     const sofa=fx?.seat!=null?ordered.find(o=>o.id===fx.seat):null;
     let catLayer=sofa;
@@ -550,9 +675,13 @@ const catWatching=raster(23,27,c=>{
       if(fx && !catPainted && !fx.seat && products[o.k].layer && !products[o.k].wall && o.x+o.y>fx.depth){
         drawCat(ctx,fx.cat,fx);catPainted=true;
       }
+      const glow=fx?.focusedProduct===o.id&&fx.tapGlow>0;
+      if(glow){ctx.save();ctx.filter='brightness('+(1+0.25*fx.tapGlow)+')'}
       ctx.drawImage(o.f?s.flipped:s.im,x,y);
+      if(glow)ctx.restore();
       if(fx){
         ctx.save();ctx.translate(x,y);drawEffects(ctx,o,s,fx,x,y);ctx.restore();
+        if(o.id===fx.sleepBed)drawBedSleeper(ctx,bedPoint(room,tone,o),o,tone,fx.tucked);
         if(o===catLayer){
           drawCat(ctx,fx.cat,fx);catPainted=true;
           if(rear(sofa)){
@@ -563,9 +692,9 @@ const catWatching=raster(23,27,c=>{
       }
     }
     if(fx&&!catPainted)drawCat(ctx,fx.cat,fx);
-    if(selected){
+    if(selected&&(!fx||fx.focusedProduct!==selected.id)){
       mark(ctx,room,tone,selected,blocked);
-      if(!fx&&directionGuideProducts.has(selected.k))markFront(ctx,room,selected);
+      if(!fx&&directionGuideProducts.has(products[selected.k].behaviorKey||selected.k))markFront(ctx,room,selected);
     }
   }
   function thumbnail(c,k,tone,pose={f:0}) {
@@ -575,5 +704,5 @@ const catWatching=raster(23,27,c=>{
     const w=Math.round(s.w*scale),h=Math.round(s.h*scale);
     x.imageSmoothingEnabled=false;x.drawImage(flipped?s.flipped:s.im,Math.round((c.width-w)/2),Math.round((c.height-h)/2),w,h);
   }
-  return {heading,frontStep,robotTravel,robotCrossesStep,turnTo,facingScreen,products,names,defaults,load,bg,roomData,dims,placementBlocker,zone,elevation,project,place,clamp,sorted,hits,nearbyTarget,paint,thumbnail};
+  return {heading,frontStep,robotTravel,robotCrossesStep,turnTo,facingScreen,products,names,defaults,load,bg,roomData,dims,placementBlocker,zone,elevation,project,place,bedPoint,clamp,sorted,hits,nearbyTarget,paint,thumbnail};
 })();
