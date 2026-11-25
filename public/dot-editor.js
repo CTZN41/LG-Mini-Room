@@ -83,6 +83,12 @@
   function redraw(){ordered=M.sorted(room,life?list().filter(life.visible):list());paintFrame()}
   function paintFrame(){
     const frame=life?.frame();
+    if(gesture?.candidate){
+      const preview=gesture.candidate;
+      displayed=M.sorted(room,ordered.map(item=>item===gesture.o?preview:item));
+      M.paint(ctx,room,tone,displayed,preview,frame,!!gesture.blocker);
+      return;
+    }
     const moving=frame?.movingRobot;
     const movingUnits=frame?.movingUnits;
     displayed=movingUnits?.size?M.sorted(room,ordered.map(o=>movingUnits.get(o.id)||o)):ordered;
@@ -195,36 +201,41 @@
     if(life && !life.canAdd(k,unitId))return;
     const it=M.products[k],{W,D}=M.roomData(room);
     const o={id:id(),k,f:0,e:0,x:Math.round((W-it.w)/2),y:it.wall?0:Math.round((D-it.d)/2)};
-    findSpace(o);
+    if(!findSpace(o))return;
     checkpoint();life?.bindUnit(o,unitId);list().push(o);select(o);drawerOpen(false);save();refresh();fit();reveal();
   }
   function placeCollected(k){
     cat=M.products[k].c;sync();inventory();add(k);
     view.focus({preventScroll:true});
   }
+  function placementIssue(o,items){
+    if(o.k==='robot_vacuum'&&M.robotCrossesStep(room,o))return '청소기나 앞쪽 이동 경로가 단차에 걸려요.';
+    const blocker=M.placementBlocker(o,items);
+    return blocker?M.products[blocker.k].n+' · 겹쳐서 놓을 수 없어요':'';
+  }
   function findSpace(o){
-    const it=M.products[o.k],{W,D}=M.roomData(room);
-    const footprint=M.dims(o);
-    // Prefer the nearest open footprint so adding a second item doesn't bury the first.
-    const preferred={...o};let found=false;
-    for(let radius=0;radius<=Math.max(W,D)&&!found;radius+=4){
-      for(let dy=-radius;dy<=radius&&!found;dy+=4)for(let dx=-radius;dx<=radius&&!found;dx+=4){
-        if(Math.max(Math.abs(dx),Math.abs(dy))!==radius)continue;
-        o.x=preferred.x+dx;o.y=preferred.y+dy;M.clamp(room,o);
-        found=!list().some(p=>{
-          if(life&&!life.visible(p))return false;
-          if(Boolean(M.products[p.k].wall)!==Boolean(it.wall)||M.products[p.k].layer!==it.layer)return false;
-          const {w,d}=M.dims(p);return o.x<p.x+w&&o.x+footprint.w>p.x&&o.y<p.y+d&&o.y+footprint.d>p.y;
-        });
-      }
+    M.clamp(room,o);
+    const items=life?list().filter(life.visible):list();
+    if(!placementIssue(o,items))return true;
+    const {W,D}=M.roomData(room),{w,d}=M.dims(o),wall=M.products[o.k].wall;
+    const probe={...o};let best=null,distance=Infinity;
+    for(let y=0;y<=(wall&&!o.f?0:D-d);y++)for(let x=0;x<=(wall&&o.f?0:W-w);x++){
+      const score=(x-o.x)**2+(y-o.y)**2;
+      if(score>=distance)continue;
+      probe.x=x;probe.y=y;M.clamp(room,probe);
+      if(probe.x!==x||probe.y!==y||placementIssue(probe,items))continue;
+      best={x,y};distance=score;
     }
-    if(!found){Object.assign(o,preferred);M.clamp(room,o)}
-
+    if(!best){notice('자리가 부족해요. 다른 제품을 옮겨 공간을 만들어 주세요.');return false}
+    Object.assign(o,best);return true;
   }
   function edit(change){
     if(!selected)return;
-    const before=JSON.stringify(list());change(selected);M.clamp(room,selected);
-    if(before!==JSON.stringify(list()))checkpoint(before);
+    const candidate={...selected};change(candidate);M.clamp(room,candidate);
+    const issue=placementIssue(candidate,ordered);
+    if(issue){notice(issue);return}
+    if(JSON.stringify(selected)===JSON.stringify(candidate))return;
+    checkpoint();delete selected.rotationOrigin;Object.assign(selected,candidate);
     overlap=[];save();refresh();reveal();
   }
   const rotate=step=>edit(o=>M.turnTo(room,o,M.products[o.k].wall?(o.f?0:3):M.heading(o)+step));
@@ -234,8 +245,10 @@
   const height=n=>edit(o=>o.e=Math.max(-M.products[o.k].elev,o.e+n));
   function duplicate(){
     if(!selected||(life&&!life.canAdd(selected.k)))return;
-    checkpoint();const o={...selected,id:id(),x:selected.x+3,y:selected.y+3};M.clamp(room,o);
-    delete o.deviceId;life?.bindUnit(o);list().push(o);select(o);save();refresh();reveal();
+    const o={...selected,id:id(),x:selected.x+3,y:selected.y+3};
+    delete o.rotationOrigin;delete o.deviceId;
+    if(!findSpace(o))return;
+    life?.bindUnit(o);checkpoint();list().push(o);select(o);save();refresh();reveal();
   }
   function remove(){if(!selected)return;checkpoint();layouts[room]=list().filter(o=>o!==selected);select();save();refresh()}
   function undo(){if(!hist[room].length)return;layouts[room]=JSON.parse(hist[room].pop());select();save();refresh()}
@@ -244,24 +257,27 @@
     const [a,b]=[...pointers.values()];
     return {mid:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},dist:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y))};
   }
-  function cancelMove(){
-    if(gesture?.type==='move'&&gesture.moved){gesture.o.x=gesture.ox;gesture.o.y=gesture.oy;redraw()}
-  }
   view.onpointerdown=e=>{
     if(!ready||e.button!==0)return;
     if(!$('keyboardTarget').hidden)clearBrowseSelection();
     const p=local(e.clientX,e.clientY);
     view.setPointerCapture(e.pointerId);pointers.set(e.pointerId,p);view.classList.add('busy');
     if(pointers.size===2){
-      cancelMove();const {mid,dist}=pinchData();
-      gesture={type:'pinch',dist,anchor:native(mid),zoom:camera.zoom};return;
+      const {mid,dist}=pinchData();
+      gesture={type:'pinch',dist,anchor:native(mid),zoom:camera.zoom};
+      $('placementHint').textContent='';paintFrame();return;
     }
     if(pointers.size!==1)return;
     const n=native(p), stack=M.hits(room,tone,displayed,n.x,n.y);
+    const visiting=life&&!life.editing(),finger=visiting&&e.pointerType==='touch';
+    if(finger&&(!stack.length||!M.products[stack[0].k].layer)){
+      const near=M.nearbyTarget(room,tone,displayed,n.x,n.y,10/camera.k,life.interactive);
+      if(near)stack.unshift(near);
+    }
     if(displayed!==ordered)for(let i=0;i<stack.length;i++)stack[i]=ordered.find(o=>o.id===stack[i].id);
     // After explicitly picking a covered object, dragging that same overlap moves it.
     const o=overlap.length>1&&stack.includes(selected)?selected:stack[0];
-    gesture=life&&!life.editing()?{type:'visit',p,o,x:camera.x,y:camera.y,k:camera.k}:o?{type:'move',o,stack,p,ox:o.x,oy:o.y,k:camera.k,before:JSON.stringify(list())}:
+    gesture=visiting?{type:'visit',p,o,slop:finger?10:4,x:camera.x,y:camera.y,k:camera.k}:o?{type:'move',o,stack,p,ox:o.x,oy:o.y,k:camera.k,before:JSON.stringify(list())}:
       {type:'pan',p,x:camera.x,y:camera.y,k:camera.k};
   };
   view.onpointermove=e=>{
@@ -272,27 +288,46 @@
       const {mid,dist}=pinchData();zoomAt(gesture.zoom*dist/gesture.dist,mid,gesture.anchor);return;
     }
     const g=gesture,dx=p.x-g.p.x,dy=p.y-g.p.y;
-    if(!g.moved&&Math.hypot(dx,dy)<4)return;
+    if(!g.moved&&Math.hypot(dx,dy)<(g.slop??4))return;
     g.moved=true;
     if(g.type==='pan'||g.type==='visit'){camera.x=g.x-dx/g.k;camera.y=g.y-dy/g.k;fit();return}
-    const o=g.o,mx=dx/g.k,my=dy/g.k;
+    previewMove(g,dx,dy);
+  };
+  function previewMove(g,dx,dy){
+    const o={...g.o},mx=dx/g.k,my=dy/g.k;
     let wx=(mx/2+my)/2,wy=(my-mx/2)/2;
     if(M.products[o.k].wall){
       if(o.f){wy=(-2*mx+my)/5;wx=0}else{wx=(2*mx+my)/5;wy=0}
     }
     o.x=g.ox+Math.round(wx);o.y=g.oy+Math.round(wy);M.clamp(room,o);
-    select(o);redraw();
-  };
+    g.candidate=o;const message=placementIssue(o,ordered);
+    g.blocker=message;
+    if(!message)g.lastValid=o;
+    if($('placementHint').textContent!==message)$('placementHint').textContent=message;
+    select(g.o);paintFrame();
+  }
   function finish(e,cancelled){
     if(!pointers.has(e.pointerId))return;
     pointers.delete(e.pointerId);
     if(gesture?.type==='pinch'){if(pointers.size>=2)return;gesture=null}
-    const g=gesture;gesture=null;
-    if(g?.type==='visit'&&!cancelled&&!g.moved){life.tap(g.o)}
+    const g=gesture;
+    if(g?.type==='move'&&g.moved&&!cancelled){
+      const p=local(e.clientX,e.clientY);previewMove(g,p.x-g.p.x,p.y-g.p.y);
+    }
+    gesture=null;$('placementHint').textContent='';
+    if(g?.type==='visit'&&!cancelled&&!g.moved){
+      const end=local(e.clientX,e.clientY);
+      if(Math.hypot(end.x-g.p.x,end.y-g.p.y)<g.slop)life.tap(g.o);
+    }
     else if(g?.type==='move'){
-      if(cancelled){g.o.x=g.ox;g.o.y=g.oy}
-      else if(g.moved){if(g.o.x!==g.ox||g.o.y!==g.oy){checkpoint(g.before);save()}select(g.o)}
-      else select(g.stack[0],g.stack);
+      if(!cancelled&&g.moved){
+        const end=g.lastValid;
+        if(end&&(end.x!==g.ox||end.y!==g.oy)){
+          checkpoint(g.before);g.o.x=end.x;g.o.y=end.y;delete g.o.rotationOrigin;save();
+        }
+        if(g.blocker)notice('마지막으로 놓을 수 있던 자리에 두었어요.');
+        select(g.o);
+      }else if(!cancelled)select(g.stack[0],g.stack);
     }else if(g?.type==='pan'&&!g.moved&&!cancelled)select();
     if(!pointers.size)view.classList.remove('busy');
     refresh();
@@ -463,6 +498,10 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
   const recipeFor=k=>templates.find(t=>t.actions.some(a=>a.kind===groupFor(k)));
   const tapKind=k=>k?.startsWith('fridge_')?'fridge':k==='vacuum'||k==='robot_vacuum'?k:null;
   const tapDescriptions={
+    air:'고양이가 에어컨 바람을 맞으며 귀를 살짝 접어요.',
+    purifier:'고양이가 공기청정기 앞에서 코를 들고 바람 냄새를 맡아요.',
+    washer:'고양이가 세탁조 안에서 도는 양말을 눈으로 따라가요.',
+    styler:'고양이가 김이 오르는 스타일러 앞에 몸을 말고 잠들어요.',
     fridge:'고양이가 냉장고 문을 올려다보며 간식을 기다려요.',
     vacuum:'청소기가 떨리면 고양이가 한 발 물러났다가 다시 들여다봐요.',
     robot_vacuum:'고양이가 움직이는 로봇청소기를 눈으로 따라가요.'
@@ -510,14 +549,14 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     if(existing)return existing;
     const primary=key==='tvset';
     const o={id:id(),deviceId:d.id,k:key,x:primary?1:65,y:primary?49:8,f:primary?1:0,e:0};
-    findSpace(o);return o;
+    return findSpace(o)?o:null;
   }
   function placeTV(o,deviceId){
     o.deviceId=deviceId;
     if(!list().includes(o))list().push(o);
   }
   function ensureTV(d){
-    placeTV(planTV(d),d.id);
+    const o=planTV(d);if(o)placeTV(o,d.id);
   }
   function initialMy(r,next){
     if(!hasHome())return [];
@@ -585,23 +624,41 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     }
     return nearest;
   }
-  function standingPoint(item,kind){
+  function standingPoint(item,kind,patrol=null){
     const {w,d}=M.dims(item),{W,D}=M.roomData(room());
-    const [nx,ny]=[[0,1],[-1,0],[0,-1],[1,0]][M.heading(item)];
+    // Let the cat observe the cleaner from beside its forward lane.
+    const side=kind==='robot_vacuum'||kind==='cleaning';
+    const [nx,ny]=M.frontStep((M.heading(item)+(side?1:0))%4);
     const cx=item.x+w/2,cy=item.y+d/2,gap=kind==='washer'?4:kind==='cleaning'?15:8;
     const frontX=cx+nx*(w/2+gap),frontY=cy+ny*(d/2+gap);
+    const level=M.zone(room(),item);
+    const robot=patrol&&M.place(room(),tone(),item);
+    const travelX=patrol?patrol.dx*patrol.length:0,travelY=patrol?patrol.dy*patrol.length:0;
+    const screenTravelX=2*(travelX-travelY);
+    const nearEdge=robot?robot.x+Math.min(0,screenTravelX):0;
+    const farEdge=robot?robot.x+robot.s.w+Math.max(0,screenTravelX):0;
+    const watchY=robot?robot.y+robot.s.h+(travelX+travelY)/2+3:0;
     const obstacles=list().filter(o=>visible(o)&&M.products[o.k].layer&&!M.products[o.k].wall)
       .map(o=>({x:o.x,y:o.y,...M.dims(o),loc:kind&&M.place(room(),tone(),o),flipped:o.f}));
     let best=Infinity,point=null;
     for(let x=2;x<=W-2;x+=2)for(let y=2;y<=D-2;y+=2){
       if(room()==='B'&&x+2>52&&y+2>48)continue;
       if(x>=item.x-1&&x<=item.x+w+1&&y>=item.y-1&&y<=item.y+d+1)continue;
-      let score=(x-frontX)**2+(y-frontY)**2;
+      const floor=floorPoint(x,y);
+      let score;
+      if(patrol){
+        // Score both sides of the whole patrol in screen space, so the silhouettes read side by side.
+        if(x>=item.x+Math.min(0,travelX)-2&&x<=item.x+w+Math.max(0,travelX)+2&&
+           y>=item.y+Math.min(0,travelY)-2&&y<=item.y+d+Math.max(0,travelY)+2)continue;
+        const left=(floor.x-(nearEdge-19))**2,right=(floor.x-(farEdge+19))**2+24;
+        score=Math.min(left,right)+2*(floor.y-watchY)**2;
+        score+=12*Math.max(0,8-Math.min(x,y,W-x,D-y))**2;
+        if(floor.y!==M.project(room(),x,y,level)[1])score+=2400;
+      }else score=(x-frontX)**2+(y-frontY)**2;
       if(score>=best)continue;
       if(obstacles.some(o=>x>o.x-2&&x<o.x+o.w+2&&y>o.y-2&&y<o.y+o.d+2))continue;
-      if((x-cx)*nx+(y-cy)*ny<0)score+=100;
+      if(!patrol&&(x-cx)*nx+(y-cy)*ny<0)score+=100;
       if(score>=best)continue;
-      const floor=floorPoint(x,y);
       // Check the cat's silhouette as well as its floor tile in a crowded room.
       if(kind&&obstacles.some(o=>{
         if(o.x+o.y<=floor.depth)return false;
@@ -626,39 +683,41 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
   function approachAppliance(item,kind){
     const now=performance.now();
     start=position(now);seat=null;target=item;
-    standing=standingPoint(item,kind);started=now;
+    const patrol=kind==='robot_vacuum'?robotPath(item,null):null;
+    standing=standingPoint(item,kind,patrol);started=now;
     walking=!still()&&Math.hypot(standing.x-start.x,standing.y-start.y)>1;
     reaction={itemId:item.id,kind,wall:item.k==='wall_ac',arrives:now+(walking?approachMs:0)};
-    if(kind==='robot_vacuum')reaction.path=robotPath(item);
+    if(patrol){
+      reaction.path=robotPath(item);
+      const loc=M.place(room(),tone(),item),{dx,dy,length}=reaction.path;
+      reaction.facingLeft=loc.x+loc.s.w/2+(dx-dy)*length<standing.x;
+    }
     if(!still())animate();
   }
   function robotPath(item,resting=standing,reserved=[]){
     const {w,d}=M.dims(item),level=M.zone(room(),item);
-    const {zones}=M.roomData(room());
+    const [dx,dy]=M.frontStep(M.heading(item));
     const blocks=list().filter(o=>o!==item&&visible(o)&&M.products[o.k].layer&&!M.products[o.k].wall);
-    let best={dx:0,dy:0,length:0};
-    const directions=[[0,1],[-1,0],[0,-1],[1,0]];
-    for(let i=0;i<4;i++){
-      const [dx,dy]=directions[(M.heading(item)+i)%4];
-      for(let n=1;n<=8;n++){
-        const x=item.x+dx*n,y=item.y+dy*n,probe={...item,x,y};
-        M.clamp(room(),probe);
-        if(probe.x!==x||probe.y!==y||M.zone(room(),probe)!==level)break;
-        const onStep=zones.some(([l,t,r,b])=>x<r&&x+w>l&&y<b&&y+d>t&&
-          (x<l||x+w>r||y<t||y+d>b));
-        if(onStep)break;
-        if(blocks.some(o=>{
-          const size=M.dims(o);
-          return x<o.x+size.w&&x+w>o.x&&y<o.y+size.d&&y+d>o.y;
-        }))break;
-        if(reserved.some(b=>x<b.x+b.w&&x+w>b.x&&y<b.y+b.d&&y+d>b.y))break;
-        const [cx,cy]=M.project(room(),x+w/2,y+d/2,level);
-        if(resting&&Math.hypot(cx-resting.x,cy-resting.y)<13)break;
-        if(n>best.length)best={dx,dy,length:n};
-      }
-      if(best.length===8)break;
+    let length=0;
+    for(let n=1;n<=M.robotTravel;n++){
+      const x=item.x+dx*n,y=item.y+dy*n,probe={...item,x,y};
+      M.clamp(room(),probe);
+      if(probe.x!==x||probe.y!==y||M.robotCrossesStep(room(),item,n))break;
+      if(blocks.some(o=>{
+        const size=M.dims(o);
+        return x<o.x+size.w&&x+w>o.x&&y<o.y+size.d&&y+d>o.y;
+      }))break;
+      if(reserved.some(b=>x<b.x+b.w&&x+w>b.x&&y<b.y+b.d&&y+d>b.y))break;
+      const [cx,cy]=M.project(room(),x+w/2,y+d/2,level);
+      if(resting&&Math.hypot(cx-resting.x,cy-resting.y)<13)break;
+      length=n;
     }
-    return best;
+    return {dx,dy,length};
+  }
+  function blockedRobotMessage(item){
+    return M.robotCrossesStep(room(),item,1)
+      ?'앞쪽 단차에 걸려요. 배치 편집에서 위치나 방향을 바꿔 주세요.'
+      :'앞쪽에 빈 통로가 없어 제자리에서 표시등만 깜박여요.';
   }
   function stopReaction(){
     if(!reaction)return;
@@ -689,13 +748,22 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     const destination=walking&&(seat?sofaPoint(seat):standing);
     const dx=destination?destination.x-start.x:tvLoc?tvLoc.x+tvLoc.s.w/2-cat.x:0;
     const dy=destination?destination.y-start.y:tvLoc?tvLoc.y+tvLoc.s.h/3-cat.y:0;
-    if(pose?.kind==='robot_vacuum'){
+    let facingLeft=dx<0;
+    if(pose?.kind==='robot_vacuum'&&!cleaningRuns.length){
+      facingLeft=reaction.facingLeft;
+      pose.watchingCleaner=true;
+      // Sample the continuous patrol for the eyes and head while the cleaner is drawn on whole pixels.
+      const path=reaction.path;
+      const offset=still()?0:path.length*(1-Math.cos(2*Math.PI*pose.progress))/2;
+      pose.gazeX=(facingLeft?-1:1)*(path.dx-path.dy)*offset/4;
+      pose.gazeY=-(path.dx+path.dy)*offset/6;
+    }else if(pose?.kind==='robot_vacuum'){
       const gx=movingRobot?movingRobot.x-target.x:0,gy=movingRobot?movingRobot.y-target.y:0;
       pose.gazeX=Math.max(-2,Math.min(2,(gx-gy)*(dx<0?-1:1)/3));
       pose.gazeY=Math.max(-1,Math.min(1,-(gx+gy)/5));
     }
     return {cat,reaction:pose,movingRobot,movingUnits,depth:cat.depth,seat:!walking&&seat?seat.id:null,
-      time:still()?0:now,walking,facingAway:dy<0,facingLeft:dx<0,
+      time:still()?0:now,walking,facingAway:dy<0,facingLeft,
       facingSide:walking?Math.abs(dx)>Math.abs(dy)*.65:Math.abs(dx)>12,tv:tv?.id,
       appliances:recipeEffects,playing:!!movie||!!poweredTV,
       dim:!!playback?.bindings['light-dim']||(playback?.custom&&Object.values(recipeEffects).some(op=>op==='light-off'||op==='light-dim')),
@@ -719,7 +787,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
   }
   function show(title,detail=''){$('lifeTitle').textContent=title;$('lifeDetail').textContent=detail}
   function setPanel(next){
-    if(next!=='applianceConfig'&&next!=='petVisit')stopReaction();
+    if(next!=='applianceConfig'&&next!=='product')stopReaction();
     panel=next;render();draw();
     if(poweredTV&&!still())animate();
   }
@@ -737,7 +805,8 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     const starter=[['tvset',1,49,1],['floor_lamp',21,49,0],['sofa',34,48,1]];
     for(const [k,x,y,f] of starter){
       if(list().some(o=>k==='tvset'?isTV(o):o.k===k))continue;
-      const o={id:id(),k,x,y,f,e:0};if(k==='sofa')o.turn=1;M.clamp(room(),o);list().push(o);
+      const o={id:id(),k,x,y,f,e:0};if(k==='sofa')o.turn=1;
+      if(findSpace(o)){if(isAppliance(k))bindUnit(o);list().push(o)}
     }
     identifyDevices(list());for(const d of liveTVs())ensureTV(d);
     save();inventory();refresh();clearConnectLink();if(recipe)openRecipe(recipe);else connect();
@@ -831,34 +900,29 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
   }
   function tap(o){
     if(playback||menu)return;
-    if(reaction&&reaction.itemId===o?.id)return;
+    if(panel==='product'&&reaction&&reaction.itemId===o?.id)return;
     stopReaction();
     poweredTV=isTV(o)?o:null;
-    const kind=tapKind(o?.k);
+    const kind=tapKind(o?.k)||groupFor(o?.k)||(o?.k==='floor_lamp'?'lamp':null);
     if(kind){
       approachAppliance(o,kind);
-      setPanel('petVisit');return;
-    }
-    const found=o&&recipeFor(o.k);
-    if(found){
-      approachAppliance(o,groupFor(o.k));
-      openRecipe(found,o);
+      setPanel('product');
       return;
+    }
+    if(isTV(o)){
+      if(my&&!hasHome()){setPanel('setup');return}
+      watch(o);setPanel('product');return;
     }
     if(friend){
       if(o?.k==='sofa'){
         if(panel!=='friendMovie')log('routine_opened');
         setPanel('friendMovie');
-      }else{if(isTV(o))watch(o);setPanel('idle')}
+      }else setPanel('idle');
       return;
     }
-    if(isTV(o)){
-      if(my&&!hasHome()){setPanel('setup');return}
-      watch(o);setPanel('product');
-    }else if(o?.k==='sofa'&&my&&saved()){
+    if(o?.k==='sofa'&&my&&saved()){
       seat=o;walking=false;target=screenFor(saved().bindings['tv-on']);log('routine_reopened',savedSource());setPanel('saved');
-    }else if(o?.k==='floor_lamp'){setPanel('lamp')}
-    else{standing=position(performance.now());seat=target=null;walking=false;setPanel('idle')}
+    }else{standing=position(performance.now());seat=target=null;walking=false;setPanel('idle')}
   }
   function beginRepair(){
     bindings={...saved().bindings};delete bindings['tv-on'];setPanel('repair');
@@ -903,7 +967,8 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     const k=groups[a.kind].keys.find(k=>canAdd(k));
     if(!my||!k)throw Error('연결할 등록 기기가 없어요.');
     const o={id:id(),k,x:Math.round(M.roomData(room()).W/2),y:18,f:0,e:0};
-    findSpace(o);bindUnit(o);list().push(o);
+    if(!findSpace(o))throw Error('이 방에 기기를 배치할 빈자리가 없어요.');
+    bindUnit(o);list().push(o);
     if(!save()){list().pop();throw Error('가전 배치를 저장할 수 없어요. 저장 공간을 확인해 주세요.')}
     refresh();
     return o.deviceId;
@@ -1102,7 +1167,8 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     for(const a of t.actions){
       if(applianceOptions(a).length)continue;
       const o={id:id(),k:groups[a.kind].keys[0],x:a.required?15:45,y:30,f:0,e:0};
-      findSpace(o);list().push(o);
+      if(!findSpace(o)){setPanel('idle');return}
+      list().push(o);
     }
     refresh();openRecipe(t);playRecipe('applianceConfig');
   }
@@ -1210,6 +1276,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
         if(a.kind==='tv'&&options.some(o=>o.id===selected)&&!screenFor(selected)){
           action(nameOf(selected)+' 방에 놓기',()=>{
             const tv=planTV(liveTVs().find(o=>o.id===selected));
+            if(!tv)throw Error('TV를 배치할 빈자리가 없어요.');
             const inserted=!list().includes(tv),oldId=tv.deviceId;
             placeTV(tv,selected);
             if(!save()){
@@ -1273,7 +1340,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     });
     if(cleaningRuns.length){
       summary.push(seat?'고양이는 소파에서 청소기를 지켜봐요':'고양이는 옆에서 청소기를 지켜봐요');
-      if(!cleaningRuns[0].path.length)summary.push('빈 통로가 없어 표시등만 깜박여요');
+      if(!cleaningRuns[0].path.length)summary.push(blockedRobotMessage(cleaningRuns[0].item));
     }
     show(recipe.name+' 실행 중',summary.join(' · ')+' · 실제 가전은 작동하지 않아요');
     if(!still())action('연출 건너뛰기',()=>{skipped=true;walking=false;render();draw()});
@@ -1294,7 +1361,14 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     const registered=model.registeredTVs().includes(d.id);
     action(d.name+(registered?' 등록 해제':' 등록'),()=>{
       const active=model.registeredTVs();
+      // A removed TV may still have an old anchor that has since been occupied.
+      const returning=!registered&&list().find(o=>isTV(o)&&o.deviceId===d.id);
+      const placement=returning&&{...returning};
+      if(placement&&!findSpace(placement))return;
       model.update(s=>s.registeredTvIds=registered?active.filter(id=>id!==d.id):[...active,d.id]);
+      if(placement&&(returning.x!==placement.x||returning.y!==placement.y)){
+        returning.x=placement.x;returning.y=placement.y;delete returning.rotationOrigin;
+      }
       if(!registered)ensureTV(d);
       save();select();inventory();refresh();setPanel('devices');
     });
@@ -1370,7 +1444,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
   }
   function render(){
     offer?.disconnect();offer=null;
-    if(!((friend&&panel==='idle')||(!readOnly&&!my&&!editMode&&panel==='product')))offeredTarget=null;
+    if(!((friend&&panel==='idle')||(!readOnly&&!my&&!editMode&&panel==='product'&&isTV(target))))offeredTarget=null;
     for(const b of $('rooms').children)b.disabled=readOnly||!!playback;
     for(const b of document.querySelectorAll('[data-tone]'))b.disabled=readOnly;
     $('routineBagButton').hidden=readOnly;$('routineBagButton').disabled=!!playback;
@@ -1391,6 +1465,8 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     const movie=saved(),recipes=templates.filter(savedRecipe);
     const custom=model.state.savedRoutines.filter(r=>r.custom===true);
     const shelf=my&&hasHome()&&!editMode&&panel==='idle';
+    $('living').classList.toggle('browse-card',!readOnly&&!editMode&&(!my||hasHome())&&
+      (panel==='idle'||panel==='product'));
     const quick=my&&panel==='playing'&&previousPanel==='idle';
     tools.hidden=!shelf;
     $('living').classList.toggle('routine-shelf',shelf);
@@ -1490,25 +1566,34 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
       action('다른 가전 루틴',()=>setPanel('recipeList'));action('여러 루틴 설정',openBatch);
       action('루틴 만들기',()=>openComposer());return;
     }
-    if(panel==='product'||panel==='saved'){
-      const screenName=my&&target?.deviceId?nameOf(target.deviceId):M.products[target?.k]?.n||'TV';
-      show(panel==='saved'?'영화 보기 · 연결 기기':screenName+' · 영화 보기',panel==='saved'?
-        nameOf(saved()?.bindings['tv-on'])+' · '+(saved()?.bindings['light-dim']?'거실 조명 30%':'조명 제외')+' · 커튼 제외':(seat?'고양이가 가까운 소파에서 TV를 봐요.':'고양이가 TV 앞에 서서 봐요.'));
-      const button=action('영화 보기',()=>startMovie(),true);
-      if(panel==='product'&&!my)observeOffer(button,target);
-      if(panel==='product')action(poweredTV===target?'TV 끄기':'TV 켜기',()=>{
-        poweredTV=poweredTV===target?null:target;setPanel('product');
-      });
-      if(my)action('연결 설정',connect);
+    if(panel==='saved'){
+      show('영화 보기 · 연결 기기',nameOf(saved()?.bindings['tv-on'])+' · '+(saved()?.bindings['light-dim']?'거실 조명 30%':'조명 제외')+' · 커튼 제외');
+      action('영화 보기',()=>startMovie(),true);action('연결 설정',connect);
       action('닫기',()=>tap(null));return;
     }
-    if(panel==='petVisit'){
-      const blocked=reaction?.path?.length===0;
-      show(M.products[target.k].n,blocked?'빈 통로가 없어 로봇청소기가 제자리에서 깜박여요.':tapDescriptions[tapKind(target.k)]);
-      if(target.k==='robot_vacuum')action('청소 시간',()=>openRecipe(recipeFor(target.k),target),true);
+    if(panel==='product'){
+      const item=target,k=item.k;
+      const title=my&&isTV(item)&&item.deviceId?nameOf(item.deviceId):M.products[k].n;
+      if(isTV(item)){
+        show(title,seat?'고양이가 가까운 소파에서 TV를 봐요.':'고양이가 TV 앞에 서서 봐요.');
+        if(!friend){
+          const button=action('영화 보기',()=>startMovie(),true);
+          if(!my)observeOffer(button,item);
+          action(poweredTV===item?'TV 끄기':'TV 켜기',()=>{
+            poweredTV=poweredTV===item?null:item;setPanel('product');
+          });
+          if(my)action('연결 설정',connect);
+        }
+      }else if(k==='floor_lamp'){
+        show(title,lampOn?'고양이가 켜진 조명을 올려다봐요.':'고양이가 꺼진 조명을 올려다봐요.');
+        if(!friend)action(lampOn?'조명 끄기':'조명 켜기',()=>{lampOn=!lampOn;setPanel('product')});
+      }else{
+        show(title,reaction?.path?.length===0?blockedRobotMessage(item):tapDescriptions[tapKind(k)||groupFor(k)]);
+        const t=recipeFor(k);
+        if(t)action(t.name,()=>openRecipe(t,item),true);
+      }
       action('닫기',()=>tap(null));return;
     }
-    if(panel==='lamp'){show('스탠드 조명',lampOn?'켜짐':'꺼짐');action(lampOn?'조명 끄기':'조명 켜기',()=>{lampOn=!lampOn;setPanel('lamp')});return}
     show(my?'마이룸':'드림룸',list().some(o=>isTV(o)&&visible(o))?'방 안의 TV를 눌러 보세요.':
       list().some(o=>visible(o)&&recipeFor(o.k))?'방 안의 가전을 눌러 루틴을 확인해 보세요.':
       my?'배치 편집에서 등록 가전을 놓아 보세요.':'가전 수집에서 제품을 골라 방에 놓아 보세요.');
@@ -1553,7 +1638,7 @@ function createLivingRoom({model,space,M,$,list,id,room,tone,notice,draw,refresh
     if(model.storageMessage)notice(model.storageMessage);
     window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
   }
-  const interactive=o=>!menu&&(!!tapKind(o.k)||!!recipeFor(o.k)||isTV(o)||o.k==='sofa'||(!friend&&o.k==='floor_lamp'));
+  const interactive=o=>!menu&&(isAppliance(o.k)||o.k==='sofa');
   return {enter,visible,allowed,owned,isAppliance,bindUnit,interactive,restoreDeviceIds,identifyDevices,editing:()=>editMode,frame,tap,canAdd,reset,initialMy};
 }
 

@@ -47,6 +47,8 @@ const base=process.argv[2]||'http://127.0.0.1:4173';
       if((await page.locator('#keyboardTarget').innerText()).includes('벽걸이 에어컨'))break;
     }
     await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#lifeTitle').innerText(),'벽걸이 에어컨');
+    await button('쾌적한 방').click();
     assert.equal(await page.getByRole('combobox',{name:'에어컨 · 필수'}).inputValue(),wall.deviceId);
     await button('미리보기').click();assert.match(await page.locator('#lifeDetail').innerText(),/벽걸이 에어컨 냉방/);
     await button('내 루틴에 저장').click();await button('쾌적한 방').waitFor();

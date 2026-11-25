@@ -25,6 +25,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 340px;
 #keyboardTarget,.visiting #view:focus-visible:has(#keyboardTarget[hidden])::after{position:absolute;left:8px;bottom:8px;padding:5px 8px;background:var(--paper);color:var(--ink);border:1px solid var(--line);pointer-events:none}
 .visiting #view:focus-visible:has(#keyboardTarget[hidden])::after{content:'← → 제품 선택 · Enter로 열기'}
 #scene{position:absolute;display:block;max-width:none;pointer-events:none}
+#placementHint:not(:empty){position:absolute;top:8px;left:50%;transform:translateX(-50%);width:max-content;max-width:90%;padding:5px 9px;background:#fff1ef;color:#74283c;border:2px solid #74283c;pointer-events:none;text-align:center}
 .camera{flex:none;align-self:center;padding:4px 6px 12px;gap:7px}.zoom{background:var(--deep);color:var(--title);border:2px solid var(--line);gap:0}.zoom button{min-width:36px;min-height:32px;border:0;box-shadow:none;font-size:17px}.zoom output{min-width:48px;text-align:center;font:700 12px monospace}
 .selection{color:var(--title);background:var(--deep);border:2px solid var(--line);padding:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:none;min-height:62px}
 .selectedName{display:flex;align-items:center;gap:7px;min-width:0;flex:1}.selectedName span{overflow-wrap:anywhere}#sample{width:36px;height:36px;background:var(--paper);border:1px solid var(--line)}
@@ -169,3 +170,45 @@ dialog::backdrop{background:#150f20a8}dialog header{display:flex;align-items:cen
 #library header{position:sticky;top:-14px;z-index:1;background:var(--paper)}
 @media(max-height:640px){#photoPreview{height:66px}}
 @media(max-width:360px){#spaces a{padding-inline:5px}#spaces{padding-inline:5px;gap:3px}}
+
+/* Keep the room in view while changing tools or browsing the product drawer. */
+@media (max-width:840px) and (orientation:portrait){
+  #more{width:38px;min-width:0;padding:0}
+  #spaces{display:flex;flex-wrap:nowrap;gap:3px;padding:3px 4px;overflow-x:auto;overscroll-behavior-x:contain}
+  #spaces a,#spaces button{flex:none;white-space:nowrap;min-height:38px;align-content:center;padding:4px 6px;font-size:13px}
+  .selection{padding:3px 6px;gap:2px 6px}
+  #actions{flex-flow:row nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;gap:6px;padding:2px 3px 4px}
+  #actions button{flex:0 0 auto;white-space:nowrap;min-height:36px;padding-inline:8px}
+  #remove{margin-left:8px}
+  #drawer.expanded{height:min(36dvh,360px)}
+}
+@media (max-height:660px) and (max-width:840px) and (orientation:portrait){
+  .top{row-gap:3px;padding-block:max(3px,env(safe-area-inset-top)) 4px}
+  .camera{padding:1px 4px 3px}
+  #drawer{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);gap:3px 5px;
+    height:calc(129px + env(safe-area-inset-bottom));padding:3px 5px max(4px,env(safe-area-inset-bottom))}
+  #drawer.expanded{height:min(30dvh,190px)}
+  .drawerHead{grid-row:1;grid-column:2;height:auto;margin:0}
+  .drawerHead h2{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  #categories{grid-area:1/1;margin:0;gap:3px}
+  #categories button,#expand{min-height:34px;font-size:12px}
+  #products{grid-row:2;grid-column:1/-1}
+  .card canvas{width:44px}
+  #drawer:not(.expanded) .card{flex-basis:96px}
+  body:has(#spaces:not([hidden])) .top{display:flex;gap:4px;padding-inline:5px}
+  body:has(#spaces:not([hidden])) .top h1{width:19px;flex:none;overflow:hidden;margin:0}
+  body:has(#spaces:not([hidden])) #logo{width:125px;max-width:none;flex:none}
+  body:has(#spaces:not([hidden])) #rooms{display:flex;gap:3px;margin-right:auto}
+  #rooms button:not([aria-pressed=true]){padding-inline:8px}
+  body:has(#spaces:not([hidden])) #rooms button:not([aria-pressed=true]){font-size:0}
+  #rooms button:not([aria-pressed=true]) b{margin:0}
+  .top .tones button{padding-inline:4px;white-space:nowrap}
+  .top .tones button::before{display:none}
+  .top #more{width:30px}
+}
+@media (max-width:360px) and (orientation:portrait){
+  #spaces a,#spaces button{padding-inline:3px}
+}
+@media (max-width:500px) and (orientation:portrait){
+  #living.browse-card{height:128px;overflow:auto;overscroll-behavior:contain;align-content:start}
+}

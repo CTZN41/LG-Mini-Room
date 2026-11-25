@@ -41,6 +41,7 @@ try{for(const space of ['my','dream']){
  }
  await btn('배치 편집').waitFor();await capture();await tap('tvset');await p.waitForTimeout(850);
  let near=await p.evaluate(()=>pose);assert.ok(near.seat);assert.match(await p.locator('#lifeDetail').innerText(),/가까운 소파/);
+ assert.equal(await p.locator('#lifeTitle').innerText(),space==='dream'?'TV+거실장':'거실 TV');
  async function expectMoving(k){
    const before=await p.evaluate(k=>glassPixels(k),k);
    await p.waitForFunction(([k,before])=>glassPixels(k)!==before,[k,before],{timeout:2500});

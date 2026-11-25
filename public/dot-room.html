@@ -16,7 +16,7 @@
   <h1 aria-label="MY DOT ROOM"><canvas id="logo" aria-hidden="true"></canvas></h1>
   <nav id="rooms" aria-label="방 구조"></nav>
   <div class="tones" aria-label="가구 톤"><button data-tone="pink">핑크</button><button data-tone="lime">연두</button></div>
-  <button id="more" aria-label="방 메뉴" title="방 메뉴">···</button>
+  <button id="more" aria-label="방 메뉴" title="방 메뉴">⋯</button>
 </header>
 <nav id="spaces" hidden aria-label="미니룸"><a id="dreamLink" href="?space=dream">드림룸</a><a id="myLink" href="?space=my">마이룸</a><button id="libraryButton" hidden></button><button id="routineBagButton" hidden>인벤토리</button><button id="editMode">배치 편집</button></nav>
 <main>
@@ -24,6 +24,7 @@
     <div id="view" tabindex="0" aria-label="방 캔버스. 둘러볼 때 좌우 방향키로 제품을 고르고 Enter로 열 수 있어요. 편집할 때 제품을 끌어 이동하세요.">
       <canvas id="scene" aria-label="방 전체와 배치한 제품"></canvas>
       <span id="keyboardTarget" role="status" hidden></span>
+      <span id="placementHint" role="status"></span>
     </div>
     <nav class="camera" aria-label="화면 배율">
       <button id="overview">전체 보기</button><button id="wallView" hidden>벽면 확대</button>

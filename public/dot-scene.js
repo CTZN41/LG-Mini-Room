@@ -71,6 +71,10 @@ const DotScene = (() => {
   const roomData=r=>data.rooms[r].pink;
   // Fronts point along +Y, -X, -Y and +X, clockwise on the floor.
   const heading=o=>o.turn??(o.f?3:0);
+  const floorDirections=[[0,1],[-1,0],[0,-1],[1,0]];
+  const frontStep=turn=>floorDirections[turn];
+  const robotTravel=8;
+  const directionGuideProducts=new Set(['vacuum','robot_vacuum','puri_p','puri_m','puri_b','tower_ac']);
   const rear=o=>heading(o)===1||heading(o)===2;
   const orientedSprite=(o,t)=>rear(o)?sprite(o.k+'_rear',t)||sprite(o.k,t):sprite(o.k,t);
   function turnTo(room,o,turn){
@@ -108,6 +112,28 @@ const DotScene = (() => {
   function dims(o) {
     const {w,d}=products[o.k];
     return o.f ? {w:d,d:w} : {w,d};
+  }
+  function placementBlocker(o,items){
+    const product=products[o.k],{w,d}=dims(o);
+    return items.find(p=>{
+      if(p.id===o.id)return false;
+      const other=products[p.k];
+      // Flat decorations can go under furniture. Each wall has its own mounting strip.
+      if(product.layer!==other.layer||product.wall!==other.wall)return false;
+      if(product.wall&&Boolean(o.f)!==Boolean(p.f))return false;
+      const size=dims(p);
+      return o.x<p.x+size.w&&o.x+w>p.x&&o.y<p.y+size.d&&o.y+d>p.y;
+    });
+  }
+  // A straight sweep of a rectangular base is itself a rectangle. Touching an
+  // edge is safe; occupying floor on both sides of a change in height is not.
+  function robotCrossesStep(room,o,travel=robotTravel){
+    const {w,d}=dims(o),[dx,dy]=frontStep(heading(o));
+    const {W,D,zones}=roomData(room);
+    const left=Math.max(0,o.x+Math.min(0,dx*travel)),right=Math.min(W,o.x+w+Math.max(0,dx*travel));
+    const top=Math.max(0,o.y+Math.min(0,dy*travel)),bottom=Math.min(D,o.y+d+Math.max(0,dy*travel));
+    return zones.some(([x1,y1,x2,y2])=>left<x2&&right>x1&&top<y2&&bottom>y1&&
+      (left<x1||right>x2||top<y1||bottom>y2));
   }
   function zone(room,o) {
     const {w,d}=dims(o), cx=o.x+w/2, cy=o.y+d/2;
@@ -160,7 +186,27 @@ const DotScene = (() => {
       return s.pixels[(py*s.w+px)*4+3]>10;
     }).reverse();
   }
-  function mark(ctx,room,tone,o) {
+  // Only visible pixels count toward a near miss, even when two appliances overlap.
+  function nearbyTarget(room,tone,ordered,x,y,radius,interactive){
+    let best=radius*radius, target=null;
+    for(let i=ordered.length-1;i>=0;i--){
+      const item=ordered[i];
+      if(!interactive(item))continue;
+      const loc=place(room,tone,item),{s}=loc;
+      const left=Math.max(0,Math.ceil(x-radius-loc.x-.5)),right=Math.min(s.w-1,Math.floor(x+radius-loc.x-.5));
+      const top=Math.max(0,Math.ceil(y-radius-loc.y-.5)),bottom=Math.min(s.h-1,Math.floor(y+radius-loc.y-.5));
+      for(let py=top;py<=bottom;py++)for(let px=left;px<=right;px++){
+        const sx=item.f?s.w-1-px:px;
+        if(s.pixels[(py*s.w+sx)*4+3]<=10)continue;
+        const xx=loc.x+px+.5,yy=loc.y+py+.5;
+        const dist=(xx-x)**2+(yy-y)**2;
+        if(dist>=best||hits(room,tone,ordered,xx,yy)[0]!==item)continue;
+        best=dist;target=item;
+      }
+    }
+    return target;
+  }
+  function mark(ctx,room,tone,o,blocked) {
     const {s,x,y}=place(room,tone,o);
     ctx.save();
     if(o.f){ctx.translate(x+s.w+3,y-3);ctx.scale(-1,1);ctx.drawImage(s.ring,0,0)}
@@ -171,8 +217,10 @@ const DotScene = (() => {
     const corners=[[0,0],[w,0],[w,d],[0,d]].map(([a,b])=>project(room,o.x+a,o.y+b,z));
     ctx.beginPath();
     corners.forEach(([a,b],i)=>i?ctx.lineTo(a+.5,b+.5):ctx.moveTo(a+.5,b+.5));
-    ctx.closePath();ctx.strokeStyle='#40243d';ctx.lineWidth=3;ctx.stroke();
-    ctx.strokeStyle='#fff4ac';ctx.lineWidth=1;ctx.setLineDash([3,2]);ctx.stroke();ctx.setLineDash([]);
+    ctx.closePath();
+    if(blocked){ctx.fillStyle='rgba(255,68,94,.42)';ctx.fill()}
+    ctx.strokeStyle='#40243d';ctx.lineWidth=3;ctx.stroke();
+    ctx.strokeStyle=blocked?'#ff667b':'#fff4ac';ctx.lineWidth=1;ctx.setLineDash([3,2]);ctx.stroke();ctx.setLineDash([]);
   }
 function raster(w,h,draw){
  const surface=document.createElement('canvas');surface.width=w;surface.height=h;
@@ -180,6 +228,34 @@ function raster(w,h,draw){
  return surface;
 }
 function rect(c,x,y,w,h,color){c.fillStyle=color;c.fillRect(x,y,w,h);}
+// Pixel arrow pointing down-right in screen space. The tip is the floor anchor.
+const frontArrow=raster(21,14,c=>{
+  const rows=[
+    ' ##','#####','#######',' #######     ##','   #######   ###',
+    '     ####### ####','       ###########','         ##########',
+    '           ########','          ##########','        #############',
+    '          ###########','              #######','                  ###'
+  ];
+  const filled=(x,y)=>rows[y]?.[x]==='#';
+  for(let y=0;y<rows.length;y++)for(let x=0;x<rows[y].length;x++){
+    if(!filled(x,y))continue;
+    const inside=filled(x-1,y)&&filled(x+1,y)&&filled(x,y-1)&&filled(x,y+1);
+    rect(c,x,y,1,1,inside?'#83f6e4':'#243a44');
+  }
+});
+function markFront(ctx,room,o){
+  const {w,d}=dims(o),[dx,dy]=frontStep(heading(o)),{W,D}=roomData(room);
+  const cx=o.x+w/2,cy=o.y+d/2;
+  // Pull the tip inside the room if the appliance faces a wall or the L-shaped cutout.
+  let gx=cx,gy=cy;
+  for(let reach=(dx?w:d)/2+9;reach>0;reach--){
+    const x=cx+dx*reach,y=cy+dy*reach;
+    if(x>=1&&x<=W-1&&y>=1&&y<=D-1&&!(room==='B'&&x>51&&y>47)){gx=x;gy=y;break}
+  }
+  const [x,y]=project(room,gx,gy,zone(room,o));
+  ctx.save();ctx.translate(x,y);ctx.scale(dx-dy,dx+dy);
+  ctx.drawImage(frontArrow,1-frontArrow.width,1-frontArrow.height);ctx.restore();
+}
 function steps(c,x,y,w,h,r,color){
  rect(c,x+r,y,w-2*r,h,color);rect(c,x,y+r,w,h-2*r,color);
  if(r>1)rect(c,x+1,y+1,w-2,h-2,color);
@@ -214,6 +290,15 @@ const catWatching=raster(23,27,c=>{
  rect(c,8,16,10,2,'#76a395');
 });
 
+  // A low haunch, planted front paws and a visible muzzle give the seated watcher a profile.
+  const cleanerWatcher=raster(26,27,c=>{
+    steps(c,3,16,13,9,3,ink);steps(c,4,17,12,7,3,'#edc195');
+    steps(c,11,14,8,11,2,ink);steps(c,12,15,6,9,1,'#ffdaad');
+    rect(c,13,23,4,2,'#bd8b70');rect(c,18,23,3,2,ink);
+    rect(c,1,20,3,3,'#bd8b70');rect(c,2,22,7,2,'#d5a481');
+    c.drawImage(catWatching,4,0,19,18,5,1,19,18);
+    rect(c,17,9,2,2,ink);rect(c,17,11,3,1,'#ffdaad');
+  });
   // The curled body uses the original side-view face and scarf.
   const sleepingCoat=raster(17,10,c=>{
     steps(c,0,0,17,10,3,ink);steps(c,1,1,15,8,2,'#ecc194');
@@ -236,13 +321,18 @@ const catWatching=raster(23,27,c=>{
     rect(c,16,8,3,3,'#ffdaad');rect(c,16,10,4,1,ink);
   });
 
+  function drawRobotLight(ctx,o,s,lit){
+    const back=rear(o),x=back?20:13;
+    rect(ctx,o.f?s.w-x-2:x,back?16:19,2,1,lit?'#a8e4d1':'#478882');
+  }
   function drawAppliance(ctx,o,s,kind,time){
+    if(kind==='robot_vacuum'){
+      drawRobotLight(ctx,o,s,Math.floor(time/480)%2===0);return;
+    }
     ctx.save();
     if(o.f){ctx.translate(s.w,0);ctx.scale(-1,1)}
     const phase=Math.floor(time/160)%6;
-    if(kind==='robot_vacuum'){
-      rect(ctx,rear(o)?16:22,rear(o)?8:6,2,1,phase<3?'#a8e4d1':'#478882');
-    }else if(kind==='air'){
+    if(kind==='air'){
       const x=o.k==='wall_ac'?17:8,y=o.k==='wall_ac'?19:15;
       for(let i=0;i<3;i++){
         const offset=(phase+i*2)%6;
@@ -296,6 +386,7 @@ const catWatching=raster(23,27,c=>{
   }
   function drawTapEffect(ctx,o,s,fx,originX,originY){
     const {progress,kind}=fx.reaction;
+    if(kind==='lamp')return; // The lamp itself is drawn from its power state.
     const localX=x=>o.f?s.w-x:x;
     if(kind==='air'){
       const ventX=localX(o.k==='wall_ac'?17:8),ventY=o.k==='wall_ac'?20:16;
@@ -333,8 +424,7 @@ const catWatching=raster(23,27,c=>{
         }
       }
     }else if(kind==='robot_vacuum'){
-      const blink=Math.floor(progress*4)%2;
-      rect(ctx,localX(rear(o)?16:22),rear(o)?8:6,2,1,blink?'#a8e4d1':'#478882');
+      drawRobotLight(ctx,o,s,Math.floor(progress*4)%2===1);
     }else if(!rear(o)){
       const angle=washerAngle(progress);
       const x=Math.round(localX(10+4*Math.cos(angle))),y=Math.round(96-5*Math.sin(angle));
@@ -388,7 +478,7 @@ const catWatching=raster(23,27,c=>{
     ctx.restore();
   }
 
-  function drawReactingCat(ctx,{kind,progress,wall,settle=1,gazeX=0,gazeY=0}){
+  function drawReactingCat(ctx,{kind,progress,wall,settle=1,gazeX=0,gazeY=0,watchingCleaner=false}){
     const ease=settle*settle*(3-2*settle);
     if(kind==='styler'){
       // Tuck the shoulders and lower the chin together, keeping the belly on the floor.
@@ -415,12 +505,15 @@ const catWatching=raster(23,27,c=>{
     }else if(kind==='fridge'){
       const look=Math.min(1,pulse(progress,.04,.94)*2);
       lift=-1+4*look;lean=1+look;
+    }else if(kind==='lamp'){
+      lift=2;lean=1;
     }else if(kind==='vacuum'){
       // The whole cat steps back quickly, then eases forward and peers at the nozzle.
       const recoil=Math.min(1,Math.max(0,(progress-.15)/.12),Math.max(0,(.71-progress)/.32));
       ctx.translate(-Math.round(6*recoil*ease),-Math.round(2*pulse(progress,.15,.32)*ease));
       lean=2*pulse(progress,.63,.99)-recoil;lift=recoil;
     }else if(kind==='robot_vacuum'){
+      if(watchingCleaner)sprite=cleanerWatcher;
       lift=-1+gazeY;lean=1+gazeX;
     }else{
       const angle=washerAngle(progress);
@@ -437,7 +530,7 @@ const catWatching=raster(23,27,c=>{
     }
   }
 
-  function paint(ctx,room,tone,ordered,selected,fx) {
+  function paint(ctx,room,tone,ordered,selected,fx,blocked=false) {
     ctx.imageSmoothingEnabled=false;
     ctx.drawImage(bg(room,tone),0,0);
     if(fx?.dim) ctx.drawImage(images.get('shade:'+room+':'+tone),0,0);
@@ -470,7 +563,10 @@ const catWatching=raster(23,27,c=>{
       }
     }
     if(fx&&!catPainted)drawCat(ctx,fx.cat,fx);
-    if(selected) mark(ctx,room,tone,selected);
+    if(selected){
+      mark(ctx,room,tone,selected,blocked);
+      if(!fx&&directionGuideProducts.has(selected.k))markFront(ctx,room,selected);
+    }
   }
   function thumbnail(c,k,tone,pose={f:0}) {
     const x=c.getContext('2d'),s=orientedSprite({...pose,k},tone),flipped=pose.f;
@@ -479,5 +575,5 @@ const catWatching=raster(23,27,c=>{
     const w=Math.round(s.w*scale),h=Math.round(s.h*scale);
     x.imageSmoothingEnabled=false;x.drawImage(flipped?s.flipped:s.im,Math.round((c.width-w)/2),Math.round((c.height-h)/2),w,h);
   }
-  return {heading,turnTo,facingScreen,products,names,defaults,load,bg,roomData,dims,zone,elevation,project,place,clamp,sorted,hits,paint,thumbnail};
+  return {heading,frontStep,robotTravel,robotCrossesStep,turnTo,facingScreen,products,names,defaults,load,bg,roomData,dims,placementBlocker,zone,elevation,project,place,clamp,sorted,hits,nearbyTarget,paint,thumbnail};
 })();

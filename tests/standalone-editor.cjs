@@ -82,17 +82,28 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
   assert.equal(await page.locator('#expand').getAttribute('aria-expanded'),'false');
   assert.equal(await page.evaluate(()=>scrollY),0);assert.equal(await page.locator('#actions').isVisible(),true);
   let obj=(await state()).layouts.B.at(-1);
-  p=await point({id:obj.id});await drag(p.x,p.y,10*p.k,6*p.k);
+  p=await point({id:obj.id});
+  const step=await page.evaluate(o=>{
+    const items=JSON.parse(localStorage.dotroom).layouts.B;
+    for(const [dx,dy] of [[5,0],[-5,0],[0,5],[0,-5],[4,4],[-4,-4]]){
+      const trial={...o,x:o.x+dx,y:o.y+dy};
+      DotScene.clamp('B',trial);
+      if(trial.x===o.x+dx&&trial.y===o.y+dy&&!DotScene.placementBlocker(trial,items))return {dx,dy};
+    }
+    throw Error('No open drag target for shower');
+  },obj);
+  await drag(p.x,p.y,2*(step.dx-step.dy)*p.k,(step.dx+step.dy)*p.k);
   let changed=(await state()).layouts.B.at(-1);assert.ok(changed.x!==obj.x||changed.y!==obj.y);
   await click('#undo');assert.deepEqual((await state()).layouts.B.at(-1),obj);
   await click('[data-cat="소품"]');await click('[data-key=plant_small]');
   obj=(await state()).layouts.B.at(-1);const original={...obj};
   p=await point({id:obj.id});
-  let dx=64-obj.x,dy=21-obj.y;
+  // Open platform beside the bed. (64,21) is inside the bed's footprint.
+  let dx=55-obj.x,dy=21-obj.y;
   await drag(p.x,p.y,2*(dx-dy)*p.k,(dx+dy)*p.k);
   obj=(await state()).layouts.B.at(-1);
   assert.equal(await page.evaluate(o=>DotScene.zone('B',o),obj),4);
-  assert.deepEqual([obj.x,obj.y],[64,21]);
+  assert.deepEqual([obj.x,obj.y],[55,21]);
   await click('#undo');assert.deepEqual((await state()).layouts.B.at(-1),original);
   await click('[data-cat="벽"]');await click('[data-key=frame2]');await click('#in');
   obj=(await state()).layouts.B.at(-1);p=await point({id:obj.id});
@@ -115,6 +126,8 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
   });assert.ok(match);await click('#picture .close');await click('#more');await click('#clear');assert.equal((await state()).layouts.B.length,0);
   await click('#undo');assert.deepEqual((await state()).layouts.B,saved.layouts.B);
   await click('#more');await click('#reset');assert.equal((await state()).layouts.B.length,23);
+  // Exercise all four headings in open space; the collision suite covers rejected turns.
+  await click('#more');await click('#clear');
   await click('[data-cat="가구"]');await click('[data-key=sofa]');
   const sofaId=(await state()).layouts.B.at(-1).id;
   const headings=new Set(),previews=new Set();

@@ -14,7 +14,8 @@ async function exercise(browser,space,width,height,reduced){
     {id:3,k:'wall_ac',x:34,y:0},
     {id:4,k:'tower_ac',x:30,y:50},
     {id:5,k:'puri_m',x:10,y:53},
-    {id:6,k:'styler',x:69,y:31}
+    {id:6,k:'styler',x:69,y:31},
+    {id:7,k:'floor_lamp',x:40,y:39}
   ].map(o=>({...o,f:0,e:0,deviceId:'unit-'+o.id}));
   await page.route('**/api/my-appliances',route=>route.fulfill({json:{mode:'thinq',
     devices:devices.map(o=>({id:o.deviceId,k:o.k,name:o.k+o.id}))}}));
@@ -80,7 +81,15 @@ async function exercise(browser,space,width,height,reduced){
     if(width<500)await page.touchscreen.tap(...point);else await page.mouse.click(...point);
   }
   const arrived=id=>page.waitForFunction(id=>window.pose?.reaction?.itemId===id,id);
+  await tap(7);await arrived(7);
+  assert.equal(await page.locator('#lifeTitle').innerText(),'스탠드 조명');
+  assert.match(await page.locator('#lifeDetail').innerText(),/꺼진 조명/);
+  await btn('조명 켜기').click();assert.match(await page.locator('#lifeDetail').innerText(),/켜진 조명/);
+  await btn('조명 끄기').click();await btn('닫기').click();
   await tap(1);await arrived(1);
+  assert.equal(await page.locator('#lifeTitle').innerText(),'타워 에어컨');
+  assert.match(await page.locator('#lifeDetail').innerText(),/귀를 살짝 접어요/);
+  assert.equal(await btn('미리보기').count(),0);
   assert.equal(await page.evaluate(()=>pose.reaction.kind),'air');
   const first=await page.evaluate(()=>pose.cat);
   if(!reduced){
@@ -90,6 +99,8 @@ async function exercise(browser,space,width,height,reduced){
   await tap(4);await arrived(4);
   assert.notDeepEqual(await page.evaluate(()=>pose.cat),first);
   await tap(1);await tap(2);await arrived(2);
+  assert.equal(await page.locator('#lifeTitle').innerText(),'워시타워 민트');
+  assert.match(await page.locator('#lifeDetail').innerText(),/양말/);
   assert.equal(await page.evaluate(()=>pose.reaction.kind),'washer');
   assert.notDeepEqual(await page.evaluate(()=>pose.cat),first);
   if(!reduced){
@@ -101,10 +112,12 @@ async function exercise(browser,space,width,height,reduced){
     await page.waitForTimeout(2300);
     assert.equal(await page.locator('#scene').evaluate(c=>c.toDataURL()),frame);
   }
-  for(const [id,kind,title] of [[5,'purifier','쾌적한 방'],[6,'styler','의류 관리']]){
+  for(const [id,kind,title] of [[5,'purifier','공기청정기 민트'],[6,'styler','스타일러']]){
     await tap(id);await arrived(id);
     assert.equal(await page.evaluate(()=>pose.reaction.kind),kind);
     assert.equal(await page.locator('#lifeTitle').innerText(),title);
+    assert.match(await page.locator('#lifeDetail').innerText(),/고양이가/);
+    assert.equal(await btn('미리보기').count(),0);
     assert.deepEqual(await page.evaluate(()=>pose.appliances),{});
     const stillFrame=await page.locator('#scene').evaluate(c=>c.toDataURL());
     if(reduced){
@@ -116,6 +129,7 @@ async function exercise(browser,space,width,height,reduced){
     }
   }
   assert.ok(await page.evaluate(()=>!localStorage.getItem('lg-miniroom.discovered.clothes-care')));
+  await btn('의류 관리').click();
   await btn('미리보기').click();
   assert.equal(await page.evaluate(()=>pose.reaction),null);
   assert.equal(await page.evaluate(()=>pose.appliances[6]),'styler');
@@ -124,6 +138,8 @@ async function exercise(browser,space,width,height,reduced){
   assert.ok(await page.evaluate(()=>pose.reaction.wall));
   assert.deepEqual(await page.evaluate(()=>pose.appliances),{});
   assert.ok(await page.evaluate(()=>!localStorage.getItem('lg-miniroom.discovered.room-comfort')));
+  assert.equal(await page.locator('#lifeTitle').innerText(),'벽걸이 에어컨');
+  await btn('쾌적한 방').click();
   await btn('미리보기').click();
   assert.equal(await page.evaluate(()=>pose.reaction),null);
   assert.equal(await page.evaluate(()=>pose.appliances[3]),'air');
@@ -151,6 +167,7 @@ async function exercise(browser,space,width,height,reduced){
   const savedLayout=await page.evaluate(key=>localStorage[key],layoutKey);
   for(const device of devices){
     await tap(device.id);await arrived(device.id);
+    assert.equal(await page.locator('#lifeTitle').innerText(),await page.evaluate(k=>DotScene.products[k].n,device.k));
     assert.equal(await page.evaluate(()=>pose.reaction.kind),device.k.startsWith('fridge_')?'fridge':device.k);
     assert.deepEqual(await page.evaluate(()=>pose.appliances),{});
     assert.equal(await btn('미리보기').count(),0);
