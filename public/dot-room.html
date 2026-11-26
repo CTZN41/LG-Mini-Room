@@ -13,6 +13,8 @@
   <script defer src="product-catalog.js"></script>
   <script defer src="dot-scene.js"></script>
   <script defer src="dot-editor.js"></script>
+  <link rel="stylesheet" href="thinq/shell.css">
+  <script defer src="thinq/shell.js"></script>
 </head>
 <body>
 <header class="top">
@@ -38,7 +40,7 @@
     <div class="selection">
       <div class="selectedName"><img id="editPhoto" hidden alt=""><canvas id="sample" width="40" height="40" hidden></canvas><span><span id="name" role="status">제품을 눌러 선택</span><small id="unknownEditModel" hidden>모델명 미확인</small></span></div>
       <div id="actions" hidden>
-        <button id="ccw" aria-label="왼쪽 90도 회전" title="왼쪽 90도 (Shift+R)">↺ 90°</button><button id="flip" title="오른쪽 90도 (R)">↻ 90°</button><button id="aim" hidden>TV 쪽으로</button><button id="up" aria-label="높이 올리기" title="높이 올리기 (])">높이＋</button><button id="down" aria-label="높이 내리기" title="높이 내리기 ([)">높이−</button><button id="duplicate">복제</button><button id="remove">삭제</button><button id="overlap" hidden>겹친 제품</button>
+        <button id="ccw" aria-label="왼쪽 90도 회전" title="왼쪽 90도 (Shift+R)">↺ 90°</button><button id="flip" title="오른쪽 90도 (R)">↻ 90°</button><button id="aim" hidden>TV 쪽으로</button><button id="up" hidden aria-label="높이 올리기" title="높이 올리기 (])">높이＋</button><button id="down" hidden aria-label="높이 내리기" title="높이 내리기 ([)">높이−</button><button id="remove">삭제</button><button id="overlap" hidden>겹친 제품</button>
       </div>
       <button id="undo" title="되돌리기 (Ctrl+Z)">↶ 되돌리기</button>
     </div>
@@ -52,7 +54,7 @@
 <dialog id="library" aria-labelledby="libraryTitle"><header><h2 id="libraryTitle"></h2><button class="close" aria-label="가전 목록 닫기">×</button></header>
   <div id="libraryBrowse">
   <button id="openCatalog" hidden>제품 DB에서 찾기</button>
-  <p id="libraryNote"></p><div id="collectionPhoto" hidden>
+  <p id="libraryNote"></p><div class="cameraActions"><button id="openCamera" type="button" class="primary" hidden>＋ 추가하기</button><button id="libraryDemo" type="button" hidden>체험용 기기 사용</button></div><div id="collectionPhoto" hidden>
     <label>제품 사진 찍기·선택<input id="photoInput" type="file" accept="image/*" capture="environment"></label>
     <img id="photoPreview" hidden alt="수집할 제품의 사진">
     <label>사진 후보 체험<select id="photoMode"><option value="manual">직접 선택</option><option value="single">예시 · TV 한 대</option><option value="multiple">예시 · 냉장고 여러 대</option><option value="none">예시 · 일치 없음</option><option value="failure">예시 · 조회 실패</option></select></label>

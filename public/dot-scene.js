@@ -68,17 +68,28 @@ const DotScene = (() => {
     const ring=canvas(w+6,h+6), rc=ring.getContext('2d');
     const outline=rc.createImageData(ring.width,ring.height);
     const opaque=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&pixels[(y*w+x)*4+3]>10;
+    let heightPx=1;
     for(let y=-3;y<h+3;y++) for(let x=-3;x<w+3;x++){
-      if(opaque(x,y)) continue;
+      if(opaque(x,y)){
+        // Remove the isometric slope of the footprint from the visible silhouette.
+        heightPx=Math.max(heightPx,sp.ay+Math.abs(x-sp.ax)/2-y);
+        continue;
+      }
       let distance=4;
       for(let j=-3;j<=3;j++) for(let i=-3;i<=3;i++)
         if(opaque(x+i,y+j)) distance=Math.min(distance,Math.max(Math.abs(i),Math.abs(j)));
       if(distance<4) outline.data.set(distance<3?[255,234,148,255]:[62,32,53,255],((y+3)*ring.width+x+3)*4);
     }
     rc.putImageData(outline,0,0);
-    return {im:art,flipped,ring,pixels,w,h,ax:sp.ax,ay:sp.ay,mistOutlet:sp.mistOutlet,outlet:sp.outlet,drumCenter:sp.drumCenter,doorEdge:sp.doorEdge,lid:sp.lid,screen:sp.screen};
+    return {im:art,flipped,ring,pixels,w,h,heightPx:sp.heightPx??heightPx,ax:sp.ax,ay:sp.ay,mistOutlet:sp.mistOutlet,outlet:sp.outlet,perch:sp.perch,drumCenter:sp.drumCenter,doorEdge:sp.doorEdge,lid:sp.lid,screen:sp.screen};
   }
   async function load() {
+    const icon=canvas(20,24),brush=icon.getContext('2d');
+    brush.fillStyle='#463749';brush.fillRect(1,1,18,22);
+    brush.fillStyle='#aebfc1';brush.fillRect(3,3,14,18);
+    brush.fillStyle='#f5eede';brush.fillRect(5,5,10,8);
+    brush.fillStyle='#54666c';brush.fillRect(7,16,6,2);
+    images.set('appl:camera_generic',prepareSprite(icon,{ax:10,ay:21},false));
     const jobs=[];
     for (const [group,entries] of Object.entries(data.sprites)) {
       for (const [key,sp] of Object.entries(entries)) jobs.push((async()=>{
@@ -166,17 +177,25 @@ const DotScene = (() => {
     const {w,d}=item.previousFootprint&&o.id!=null&&!o.artVersion?item.previousFootprint:item;
     return o.f ? {w:d,d:w} : {w,d};
   }
-  function placementBlocker(o,items){
-    const product=products[o.k],{w,d}=dims(o);
+  function adjustableHeight(item){
+    return Boolean(item&&(item.wall||CatalogArt.standlessTV(item)));
+  }
+  function footprintsOverlap(a,b){
+    const left=dims(a),right=dims(b);
+    return a.x<b.x+right.w&&a.x+left.w>b.x&&a.y<b.y+right.d&&a.y+left.d>b.y;
+  }
+  function topElevation(room,o){
+    return elevation(room,o)+orientedSprite(o,'pink').heightPx/data.zf;
+  }
+  function placementBlocker(o,items,room='B'){
+    const product=products[o.k],bottom=elevation(room,o);
     return items.find(p=>{
-      if(ProductCatalog.componentOnly(p.k))return false;
-      if(p.id===o.id)return false;
+      if(p===o||(o.id!=null&&p.id===o.id)||ProductCatalog.componentOnly(p.k))return false;
       const other=products[p.k];
-      // Flat decorations can go under furniture. Each wall has its own mounting strip.
-      if(product.layer!==other.layer||product.wall!==other.wall)return false;
-      if(product.wall&&Boolean(o.f)!==Boolean(p.f))return false;
-      const size=dims(p);
-      return o.x<p.x+size.w&&o.x+w>p.x&&o.y<p.y+size.d&&o.y+d>p.y;
+      if(product.layer!==other.layer||!footprintsOverlap(o,p))return false;
+      if(!product.layer)return true;
+      const otherBottom=elevation(room,p);
+      return bottom===otherBottom||(bottom<topElevation(room,p)&&otherBottom<topElevation(room,o));
     });
   }
   // A straight sweep of a rectangular base is itself a rectangle. Touching an
@@ -195,7 +214,7 @@ const DotScene = (() => {
       if(cx>=x1&&cx<x2&&cy>=y1&&cy<y2) return z;
     return 0;
   }
-  const elevation=(r,o)=>products[o.k].elev+o.e+(products[o.k].wall?0:zone(r,o));
+  const elevation=(r,o)=>products[o.k].elev+(o.e??0)+(products[o.k].wall?0:zone(r,o));
   function project(room,x,y,z) {
     const {ox,oy}=roomData(room);
     return [Math.round(ox+2*(x-y)),Math.round(oy+x+y-z*data.zf)];
@@ -221,10 +240,16 @@ const DotScene = (() => {
   function sorted(room,list) {
     list=list.filter(o=>!ProductCatalog.componentOnly(o.k));
     const floors=list.filter(o=>!products[o.k].layer).sort((a,b)=>a.x+a.y-b.x-b.y);
-    const walls=list.filter(o=>products[o.k].layer&&products[o.k].wall);
-    const rest=list.filter(o=>products[o.k].layer&&!products[o.k].wall)
-      .sort((a,b)=>a.x+a.y-b.x-b.y||elevation(room,a)-elevation(room,b));
-    const behind=(a,b)=>{const {w,d}=dims(a);return a.x+w<=b.x||a.y+d<=b.y};
+    const rest=list.filter(o=>products[o.k].layer)
+      .sort((a,b)=>Number(products[b.k].wall)-Number(products[a.k].wall)||a.x+a.y-b.x-b.y||elevation(room,a)-elevation(room,b));
+    const behind=(a,b)=>{
+      if(footprintsOverlap(a,b)){
+        if(elevation(room,a)<elevation(room,b)&&topElevation(room,a)<=elevation(room,b))return true;
+        if(elevation(room,b)<elevation(room,a)&&topElevation(room,b)<=elevation(room,a))return false;
+      }
+      if(products[a.k].wall!==products[b.k].wall)return Boolean(products[a.k].wall);
+      const {w,d}=dims(a);return a.x+w<=b.x||a.y+d<=b.y;
+    };
     const seen=new Set(), result=[];
     function visit(n) {
       if(seen.has(n)) return;
@@ -233,7 +258,7 @@ const DotScene = (() => {
       result.push(n);
     }
     rest.forEach(visit);
-    return floors.concat(walls,result);
+    return floors.concat(result);
   }
   function hits(room,tone,ordered,x,y) {
     return ordered.filter(o=>{
@@ -467,6 +492,7 @@ const catWatching=raster(23,27,c=>{
     if(kind==='washer'&&products[o.k].catalogFamily==='건조기'&&rear(o))return;
     if(kind==='lamp'||kind==='humidifier')return; // These effects also apply during the approach.
     const localX=x=>o.f?s.w-x:x;
+    if(fx.reaction.perchPose)return;
     if(kind==='dehumidifier'){
       const [x,y]=s.outlet||[s.ax,s.ay-29];
       rect(ctx,localX(x)-(o.f?2:0),y,2,1,progress<.5?'#c1f2cd':'#8ccba9');
@@ -588,7 +614,11 @@ const catWatching=raster(23,27,c=>{
     ctx.restore();
   }
 
-  function drawReactingCat(ctx,{kind,progress,wall,settle=1,gazeX=0,gazeY=0,watchingCleaner=false}){
+  function drawReactingCat(ctx,{kind,progress,wall,perchPose,settle=1,gazeX=0,gazeY=0,watchingCleaner=false}){
+    if(perchPose){
+      ctx.drawImage(perchPose==='jump'?catWatching:seatedWatcher,-11,-24);
+      return;
+    }
     const ease=settle*settle*(3-2*settle);
     if(kind==='styler'){
       // Tuck the shoulders and lower the chin together, keeping the belly on the floor.
@@ -664,6 +694,7 @@ const catWatching=raster(23,27,c=>{
     let catPainted=fx?.sleepBed!=null;
     // Draw the seated cat above loose cushions resting on its own seat.
     const sofa=fx?.seat!=null?ordered.find(o=>o.id===fx.seat):null;
+    const perchId=fx?.reaction?.perchPose?fx.reaction.itemId:null;
     let catLayer=sofa;
     if(sofa){
       const bounds=dims(sofa);
@@ -674,7 +705,7 @@ const catWatching=raster(23,27,c=>{
     }
     for(const o of ordered){
       const {s,x,y}=place(room,tone,o);
-      if(fx && !catPainted && !fx.seat && products[o.k].layer && !products[o.k].wall && o.x+o.y>fx.depth){
+      if(fx && !catPainted && !fx.seat && perchId==null && products[o.k].layer && !products[o.k].wall && o.x+o.y>fx.depth){
         drawCat(ctx,fx.cat,fx);catPainted=true;
       }
       const glow=fx?.focusedProduct===o.id&&fx.tapGlow>0;
@@ -684,9 +715,9 @@ const catWatching=raster(23,27,c=>{
       if(fx){
         ctx.save();ctx.translate(x,y);drawEffects(ctx,o,s,fx,x,y);ctx.restore();
         if(o.id===fx.sleepBed)drawBedSleeper(ctx,bedPoint(room,tone,o),o,tone,fx.tucked);
-        if(o===catLayer){
+        if(o===catLayer||o.id===perchId){
           drawCat(ctx,fx.cat,fx);catPainted=true;
-          if(rear(sofa)){
+          if(sofa&&rear(sofa)){
             const loc=place(room,tone,sofa),rail=sprite('sofa_rail',tone);
             ctx.drawImage(sofa.f?rail.flipped:rail.im,loc.x,loc.y);
           }
@@ -706,5 +737,5 @@ const catWatching=raster(23,27,c=>{
     const w=Math.round(s.w*scale),h=Math.round(s.h*scale);
     x.imageSmoothingEnabled=false;x.drawImage(flipped?s.flipped:s.im,Math.round((c.width-w)/2),Math.round((c.height-h)/2),w,h);
   }
-  return {heading,frontStep,robotTravel,robotCrossesStep,turnTo,facingScreen,products,names,defaults,load,bg,roomData,dims,placementBlocker,zone,elevation,project,place,bedPoint,clamp,sorted,hits,nearbyTarget,paint,thumbnail};
+  return {heading,frontStep,robotTravel,robotCrossesStep,turnTo,facingScreen,products,names,defaults,load,bg,roomData,dims,adjustableHeight,placementBlocker,zone,elevation,project,place,bedPoint,clamp,sorted,hits,nearbyTarget,paint,thumbnail};
 })();

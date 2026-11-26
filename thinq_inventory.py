@@ -16,6 +16,7 @@ CATEGORIES = {
     "DEVICE_WASHTOWER_WASHER": "세탁기", "DEVICE_DRYER": "건조기",
     "DEVICE_STICK_CLEANER": "무선청소기", "DEVICE_ROBOT_CLEANER": "로봇청소기",
     "DEVICE_HUMIDIFIER": "가습기", "DEVICE_DEHUMIDIFIER": "제습기", "DEVICE_TV": "TV",
+    "DEVICE_LIGHT": "조명",
 }
 
 

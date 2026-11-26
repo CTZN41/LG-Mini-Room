@@ -15,15 +15,10 @@ const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 let panel='room',watchStart=null,drag=null,ready=false,animation=0,offerObserver;
 const record=(event,template=null,key)=>logObservation(event,'guest','qr',template,key);
 const movie=movieTemplate.id;
-function platformLink(){
-  if (/android/i.test(navigator.userAgent))return 'https://play.google.com/store/apps/details?id=com.lgeha.nuts';
-  if (/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))
-    return 'https://apps.apple.com/kr/app/lg-thinq/id993504342';
-  return 'https://www.lge.co.kr/support/solutions-20153039356614';
-}
-function thinq(link){
-  link.href=platformLink();link.target='_blank';link.rel='noopener';
-  link.onclick=()=>record('thinq_clicked');
+function projectLink(link){
+  link.href='/';link.target='_blank';link.rel='noopener';
+  link.textContent='미니룸 첫 화면 열기';
+  link.onclick=()=>record('project_home_clicked');
 }
 function action(label,fn,primary=false){
   const b=document.createElement('button');b.textContent=label;b.onclick=fn;
@@ -93,10 +88,10 @@ function render(){
   }else if(panel==='preview'){
     title='영화 보기';hint=(lamp()?'TV 켜기 · 조명 밝기 30%':'TV 켜기')+' · 실제 가전은 작동하지 않아요.';
     action('미리보기 닫기',closePreview,true);
-    const link=document.createElement('a');link.className='thinq';link.textContent='LG ThinQ에서 계속하기';thinq(link);$('controls').append(link);
+    const link=document.createElement('a');link.className='thinq';projectLink(link);$('controls').append(link);
   }else{
-    title='체험을 마쳤어요';hint='LG ThinQ에서 내 가전에 맞는 루틴을 설정해 보세요.';
-    const link=document.createElement('a');link.className='thinq';link.textContent='LG ThinQ에서 계속하기';thinq(link);$('controls').append(link);
+    title='체험을 마쳤어요';hint='미니룸 첫 화면을 열거나 이 거실을 다시 체험할 수 있어요.';
+    const link=document.createElement('a');link.className='thinq';projectLink(link);$('controls').append(link);
     action('처음부터 체험',()=>location.replace(location.href));
   }
   $('title').textContent=title;$('hint').textContent=hint;
@@ -156,7 +151,7 @@ canvas.onpointercancel=()=>{if(drag){Object.assign(drag.item,{x:drag.x,y:drag.y}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)draw()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&panel==='preview')closePreview()});
 window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
-$('finish').onclick=finish;$('export').onclick=exportObservation;thinq(document.querySelector('#detail .thinq'));
+$('finish').onclick=finish;$('export').onclick=exportObservation;projectLink(document.querySelector('#detail .thinq'));
 async function init(){
   await DotScene.load();
   const tile=ProductCatalog.restore(DotScene.products,tvKey);

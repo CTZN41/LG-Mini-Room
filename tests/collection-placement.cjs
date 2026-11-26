@@ -29,12 +29,11 @@ async function exercise(browser,viewport){
   assert.equal(added.length,2);
   assert.equal(added[1].productKey,'tower_ac');assert.equal('templateId' in added[1],false);
 
-  await page.locator('#up').tap();assert.equal(ac(await layout()).e,1);
-  await page.locator('#down').tap();await page.locator('#flip').tap();
-  assert.equal(ac(await layout()).turn,1);
-  await page.locator('#duplicate').tap();await page.locator('#remove').tap();
-  await page.locator('#undo').tap();assert.equal((await layout()).layouts.B.filter(o=>o.k==='tower_ac').length,2);
-  await page.locator('#undo').tap();assert.equal((await layout()).layouts.B.filter(o=>o.k==='tower_ac').length,1);
+  assert.ok(await page.locator('#up').isHidden());
+  await page.keyboard.press(']');assert.equal(ac(await layout()).e,0);
+  await page.locator('#flip').tap();assert.equal(ac(await layout()).turn,1);
+  await page.keyboard.press('d');assert.equal((await layout()).layouts.B.filter(o=>o.k==='tower_ac').length,1);
+  await page.locator('#remove').tap();await page.locator('#undo').tap();
   const saved=await layout();
   const scenes=new Set();
   for(const r of ['A','B','C']){

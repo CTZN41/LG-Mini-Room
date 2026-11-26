@@ -35,7 +35,7 @@ const base=process.argv[2]||'http://127.0.0.1:4173';
     await page.reload();await edit();
     for(const k of drawerKeys){assert.ok(await card(k).isDisabled())}
     await card('tower_ac').click();assert.ok(await card('tower_ac').isDisabled());
-    assert.ok(await button('복제').isDisabled());await page.keyboard.press('d');
+    assert.equal(await button('복제').count(),0);await page.keyboard.press('d');
     await card('wall_ac').click();assert.ok(await card('wall_ac').isDisabled());
     const sample=await page.evaluate(()=>JSON.parse(localStorage['lg-miniroom.dot.my']));
     assert.equal(sample.layouts.B.filter(o=>o.k==='tower_ac').length,1);

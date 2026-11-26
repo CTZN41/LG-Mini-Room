@@ -44,29 +44,33 @@ async function verify(browser,width,height,userAgent){
     await page.touchscreen.tap(x+16,y+8);await button('제품 상세').tap();
     assert.equal(await page.locator('#detail img').evaluate(im=>im.complete&&im.naturalWidth>0),true);
     assert.match(await page.locator('#detail').innerText(),/55LX1QKNA/);
-    const expected=/Android/.test(userAgent)?'https://play.google.com/':'https://apps.apple.com/';
-    assert.ok((await page.locator('#detail a').getAttribute('href')).startsWith(expected));
+    const expected=new URL('/',base).href;
+    assert.equal(await page.locator('#detail a').evaluate(a=>a.href),expected);
     await button('제품 상세 닫기').tap();before=await pixels();
     await button('영화 보기').tap();assert.match(await page.locator('#hint').innerText(),/조명 밝기 30%/);assert.notEqual(await pixels(),before);
+    assert.equal(await page.locator('#controls a').evaluate(a=>a.href),expected);
     await button('미리보기 닫기').tap();await button('영화 보기').waitFor();assert.equal(await pixels(),before);
     await button('체험 마치기').tap();
     const destination=page.locator('#controls a');
-    const target=await destination.getAttribute('href');assert.ok(target.startsWith(expected));
-    // Verify user-initiated navigation without sending test traffic to an app store.
-    await context.route(target,r=>r.fulfill({contentType:'text/html',body:'Store'}));
+    assert.equal(await destination.evaluate(a=>a.href),expected);
+    const visitorOnly=(await context.request.get(base+'/',{maxRedirects:0})).status()===302;
     const opened=context.waitForEvent('page');await destination.tap();
-    const store=await opened;await store.waitForURL(target);await store.close();
+    const landing=await opened;
+    await landing.waitForURL(visitorOnly?base+'/experience':expected);
+    if(visitorOnly)await landing.locator('#tvCard').waitFor();
+    else await landing.getByRole('link',{name:'마이룸',exact:true}).waitFor();
+    await landing.close();
     const report=page.waitForEvent('download');await page.locator('#export').tap();
     const download=await report;const exported=JSON.parse(require('node:fs').readFileSync(await download.path(),'utf8'));
-    assert.equal(new Set(exported.events.map(e=>e.sessionId)).size,1);assert.equal(exported.events.at(-1).event,'thinq_clicked');
+    assert.equal(new Set(exported.events.map(e=>e.sessionId)).size,1);assert.equal(exported.events.at(-1).event,'project_home_clicked');
     const events=await page.evaluate(()=>JSON.parse(sessionStorage['lg-miniroom.guest.events']));
-    for(const name of ['guest_entered','product_placed','routine_offered','routine_opened','product_detail_opened','preview_started','preview_ended','guest_finished','thinq_clicked'])assert.ok(events.some(e=>e.event===name),name);
+    for(const name of ['guest_entered','product_placed','routine_offered','routine_opened','product_detail_opened','preview_started','preview_ended','guest_finished','project_home_clicked'])assert.ok(events.some(e=>e.event===name),name);
     await page.goto(base+'/experience');await page.locator('#tvCard').waitFor();
     assert.match(await page.locator('#tvCard').innerText(),/방에 놓기/);assert.match(await page.locator('#lampCard').innerText(),/방에 놓기/);
     assert.deepEqual(await page.evaluate(()=>({...localStorage})),original);
     assert.ok(!calls.some(s=>s.startsWith(base+'/api/')));assert.deepEqual(errors,[]);
     assert.ok(await page.locator('#tvCard').evaluate(el=>el.getBoundingClientRect().bottom<=innerHeight));
-    console.log('PASS',width,height,'touch placement, model, TV-only and TV+lamp previews, restore, store link, fresh visit, storage isolation');
+    console.log('PASS',width,height,'touch placement, model, TV-only and TV+lamp previews, restore, project link, fresh visit, storage isolation');
   }finally{await context.close()}
 }
 (async()=>{const browser=await chromium.launch({channel:'chrome'});try{

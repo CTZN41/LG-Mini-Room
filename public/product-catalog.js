@@ -131,6 +131,28 @@ const ProductCatalog=(()=>{
   }
   const hasModel=key=>modelKeys.has(key);
   const matchModel=(category,code)=>typeof code==='string'&&modelLookup.get(category+'|'+code.trim().toUpperCase());
+  // Camera model IDs remain distinct when several models share a category sprite.
+  function cameraProduct(products,record){
+    const {modelCode,category,displayName}=record;
+    const aliases={'김치냉장고':'냉장고','와인셀러':'냉장고','컨버터블 패키지':'냉장고','세탁 건조기':'세탁기','의류건조기':'건조기',
+      '스탠바이미':'TV','가습 공기청정기':'공기청정기','청소기':/로봇|로보킹|로보틱|R9|M9/i.test(displayName)?'로봇청소기':'무선청소기'};
+    const family=Object.hasOwn(aliases,category)?aliases[category]:category;
+    const exact=matchModel(family,modelCode)||families.map(f=>matchModel(f.name,modelCode)).find(Boolean);
+    if(exact)return restore(products,exact);
+    const key='camera:'+modelCode;
+    if(Object.hasOwn(products,key))return products[key];
+    const f=families.find(f=>f.name===family);
+    const native={'에어컨':/벽걸이/.test(displayName)?'wall_ac':'tower_ac','벽걸이형 에어컨':'wall_ac','의류관리기':'styler','스타일러':'styler'};
+    let art=null;
+    if(category==='스탠바이미')art=products.standbyme;
+    else if(f)art=restore(products,keyFor(f,f.model));
+    else if(Object.hasOwn(native,family))art=products[native[family]];
+    const item={...(art||{w:7,d:7,wall:0,elev:0,layer:1}),k:key,c:'가전',cameraArt:true,
+      spriteKey:art?(art.spriteKey||art.k):'camera_generic',behaviorKey:art&&(art.behaviorKey||art.k),
+      modelCode,n:displayName,salesName:displayName,catalogFamily:category,photoUrl:record.imageUrl||''};
+    products[key]=item;
+    return item;
+  }
   function restore(products,key){
     if(typeof key!=='string'||oldSales.has(key))return;
     if(Object.hasOwn(products,key))return products[key];
@@ -288,5 +310,5 @@ const ProductCatalog=(()=>{
     $('library').addEventListener('close',cancel);
     return {gallery,resume(){ $('catalogBrowse').hidden=false;list() }};
   }
-  return {restore,applyBody,loadSalesName,browser,representatives:()=>families.map(f=>keyFor(f,f.model)).filter(hasModel),loadModels,hasModel,matchModel,purifierModels,componentOnly,loadBodies,loadRetiredSales,migratePlacement,retiredSale:key=>oldSales.get(key)};
+  return {restore,cameraProduct,applyBody,loadSalesName,browser,representatives:()=>families.map(f=>keyFor(f,f.model)).filter(hasModel),loadModels,hasModel,matchModel,purifierModels,componentOnly,loadBodies,loadRetiredSales,migratePlacement,retiredSale:key=>oldSales.get(key)};
 })();

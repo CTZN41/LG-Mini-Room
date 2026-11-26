@@ -54,7 +54,7 @@ const base=process.argv[2]||'http://127.0.0.1:4173';
     const demo=await browser.newPage({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
     demo.setDefaultTimeout(5000);
     const click=name=>demo.getByRole('button',{name,exact:true}).click();
-    await demo.goto(base+'/editor?space=my');await click('체험용 기기 사용');
+    await demo.goto(base+'/editor?space=my');await click('체험용 기기 사용'); await click('루틴 연결');
     await demo.getByLabel('재생할 TV').selectOption('my-tv-2');await click('미리보기');
     await click('내 루틴에 저장');await click('루틴 만들기');
     await demo.getByLabel('루틴 이름').fill('잘 때 불 끄기');

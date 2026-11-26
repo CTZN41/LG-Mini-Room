@@ -21,7 +21,7 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
   // Choose a genuine opaque point, optionally in a stack or through a transparent sprite corner.
   async function point(options){
    return page.evaluate(({id,key,mode})=>{
-    const s=JSON.parse(localStorage.dotroom),m=DotScene,ord=m.sorted(s.room,s.layouts[s.room]);
+    const s=JSON.parse(localStorage.dotroom),m=DotScene,ord=m.sorted(s.room,s.layouts[s.room].filter(o=>m.products[o.k].c!=='가전'));
     const cv=document.querySelector('#scene'),bb=cv.getBoundingClientRect(),v=document.querySelector('#view').getBoundingClientRect(),k=bb.width/cv.width;
     const target=ord.find(o=>o.id===id||o.k===key),loc=target&&m.place(s.room,s.theme,target);
     const objects=ord.map(o=>({o,...m.place(s.room,s.theme,o)}));
@@ -41,7 +41,7 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
    },options);
   }
   const tapPoint=p=>phone?page.touchscreen.tap(p.x,p.y):page.mouse.click(p.x,p.y);
-  await page.goto(url);await page.waitForSelector('.card');
+  await page.goto(url);await page.waitForSelector('#rooms button');
   let s=await state();assert.equal(s.room,'B');
   for(const items of Object.values(s.layouts))assert.deepEqual(items.map(o=>o.k),['sofa']);
   assert.deepEqual(s.woodRooms,['A','B','C']);
@@ -51,7 +51,7 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
     for(const r of Object.keys(DotScene.names))layouts[r]=DotScene.defaults(r,()=>++n);
     localStorage.dotroom=JSON.stringify({room:'B',theme:'pink',layouts});
   });
-  await page.reload();await page.waitForSelector('.card');
+  await page.reload();await page.waitForSelector('#rooms button');
   const previousLayout=await page.evaluate(()=>localStorage.getItem('dotroom.before-wood'));
   assert.ok(JSON.parse(previousLayout).layouts.B.length>1);
   assert.deepEqual((await state()).layouts.B.map(item=>item.k),['sofa']);
@@ -62,10 +62,10 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
   page.once('dialog',d=>d.accept());
   await page.locator('#layoutFile').setInputFiles(backupPath);
   await page.waitForFunction(()=>!document.querySelector('#menu').open);
-  await page.reload();await page.waitForSelector('.card');
+  await page.reload();await page.waitForSelector('#rooms button');
   assert.equal((await state()).layoutVersion,1);
   assert.deepEqual((await state()).layouts.B,JSON.parse(previousLayout).layouts.B);
-  const counts=[26,16,6,3,4,1];
+  const counts=[0,16,6,3,4,1];
   for(const [i,b] of (await page.locator('[data-cat]').all()).entries()){await b.click();assert.equal(await page.locator('.card').count(),counts[i])}
   await click('[data-cat="가전"]');
   for(const r of ['A','B','C']){
@@ -106,8 +106,8 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
   let obj=(await state()).layouts.B.at(-1);
   p=await point({id:obj.id});
   const step=await page.evaluate(o=>{
-    const items=JSON.parse(localStorage.dotroom).layouts.B;
-    for(const [dx,dy] of [[5,0],[-5,0],[0,5],[0,-5],[4,4],[-4,-4]]){
+    const items=JSON.parse(localStorage.dotroom).layouts.B.filter(o=>DotScene.products[o.k].c!=='가전');
+    for(const [dx,dy] of [[5,0],[-5,0],[0,5],[0,-5],[4,4],[-4,-4],[2,0],[-2,0],[0,2],[0,-2]]){
       const trial={...o,x:o.x+dx,y:o.y+dy};
       DotScene.clamp('B',trial);
       if(trial.x===o.x+dx&&trial.y===o.y+dy&&!DotScene.placementBlocker(trial,items))return {dx,dy};
@@ -134,17 +134,17 @@ const url=pathToFileURL(path.join(__dirname,'../public/dot-room.html')).href;
   await click('#flip');obj=(await state()).layouts.B.at(-1);assert.equal(obj.f,1);assert.equal(obj.x,0);
   if(!phone){
     await page.keyboard.press('ArrowDown');await page.keyboard.press(']');await page.keyboard.press('d');
-    let copy=(await state()).layouts.B.at(-1);assert.notEqual(copy.id,obj.id);assert.equal(copy.e,obj.e+1);
+    const raised=(await state()).layouts.B.at(-1);assert.equal(raised.id,obj.id);assert.equal(raised.e,obj.e+1);
     await page.keyboard.press('[');await page.keyboard.press('r');await page.keyboard.press('Delete');
-    await page.keyboard.press('Control+z');assert.equal((await state()).layouts.B.at(-1).id,copy.id);
-  }else{await click('#up');await click('#down');await click('#duplicate');await click('#remove');await click('#undo')}
+    await page.keyboard.press('Control+z');assert.equal((await state()).layouts.B.at(-1).id,raised.id);
+  }else{await click('#up');await click('#down');assert.equal(await page.locator('#duplicate').count(),0);await click('#remove');await click('#undo')}
   await click('[data-tone=lime]');await click('[data-room=C]');await click('[data-room=B]');
-  const saved=await state();await page.reload();await page.waitForSelector('.card');assert.deepEqual(await state(),saved);
+  const saved=await state();await page.reload();await page.waitForSelector('#rooms button');assert.deepEqual(await state(),saved);
   await click('#more');await click('#shot');assert.ok(await page.locator('#picture').isVisible());
   const match=await page.evaluate(async()=>{
    const im=document.querySelector('#exportImage');await im.decode();
    const s=JSON.parse(localStorage.dotroom),c=document.createElement('canvas');c.width=im.width?im.naturalWidth:0;c.height=im.naturalHeight;
-   const x=c.getContext('2d');x.scale(4,4);DotScene.paint(x,s.room,s.theme,DotScene.sorted(s.room,s.layouts[s.room]),null);return c.toDataURL()===im.src;
+   const x=c.getContext('2d');x.scale(4,4);DotScene.paint(x,s.room,s.theme,DotScene.sorted(s.room,s.layouts[s.room].filter(o=>DotScene.products[o.k].c!=='가전')),null);return c.toDataURL()===im.src;
   });assert.ok(match);await click('#picture .close');await click('#more');await click('#clear');assert.equal((await state()).layouts.B.length,0);
   await click('#undo');assert.deepEqual((await state()).layouts.B,saved.layouts.B);
   await click('#more');await click('#reset');assert.deepEqual((await state()).layouts.B.map(o=>o.k),['sofa']);

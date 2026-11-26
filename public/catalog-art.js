@@ -382,7 +382,7 @@ const CatalogArt=(()=>{
     const [x,y]=point(8,4,44);ellipse(x,y,13,5,'#cbbfb3',cool);
     roundBody(3,8,2,2,2,15,purifierPaint.white);roundBody(3,8,17,8,8,2,ivory);
     if(rear)line([x+5,y+18],[x+5,y+34],steel);
-    return {retroAA:true,outlet:[x-5,y+10]};
+    return {retroAA:true,outlet:[x-5,y+10],perch:{step:point(3,8,19),seat:[x,y+1]}};
   });
   for(const shape of ['wallTall','wallSquare']){
     const tall=shape==='wallTall',w=tall?13:15,h=tall?42:37;
@@ -569,6 +569,9 @@ const CatalogArt=(()=>{
     blue:['#e2e8ef','#bfcedf','#929daf',ink],navy:['#758396','#48586f','#374254',ink],
     violet:['#e3dcee','#c7b6d5','#a394b2',ink],yellow:['#f8f0cf','#e3d6a5','#bfb397',ink]
   };
+  function standlessTV(item){
+    return item.body?.shape==='tvFlat'&&['unseen','wide','portrait'].includes(item.body.detail);
+  }
   function renderDisplay(item,rear){
     const {shape,upper,detail}=item.body,frame=coats[upper],w=item.w,d=item.d;
     const mobile=shape==='tvMobile',easel=shape==='tvEasel',carry=shape==='tvCase';
@@ -576,7 +579,7 @@ const CatalogArt=(()=>{
     const span=Math.min(w,item.displayWidth||w);
     const width=upright?Math.max(7,Math.round(span*.57)):span;
     const margin=Math.floor((w-width)/2),right=margin+width,mid=margin+width/2;
-    const bare=['unseen','wide','portrait'].includes(detail);
+    const bare=standlessTV(item);
     const bottom=mobile?24:easel?17:detail==='frame'?12:detail==='kiosk'?14:
       detail==='console'?8:detail==='lowStand'?2:bare?0:carry?4:5;
     const height=Math.round(span*(upright?1.94:detail==='wide'?.57:shape==='tvFlex'?1.02:1.14));
@@ -623,7 +626,7 @@ const CatalogArt=(()=>{
       box(margin,2,bottom,width,2,height,frame);
       if(rear){
         for(let z=bottom+4;z<=bottom+Math.min(8,height-1);z+=2)bar([w/2-3,front,z],[w/2+3,front,z],frame[2]);
-        return {retroAA:true};
+        return {retroAA:true,heightPx:top};
       }
       const strip=easel?5:1;
       face([[margin+.5,front,top-1],[right-.5,front,top-1],
@@ -633,7 +636,7 @@ const CatalogArt=(()=>{
         for(const x of [margin,right-1])box(x,3,bottom+1,1,2,height-1,black);
       }
       const [sx,sy]=point(margin+1,front,top-2);
-      return {retroAA:true,screen:[sx,sy,2*width-4,height-strip-3]};
+      return {retroAA:true,heightPx:top,screen:[sx,sy,2*width-4,height-strip-3]};
     },true);
   }
   function renderStick(item,rear){
@@ -754,31 +757,62 @@ const CatalogArt=(()=>{
   }
   function renderFridge(item,rear){
     const {shape,detail,upper,lower}=item.body,up=coats[upper],down=coats[lower];
-    const h={miniCube:32,miniTall:49,wineShort:39,wineMid:60,wineTall:86}[shape]||88;
+    const h={miniCube:29,miniTall:44,wineShort:36,wineMid:55,wineTall:78,
+      single:72,column:80,bottom:77,freezerTop:69}[shape]||75;
     const wine=shape.startsWith('wine'),drawers=shape==='drawerFour'||shape==='glassDrawers';
     const narrow=wine||['single','column','bottom','miniCube','miniTall','glassDrawers'].includes(shape);
-    const x=narrow?3:0, end=item.w-x, width=end-x,y=item.d;
-    const split={four:39,french:28,side:39,freezerTop:61,bottom:31,two:48,drawerFour:35,glassDrawers:34}[shape];
+    const x=narrow?1.5:0,end=item.w-x,width=end-x,y=item.d;
+    const split={four:33,french:23,side:33,freezerTop:47,bottom:28,two:39,drawerFour:31,glassDrawers:30}[shape];
+    const paired=['four','side','drawerFour','french'].includes(shape);
+    const mid=x+width/2;
     return sprite(item.w,y,h,rear,({box,bar,face,point})=>{
       const panel=(left,right,low,high,fill,edge)=>face([[left,y,high],[right,y,high],[right,y,low],[left,y,low]],fill,edge);
       const lineAt=(z,color)=>bar([x+.5,y,z],[end-.5,y,z],color);
-      box(x,1,1,width,y-1,h-1,up);
+      // The cabinet is recessed behind both the door skin and the dark toe kick.
+      box(x+1,4,0,width-2,y-5,4,[graphite,graphite,ink,ink]);
+      box(x,3,3,width,y-4,h-3,up);
       if(rear){
-        for(const z of [6,9,12])bar([x+1.5,y,z],[end-1.5,y,z],up[2]);
+        panel(x+.6,end-.6,4,h-2,up[2],graphite);
+        panel(x+1.6,end-1.6,5,15,up[1],graphite);
+        for(const z of [7,10,13])bar([x+2.5,y,z],[end-2.5,y,z],graphite);
       }else{
+        const door=(l,r,lo,hi,coat)=>{
+          box(l,y-1.5,lo,r-l,1.5,hi-lo,coat);
+          bar([l+.6,y,hi-1],[r-.6,y,hi-1],coat[0]);
+        };
+        const row=(lo,hi,coat,double)=>{
+          if(double){
+            door(x,mid-.4,lo,hi,coat);door(mid+.4,end,lo,hi,coat);
+          }else door(x,end,lo,hi,coat);
+        };
         if(split){
-          panel(x,end,1,split,down[1],ink);
-          lineAt(split,graphite);
+          row(split+1,h-1,up,paired);
+          if(drawers){
+            row(4,14,down,false);row(17,split-2,down,false);
+          }else row(4,split-2,down,shape==='four'||shape==='side');
+          // A recessed finger pull reads as a shadow with a lit lower lip.
+          lineAt(split,ink);lineAt(split-1,graphite);
+          if(!paired&&!drawers){
+            bar([x+1,y,split-2],[x+width*.45,y,split-2],up[0]);
+          }
+        }else{
+          row(4,h-1,up,false);
+          if(!wine&&detail!=='edgeHandle'){
+            const mini=shape==='miniTall'||shape==='miniCube';
+            if(mini){
+              panel(x+.8,x+width*.5,h-4,h-2,graphite,ink);
+              bar([x+1,y,h-5],[x+width*.47,y,h-5],up[0]);
+            }else{
+              const grip=h*.57;
+              panel(x+.6,x+1.7,grip-5,grip+5,graphite,ink);
+              bar([x+1.8,y,grip+4],[x+1.8,y,grip-4],up[0]);
+            }
+          }
         }
-        if(['four','side','drawerFour','french'].includes(shape)){
-          const mid=x+width/2;
-          bar([mid,y,h-1],[mid,y,drawers||shape==='french'?split+1:1],graphite);
-        }
-        if(drawers)lineAt(17,graphite);
         if(wine||shape==='glassDrawers'||detail==='window'||detail==='windowWater'){
           const full=wine||shape==='glassDrawers'||shape==='bottom';
           const left=full?x+.7:x+width*.53, right=end-.65;
-          const low=wine?4:(split||39)+2;
+          const low=wine?6:(split||33)+3;
           panel(left,right,low,h-2,'#32333f',ink);
           const spacing=wine?8:10;
           for(let z=low+4;z<h-5;z+=spacing){
@@ -787,13 +821,16 @@ const CatalogArt=(()=>{
           }
         }
         if(detail==='water'||detail==='windowWater'){
-          panel(x+1,x+width*.40,48,64,steel,graphite);
-          panel(x+1.4,x+width*.37,49,59,'#424351',graphite);
-          bar([x+1.7,y,50],[x+width*.34,y,50],steelLight);
+          panel(x+1,x+width*.40,43,58,steel,graphite);
+          panel(x+1.4,x+width*.37,44,53,'#424351',graphite);
+          bar([x+1.7,y,45],[x+width*.34,y,45],steelLight);
         }
-        if(detail==='edgeHandle')bar([x+.8,y,h-9],[x+.8,y,h-21],graphite);
+        if(detail==='edgeHandle'){
+          panel(x+.7,x+1.9,h-23,h-9,graphite,ink);
+          bar([x+1.8,y,h-10],[x+1.8,y,h-22],steelLight);
+        }
       }
-      return {retroAA:true,materials:[up,down].map(([light,base,shade])=>[base,light,shade]),
+      return {retroAA:true,materials:[],
         doorEdge:point(x+.8,y,split||Math.round(h*.5))};
     },true);
   }
@@ -882,5 +919,5 @@ const CatalogArt=(()=>{
       return {...master,drumCenter:point(w/2,d,center),lid:washerFront==='opaqueDoor'?point(w-3,d,h-5):undefined};
     },true);
   }
-  return {robots:models,renderBody};
+  return {robots:models,renderBody,standlessTV};
 })();

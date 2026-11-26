@@ -147,6 +147,7 @@ main{display:flex;flex-direction:column;gap:0;padding:0}.studio{flex:1}
 .routine-shelf #lifeActions{grid-auto-columns:minmax(105px,1fr);overflow-x:auto;padding:0 3px 4px 0}
 #lifeActions .routine-card{overflow-wrap:anywhere}
 @media(max-width:380px){.routine-shelf #routineTools button{padding-inline:5px}}
+.cameraActions{display:flex;gap:8px;flex-wrap:wrap}.cameraActions button{min-height:44px}
 #libraryNote,#libraryStatus{font-size:14px;line-height:1.45}
 #libraryItems>div{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
 #libraryItems canvas{image-rendering:pixelated}

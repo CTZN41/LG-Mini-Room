@@ -62,11 +62,8 @@ async function exercise(browser,space,width,height){
   }
   const pos=await point(1);await page.mouse.click(pos.x,pos.y);
   await page.keyboard.press('ArrowRight');assert.deepEqual(await layout(),placed);
-  await page.locator('#duplicate').click();
-  assert.equal((await layout()).length,4);
-  assert.ok(await page.evaluate(key=>{const objects=JSON.parse(localStorage[key]).layouts.B;return !DotScene.placementBlocker(objects.at(-1),objects)},key));
-  await page.locator('#undo').click();assert.deepEqual(await layout(),placed);
-
+  await page.keyboard.press('d');assert.deepEqual(await layout(),placed);
+  assert.equal(await page.locator('#duplicate').count(),0);
   const turn=[item(1,'sofa',18,16),item(2,'coffee',30,31)];
   await load(turn);const couch=await point(1);await page.mouse.click(couch.x,couch.y);
   await page.locator('#flip').click();assert.deepEqual(await layout(),turn);
@@ -89,7 +86,7 @@ async function exercise(browser,space,width,height){
   assert.deepEqual(await layout(),packed);assert.ok(await page.locator('#undo').isDisabled());
   assert.match(await page.locator('#notice').innerText(),/자리가 부족/);
   assert.deepEqual(errors,[]);await page.context().close();
-  console.log('PASS',space,width,height,'drag, blocked drop, rug, rotation, keyboard, duplicate, undo, full room and legacy layout');
+  console.log('PASS',space,width,height,'drag, blocked drop, rug, rotation, keyboard, disabled duplication, undo, full room and legacy layout');
 }
 (async()=>{const browser=await chromium.launch({channel:'chrome'});try{
   await exercise(browser,'dream',390,844);await exercise(browser,'my',1150,750);

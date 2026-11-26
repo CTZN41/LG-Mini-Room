@@ -35,6 +35,12 @@ const guestPages = new Map([
 const guestAssets = new Set(["/dot-assets.js","/dot-scene.js","/purifier-profiles.js","/catalog-art.js","/product-catalog.js","/state.js"]);
 const pages = new Map([
   ...guestPages,
+  ["/thinq/shell.css", ["thinq/shell.css", "text/css; charset=utf-8"]],
+  ["/thinq/shell.js", ["thinq/shell.js", "text/javascript; charset=utf-8"]],
+  ...["home","support","devices","care","energy","usage","coupon"].map(name => {
+    const file = "thinq/" + name + ".webp";
+    return ["/" + file, [file, "image/webp"]];
+  }),
   ["/", ["index.html", "text/html; charset=utf-8"]],
   ["/editor", ["dot-room.html", "text/html; charset=utf-8"]],
   ["/dot-room.html", ["dot-room.html", "text/html; charset=utf-8"]],

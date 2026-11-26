@@ -7,7 +7,7 @@ const {chromium}=require('playwright');
   const checkbox=n=>p.getByRole('checkbox',{name:n,exact:true}), sel=n=>p.locator('#batch').getByRole('combobox',{name:n,exact:true});
   const state=()=>p.evaluate(()=>JSON.parse(localStorage['lg-miniroom.state']));
   await p.goto((process.argv[2]||'http://127.0.0.1:4173')+'/editor?space=my&observe=1');
-  await go('체험용 기기 사용');await go('여러 루틴 설정');assert.ok(await p.locator('#batchSave').isDisabled());
+  await go('체험용 기기 사용');await go('루틴 추가');assert.ok(await p.locator('#batchSave').isDisabled());
   for(const n of ['영화 보기','쾌적한 방','의류 관리','청소 시간'])await checkbox(n).check();
   await sel('TV 켜기 · 필수').selectOption('my-tv-2');await sel('조명 30% · 선택').selectOption('my-light-1');
   await go('체험용 에어컨 배치');

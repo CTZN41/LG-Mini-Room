@@ -1,0 +1,58 @@
+const assert=require('node:assert/strict');
+const {chromium}=require('playwright');
+const base=process.argv[2]||'http://127.0.0.1:4174';
+const room=base+'/editor?space=my&app=thinq';
+const fridge={id:'camera-fridge',modelCode:'M876GBC472',displayName:'LG 오브제 냉장고',category:'냉장고',imageUrl:''};
+const monitor={id:'lg-monitor-27u411a',modelCode:'27U411A',displayName:'LG PC 모니터 FHD',category:'모니터',imageUrl:''};
+async function check(browser,width,height){
+  const page=await browser.newPage({viewport:{width,height},hasTouch:true,isMobile:true});
+  page.setDefaultTimeout(9000);
+  const errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  const tap=name=>page.getByRole('button',{name,exact:true}).tap();
+  const state=()=>page.evaluate(()=>JSON.parse(localStorage['lg-miniroom.state']||'{}'));
+  const layout=()=>page.evaluate(()=>JSON.parse(localStorage['lg-miniroom.dot.my']).layouts);
+  const callback=data=>page.goto(room+'&camera=register&'+new URLSearchParams(data));
+  const status=async pattern=>{await page.waitForFunction(pattern=>new RegExp(pattern).test(document.querySelector('#libraryStatus').textContent),pattern)};
+  try{
+    await page.goto(room);await tap('등록 가전');const before=await layout();
+    await page.route('https://lg-camera-lab.pages.dev/scan?**',r=>r.fulfill({contentType:'text/html',body:'Camera test'}));
+    await tap('＋ 추가하기');await page.waitForURL('https://lg-camera-lab.pages.dev/scan?**');
+    const back=new URL(new URL(page.url()).searchParams.get('returnTo'));
+    assert.equal(back.origin,new URL(base).origin);assert.equal(back.searchParams.get('space'),'my');
+    for(const [k,v] of Object.entries(fridge))back.searchParams.set(k,v);
+    await page.goto(back.href);await status('등록 완료');
+    assert.equal(await page.locator('#libraryItems [data-product="catalog:fridge:M876GBC472"]').count(),1);
+    assert.equal(page.url(),room);assert.deepEqual(await layout(),before);
+    await page.reload();await tap('등록 가전');assert.equal((await state()).cameraAppliances.length,1);
+    await callback({...fridge,id:'another-id',modelCode:' m876gbc472 '});await status('이미 등록');
+    assert.equal((await state()).cameraAppliances.length,1);
+    await callback({...monitor,serialNumber:'do-not-store'});await status('등록 완료');
+    assert.equal(page.url(),room);
+    assert.match(await page.locator('#libraryItems').innerText(),/27U411A · 기본 아이콘/);
+    assert.ok(!JSON.stringify((await state()).cameraAppliances).includes('do-not-store'));
+    assert.deepEqual(await layout(),before);
+    await tap('가전 목록 닫기');await tap('배치 편집');await tap(fridge.displayName);await tap(monitor.displayName);
+    await tap('배치 완료');await page.reload();await tap('배치 편집');
+    assert.equal(await page.getByRole('button',{name:monitor.displayName,exact:true}).isDisabled(),true);
+    assert.ok((await layout()).B.some(o=>o.deviceId==='camera-unit:27U411A'));
+    await tap('배치 완료');await tap('등록 가전');await tap('체험용 기기 사용');
+    assert.equal((await state()).myFixtureId,'sample-home-v1');
+    assert.equal(await page.locator('#libraryItems [data-product="catalog:fridge:M876GBC472"]').count(),1);
+    await callback({...fridge,id:'demo-vac',modelCode:'A727TA',category:'청소기'});await status('이미 등록');
+    await callback({...monitor,modelCode:''});await status('다시 촬영');
+    assert.equal((await state()).cameraAppliances.length,2);
+    await callback({id:'test-air',modelCode:'TEST-WALL-AC',displayName:'테스트 벽걸이',category:'벽걸이형 에어컨'});await status('등록 완료');
+    assert.equal(await page.evaluate(()=>DotScene.products['camera:TEST-WALL-AC'].spriteKey),'wall_ac');
+    await page.route('**/api/my-appliances',route=>route.fulfill({json:{mode:'thinq',devices:[{id:'account-fridge',category:'냉장고',modelCode:'M876GBC472',name:'내 냉장고'}]}}));
+    await callback(fridge);await status('이미 등록');
+    assert.equal(await page.locator('#libraryItems [data-product]').count(),1);
+    await callback(monitor);await status('등록 완료');
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage['lg-miniroom.state.thinq']).cameraAppliances.length),1);
+    await page.goto(base+'/editor?space=dream');await tap('배치 편집');
+    assert.equal(await page.locator('[data-unit^="camera-unit:"]').count(),0);
+    assert.deepEqual(errors,[]);
+    console.log(width+'x'+height+' PASS camera handoff URL, callback, dedup, exact and generic manual placement, reload, demo and room isolation');
+  }catch(e){console.error(await page.locator("#products").innerText(),await page.locator("#living").innerText(),errors);throw e}finally{await page.context().close()}
+}
+(async()=>{const b=await chromium.launch({channel:'chrome'});try{for(const size of [[320,568],[390,844]])await check(b,...size)}finally{await b.close()}})().catch(e=>{console.error(e);process.exitCode=1});

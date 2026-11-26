@@ -2,7 +2,7 @@ const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const url=process.argv[2]||'http://127.0.0.1:4173';
 (async()=>{const browser=await chromium.launch({channel:'chrome'});
-try{for(const [width,height] of [[390,844],[844,390],[1150,750]]){
+try{for(const [width,height] of [[320,568],[390,844],[844,390],[1150,750]]){
  const ctx=await browser.newContext({viewport:{width,height},hasTouch:width<1000,isMobile:width<1000,reducedMotion:'reduce'}),p=await ctx.newPage(),errors=[];
  p.on('pageerror',e=>errors.push(e.message));p.setDefaultTimeout(5000);
  const btn=t=>p.getByRole('button',{name:t,exact:true});
@@ -25,7 +25,9 @@ try{for(const [width,height] of [[390,844],[844,390],[1150,750]]){
  if(width<1000)await p.touchscreen.tap(...point);else await p.mouse.click(...point);
  await btn('미리보기').click();assert.match(await p.locator('#lifeDetail').textContent(),/커튼 닫힘/);assert.notEqual(await scene(),friendFrame);
  await btn('재생 종료').click();await btn('미리보기').waitFor();assert.equal(await scene(),friendFrame);
- assert.deepEqual(await store(),original);await btn('내 방에 맞추기').click();await check('my');await btn('체험용 기기 사용').click();
+ assert.deepEqual(await store(),original);await btn('내 방에 맞추기').click();await check('my');
+ assert.equal(await p.locator('#lifeTitle').innerText(),'영화 보기 연결');
+ await p.reload();await check('my');await btn('체험용 기기 사용').click();
  await p.getByLabel('재생할 TV').selectOption('my-tv-2');await btn('미리보기').click();await btn('내 루틴에 저장').click();await btn('영화 보기').waitFor();
  await p.reload();await btn('영화 보기').click();assert.match(await p.locator('#lifeDetail').innerText(),/침실 TV 재생/);
  const rows=await p.evaluate(()=>JSON.parse(sessionStorage['lg-miniroom.events']));for(const event of ['routine_offered','routine_opened','routine_saved','routine_replayed'])assert.ok(rows.some(r=>r.source==='example_room'&&r.event===event),event);

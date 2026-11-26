@@ -126,11 +126,11 @@
     if(items.some(o=>o.k===k&&(!versioned||o.artVersion)))return true;
     const o={id:id(),k,x,y,f:0,turn:0,e:0,exhibit:true};
     if(versioned)o.artVersion=1;
-    if(M.placementBlocker(o,items)){
+    if(M.placementBlocker(o,items,'C')){
       const {W,D}=M.roomData('C');let best=null,distance=Infinity;
       for(let yy=0;yy<=D-profile.d;yy++)for(let xx=0;xx<=W-profile.w;xx++){
         const cost=(xx-x)**2+(yy-y)**2;
-        if(cost>=distance||M.placementBlocker({...o,x:xx,y:yy},items))continue;
+        if(cost>=distance||M.placementBlocker({...o,x:xx,y:yy},items,'C'))continue;
         best=[xx,yy];distance=cost;
       }
       if(!best)return false;
@@ -147,7 +147,7 @@
       const item=ProductCatalog.restore(M.products,k);
       const replacement={...o,k};
       if(item.previousFootprint)replacement.artVersion=1;
-      if(!M.placementBlocker(replacement,items.filter(other=>other!==o)))Object.assign(o,replacement);
+      if(!M.placementBlocker(replacement,items.filter(other=>other!==o),'C'))Object.assign(o,replacement);
     }
   }
   function updateDreamDisplay(previousC){
@@ -251,7 +251,12 @@
     if(selected&&!wall)$('name').textContent+=' · '+(M.heading(selected)*90)+'°';
     $('overlap').hidden=overlap.length<2;
     $('undo').disabled=!hist[room].length;
-    $('duplicate').disabled=!!(selected&&life&&!life.canAdd(selected.k));
+    const adjustable=M.adjustableHeight(item);
+    $('up').hidden=$('down').hidden=!adjustable;
+    if(adjustable){
+      $('down').disabled=(selected.e??0)<=-item.elev;
+      $('name').textContent+=' · 높이 '+M.elevation(room,selected);
+    }
     $('products').querySelectorAll('[data-key]').forEach(b=>{
       b.setAttribute('aria-pressed',String(b.dataset.key===selected?.k&&(!b.dataset.unit||b.dataset.unit===selected?.deviceId)));
       b.disabled=!!life&&!life.canAdd(b.dataset.key,b.dataset.unit);
@@ -269,7 +274,9 @@
     $('wallView').hidden=room!=='A';
   }
   function inventory(){
-    const items=Object.values(M.products).filter(i=>i.c===cat&&!ProductCatalog.componentOnly(i.k)&&(life?life.allowed(i.k):i.c!=='가전'));
+    const items=Object.values(M.products).filter(i=>
+      (i.c===cat||(space==='my'&&cat==='가전'&&i.k==='floor_lamp'))&&
+      !ProductCatalog.componentOnly(i.k)&&(life?life.allowed(i.k):i.c!=='가전'));
     if(space==='my'&&cat==='가전'){
       items.sort((a,b)=>(myDrawerOrder.get(a.k)??myDrawerOrder.size)-(myDrawerOrder.get(b.k)??myDrawerOrder.size));
     }
@@ -354,7 +361,7 @@
   }
   function placementIssue(o,items){
     if((M.products[o.k].behaviorKey||o.k)==='robot_vacuum'&&M.robotCrossesStep(room,o))return '청소기나 앞쪽 이동 경로가 단차에 걸려요.';
-    const blocker=M.placementBlocker(o,items);
+    const blocker=M.placementBlocker(o,items,room);
     return blocker?M.products[blocker.k].n+' · 겹쳐서 놓을 수 없어요':'';
   }
   function findSpace(o){
@@ -401,14 +408,8 @@
   const flip=()=>rotate(1);
   $('ccw').onclick=()=>rotate(-1);
   $('aim').onclick=()=>edit(o=>{const next=M.facingScreen(o,ordered);if(next!=null)M.turnTo(room,o,next)});
-  const height=n=>edit(o=>o.e=Math.max(-M.products[o.k].elev,o.e+n));
-  function duplicate(){
-    if(!selected||(life&&!life.canAdd(selected.k)))return;
-    const o={...selected,id:id(),x:selected.x+3,y:selected.y+3};
-    if(space==='my'&&M.products[o.k].c==='가구')o.routineIds=[];
-    delete o.rotationOrigin;delete o.deviceId;
-    if(!findSpace(o))return;
-    life?.bindUnit(o);checkpoint();list().push(o);select(o);save();refresh();reveal();
+  function height(n){
+    if(M.adjustableHeight(selected&&M.products[selected.k]))edit(o=>o.e=Math.max(-M.products[o.k].elev,(o.e??0)+n));
   }
   function remove(){if(!selected)return;checkpoint();layouts[room]=list().filter(o=>o!==selected);select();save();refresh()}
   function undo(){
@@ -513,7 +514,7 @@
   handle.addEventListener('touchstart',e=>handleY=e.touches[0].clientY,{passive:true});
   handle.addEventListener('touchend',e=>{const dy=(e.changedTouches[0].clientY-handleY)/previewScale;if(Math.abs(dy)>22)drawerOpen(dy<0)},{passive:true});
   $('flip').onclick=flip;$('up').onclick=()=>height(1);$('down').onclick=()=>height(-1);
-  $('duplicate').onclick=duplicate;$('remove').onclick=remove;$('undo').onclick=undo;
+  $('remove').onclick=remove;$('undo').onclick=undo;
   $('overlap').onclick=()=>{select(overlap[(overlap.indexOf(selected)+1)%overlap.length],overlap);refresh()};
   $('more').onclick=()=>$('menu').showModal();
   document.querySelectorAll('dialog .close').forEach(b=>b.onclick=()=>b.closest('dialog').close());
@@ -555,7 +556,7 @@
       else{o.x+=mv[0];o.y+=mv[1]}
     });return}
     switch(e.key.toLowerCase()){
-      case 'r':rotate(e.shiftKey?-1:1);break;case 'd':duplicate();break;case ']':height(1);break;case '[':height(-1);break;
+      case 'r':rotate(e.shiftKey?-1:1);break;case ']':height(1);break;case '[':height(-1);break;
       case 'delete':case 'backspace':e.preventDefault();remove();break;case 'escape':select();refresh();break;
     }
   });
@@ -666,13 +667,13 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
   let playback=null,previousPanel='idle',bindings={},raf=0,lastFrame=-100,offer=null;
   let lampOn=false,poweredTV=null,sceneBeforeMovie=null;
   let sleepBed=null;
-  let reaction=null;
+  let reaction=null,perchDescent=null;
   let productTapTime=-Infinity;
   let previewFurniture=[];
   let cleaningRuns=[];
   const approachMs=740,reactionCycleMs=2100;
   const sample=model.homeSource==='demo';
-  const hasHome=()=>model.homeSource==='thinq'||(sample&&model.state.myFixtureId==='sample-home-v1');
+  const hasHome=()=>model.homeSource==='thinq'||(sample&&(model.state.myFixtureId==='sample-home-v1'||model.state.myFixtureId==='sample-light-v1'||!!model.state.cameraAppliances?.length));
   const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
   let skipped=false,offeredTarget=null;
   const still=()=>skipped||reducedMotion.matches;
@@ -689,23 +690,23 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
   }
   const tvAction=model.actions.find(a=>a.kind==='tv');
   const tvCatalog=()=>(sample?model.devices:model.registeredAppliances()).filter(d=>d.kind==='tv');
-  const nameOf=id=>tvCatalog().find(d=>d.id===id)?.name||'이전 TV';
+  const nameOf=id=>liveTVs().find(d=>d.id===id)?.name||tvCatalog().find(d=>d.id===id)?.name||'이전 TV';
   const liveTVs=()=>model.candidates(tvAction);
   const screenFor=id=>list().find(o=>isTV(o)&&o.deviceId===id&&visible(o));
   const availableTVs=()=>liveTVs().filter(d=>screenFor(d.id));
   const available=id=>!!id&&availableTVs().some(d=>d.id===id);
   const needsRepair=()=>!!saved()&&!available(saved().bindings['tv-on']);
-  const isAppliance=k=>model.isCollectibleProduct(k)||k==='floor_lamp';
+  const isAppliance=k=>model.isCollectibleProduct(k)||M.products[k]?.cameraArt||k==='floor_lamp';
   const owned=k=>model.registeredAppliances().filter(d=>d.k===k);
   function allowed(k){
-    if(M.products[k]?.c==='가전'&&!ProductCatalog.hasModel(k))return false;
+    if(M.products[k]?.c==='가전'&&!ProductCatalog.hasModel(k)&&!M.products[k].cameraArt)return false;
     if(k==='floor_lamp'&&!my)return true;
     if(friend||!isAppliance(k))return true;
     return my?owned(k).length>0:model.collected(k);
   }
   function visible(o){
     if(o.bundleId!=null)return false;
-    if(M.products[o.k]?.c==='가전'&&!ProductCatalog.hasModel(o.k))return false;
+    if(M.products[o.k]?.c==='가전'&&!ProductCatalog.hasModel(o.k)&&!M.products[o.k].cameraArt)return false;
     if((space==='dream'||menu)&&room()==='C'&&o.exhibit)return true;
     if(!my||!isAppliance(o.k))return allowed(o.k);
     return owned(o.k).some(d=>d.id===o.deviceId)&&
@@ -824,10 +825,25 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     return {x,y,depth:cx+cy};
   }
   let standing=null;
+  const perchDuration=850;
+  function perchPosition(floor,perch,elapsed){
+    const {step,seat:top}=perch;
+    if(still()||elapsed>=perchDuration)return {...top,perchPose:'seated'};
+    if(elapsed>=330&&elapsed<470)return {...step,perchPose:'step'};
+    const first=elapsed<330;
+    const from=first?floor:step,to=first?step:top;
+    const t=Math.max(0,first?elapsed/330:(elapsed-470)/380);
+    return {x:from.x+(to.x-from.x)*t,
+      y:from.y+(to.y-from.y)*t-4*t*(1-t)*(first?10:13),
+      depth:to.depth,perchPose:'jump'};
+  }
   function position(now){
     const end=seat?sofaPoint(seat):(standing??=spawn());
-    const t=Math.min(1,(now-started)/approachMs);
-    if(!walking||t>=1){walking=false;return end}
+    const t=Math.max(0,Math.min(1,(now-started)/approachMs));
+    if(!walking||t>=1){
+      walking=false;
+      return reaction?.perch&&now>=reaction.arrives?perchPosition(end,reaction.perch,now-reaction.arrives):end;
+    }
     const eased=t*t*(3-2*t);
     return {x:start.x+(end.x-start.x)*eased,y:start.y+(end.y-start.y)*eased-3*Math.sin(Math.PI*t),depth:start.depth+(end.depth-start.depth)*eased};
   }
@@ -835,7 +851,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     if(!raf)raf=requestAnimationFrame(function tick(now){
       raf=0;
       if(now-lastFrame>=60){lastFrame=now;draw()}
-      if(walking||((playback||reaction||poweredTV)&&!still()))animate();
+      if(walking||perchDescent||((playback||reaction||poweredTV)&&!still()))animate();
     });
   }
   function nearbySofa(tv){
@@ -959,7 +975,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     if(target===tv&&seat===sofa&&(sofa||standing))return;
     start=current;target=tv;seat=sofa;standing=sofa?null:standingPoint(tv);
     const end=sofa?sofaPoint(sofa):standing;
-    started=performance.now();walking=!still()&&Math.hypot(end.x-current.x,end.y-current.y)>1;
+    started=Math.max(performance.now(),perchDescent?.until||0);walking=!still()&&Math.hypot(end.x-current.x,end.y-current.y)>1;
     if(walking)animate();
   }
   function approachAppliance(item,kind){
@@ -967,9 +983,16 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     start=position(now);seat=null;target=item;
     const patrol=kind==='robot_vacuum'?robotPath(item,null):null;
     const clearance=patrol&&cleanerClearance([{item,path:patrol}]);
-    standing=standingPoint(item,kind,patrol,clearance);started=now;
+    standing=standingPoint(item,kind,patrol,clearance);started=Math.max(now,perchDescent?.until||0);
     walking=!still()&&Math.hypot(standing.x-start.x,standing.y-start.y)>1;
-    reaction={itemId:item.id,kind,wall:item.k==='wall_ac',arrives:now+(walking?approachMs:0)};
+    reaction={itemId:item.id,kind,wall:item.k==='wall_ac',arrives:started+(walking?approachMs:0)};
+    if(kind==='purifier'){
+      const {x,y,s}=M.place(room(),tone(),item);
+      if(s.perch){
+        const anchor=([px,py])=>({x:x+(item.f?s.w-1-px:px),y:y+py,depth:item.x+item.y});
+        reaction.perch={step:anchor(s.perch.step),seat:anchor(s.perch.seat)};
+      }
+    }
     if(patrol){
       reaction.path=robotPath(item);
       const loc=M.place(room(),tone(),item),{dx,dy,length}=reaction.path;
@@ -1004,18 +1027,31 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
   }
   function stopReaction(){
     if(!reaction)return;
-    standing=position(performance.now());walking=false;reaction=null;
+    const now=performance.now(),current=position(now);
+    if(current.perchPose&&!still()&&!perchDescent){
+      // Reverse only the part of the climb that the cat has actually completed.
+      const elapsed=Math.min(perchDuration,Math.max(0,now-reaction.arrives));
+      perchDescent={until:now+elapsed,itemId:reaction.itemId,perch:reaction.perch,floor:standing};
+      animate();
+    }
+    if(!current.perchPose)standing=current;
+    walking=false;reaction=null;
   }
   function frame(){
     if(editMode)return;
-    const now=performance.now(),cat=position(now);
+    const now=performance.now();
+    if(perchDescent&&(still()||now>=perchDescent.until))perchDescent=null;
+    const remaining=perchDescent?perchDescent.until-now:0;
+    const cat=perchDescent?perchPosition(perchDescent.floor,perchDescent.perch,remaining):position(now);
     let pose=null;
     const active=cleaningRuns[0]||reaction;
-    if(active&&!walking){
+    if(perchDescent){
+      pose={kind:'purifier',itemId:perchDescent.itemId,perchPose:cat.perchPose};
+    }else if(active&&!walking){
       const elapsed=Math.max(0,now-active.arrives);
       const progress=still() ? 0.7 : (elapsed%reactionCycleMs)/reactionCycleMs;
       const settle=still()?1:Math.min(1,elapsed/450);
-      pose={kind:active.kind,itemId:active.itemId,wall:active.wall,progress,settle};
+      pose={kind:active.kind,itemId:active.itemId,wall:active.wall,progress,settle,perchPose:cat.perchPose};
     }
     const movie=playback&&(!playback.templateId||playback.templateId==='movie-night');
     const tv=movie?target:poweredTV;
@@ -1036,6 +1072,10 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     const dx=destination?destination.x-start.x:tvLoc?tvLoc.x+tvLoc.s.w/2-cat.x:0;
     const dy=destination?destination.y-start.y:tvLoc?tvLoc.y+tvLoc.s.h/3-cat.y:0;
     let facingLeft=dx<0;
+    if(perchDescent){
+      const next=remaining>470?perchDescent.perch.step:perchDescent.floor;
+      facingLeft=next.x<cat.x;
+    }
     if(pose?.kind==='robot_vacuum'&&!cleaningRuns.length){
       facingLeft=reaction.facingLeft;
       pose.watchingCleaner=true;
@@ -1053,8 +1093,8 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
       phase:still() ? .42 : ((now-started)%2800)/2800}:null;
     return {cat,reaction:pose,mist,movingRobot,movingUnits,sleepBed:!walking&&sleepBed?sleepBed.id:null,
       tucked:still()?1:Math.max(0,Math.min(1,(now-started-approachMs)/450)),focusedProduct:panel==='product'?target?.id:null,
-      tapGlow:still()?0:Math.max(0,1-(now-productTapTime)/200),depth:cat.depth,seat:!walking&&seat?seat.id:null,
-      time:still()?0:now,walking,facingAway:dy<0,facingLeft,
+      tapGlow:still()?0:Math.max(0,1-(now-productTapTime)/200),depth:cat.depth,seat:!perchDescent&&!walking&&seat?seat.id:null,
+      time:still()?0:now,walking:!perchDescent&&walking,facingAway:dy<0,facingLeft,
       facingSide:walking?Math.abs(dx)>Math.abs(dy)*.65:Math.abs(dx)>12,tv:tv?.id,
       appliances:recipeEffects,playing:!!movie||!!poweredTV,
       dim:!!playback?.bindings['light-dim']||(playback?.custom&&Object.values(recipeEffects).some(op=>op==='light-off'||op==='light-dim')),
@@ -1062,7 +1102,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
       curtain:!!movie&&!my};
   }
   function clearScene(){
-    sleepBed=null;
+    sleepBed=perchDescent=null;
     furniture=composerFurniture=movieFurniture=null;
     cleaningRuns=[];
     if(raf)cancelAnimationFrame(raf);raf=0;walking=false;standing=start=seat=target=playback=reaction=null;
@@ -1070,6 +1110,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     offer?.disconnect();offer=null;offeredTarget=null;skipped=false;sceneBeforeMovie=null;
   }
   function reset(){
+    if(panel==='routineSetup')clearConnectLink();
     clearScene();recipe=null;recipeBindings={};recipeEffects={};lampOn=false;panel='idle';bindings={};render();
   }
   function action(text,fn,primary=false,container=$('lifeActions')){
@@ -1081,28 +1122,40 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
   function show(title,detail=''){$('lifeTitle').textContent=title;$('lifeDetail').textContent=detail}
   function setPanel(next){
     if(next!=='applianceConfig'&&next!=='product')stopReaction();
+    if(panel==='routineSetup'&&next!=='routineSetup')clearConnectLink();
     panel=next;render();draw();
     if(poweredTV&&!still())animate();
   }
   function toggleEdit(){
     if(readOnly||gestureActive())return;
+    if(panel==='routineSetup')clearConnectLink();
     clearScene();panel='idle';editMode=!editMode;select();drawerOpen(false);
     render();refresh();home();
   }
   function prepare(){
     if(!sample)return;
-    if(!hasHome())model.update(s=>{
+    if(model.state.myFixtureId!=='sample-home-v1')model.update(s=>{
       s.registeredTvIds=tvCatalog().map(d=>d.id);
       s.myFixtureId='sample-home-v1';s.myLayout['tv-slot']='my-tv-1';s.myLayout['light-slot']='my-light-1';
     });
     const starter=[[model.demoModels.tvset,1,49,1],['floor_lamp',21,49,0],['sofa',34,48,1]];
     for(const [k,x,y,f] of starter){
+      if(isAppliance(k)&&!owned(k).some(d=>!d.camera))continue;
       if(list().some(o=>k===model.demoModels.tvset?isTV(o):o.k===k))continue;
       const o={id:id(),k,x,y,f,e:0};if(k==='sofa')o.turn=1;
       if(findSpace(o)){if(isAppliance(k))bindUnit(o);list().push(o)}
     }
-    identifyDevices(list());for(const d of liveTVs())ensureTV(d);
-    save();inventory();refresh();clearConnectLink();if(recipe)openRecipe(recipe);else connect();
+    identifyDevices(list());for(const d of liveTVs())if(!d.camera)ensureTV(d);
+    save();inventory();refresh();
+    if(panel==='routineSetup')openMyRoutine(recipe||model.movieTemplate);
+    else setPanel('idle');
+  }
+  function prepareLightHome(){
+    if(!sample||hasHome())return;
+    model.update(s=>{
+      s.myFixtureId='sample-light-v1';s.registeredTvIds=[];s.myLayout['light-slot']='my-light-1';
+    });
+    inventory();refresh();setPanel('idle');
   }
   function connect(attachTo=null){
     movieFurniture=attachTo;
@@ -1110,7 +1163,8 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
   }
   function clearConnectLink(){
     const entry=new URL(location.href);
-    if(!entry.searchParams.has('connect'))return;
+    if(!entry.searchParams.has('connect')&&!entry.searchParams.has('inventoryConnect'))return;
+    entry.searchParams.delete('inventoryConnect');
     entry.searchParams.delete('connect');entry.searchParams.delete('template');
     history.replaceState(history.state,'',entry);
   }
@@ -1226,9 +1280,11 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
       if(my&&!hasHome()){setPanel('setup');return}
       watch(o);setPanel('product');return;
     }
-    if(o&&M.products[o.k].catalogFamily){
-      standing=position(performance.now());seat=null;walking=false;target=o;setPanel('product');return;
+    if(!friend||o&&M.products[o.k].catalogFamily){
+      standing=position(performance.now());walking=false;
+      seat=null;target=o;
     }
+    if(o&&M.products[o.k].catalogFamily){setPanel('product');return}
     if(friend){
       if(o?.k==='sofa'){
         if(panel!=='friendMovie')log('routine_opened');
@@ -1236,7 +1292,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
       }else setPanel('idle');
       return;
     }
-    standing=position(performance.now());seat=target=null;walking=false;
+    target=null;
     if(my&&isFurniture(o)){
       furniture=o;
       if(!hasHome()){setPanel('setup');return}
@@ -1268,8 +1324,8 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     })).filter(d=>d.id);
   }
   function openRecipe(t,item=null){
+    if(my&&!hasHome()){requestRoutineSetup(t);return}
     recipe=t;
-    if(my&&!hasHome()){setPanel('setup');return}
     recipeBindings={...(my?savedRecipe(t)?.bindings:{})};
     for(const a of t.actions){
       const options=applianceOptions(a);
@@ -1380,8 +1436,22 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     const tools=$('routineTools');
     const broken=movie&&needsRepair();
     const empty=!movie&&!recipes.length&&!custom.length;
-    show('내 루틴',movie?nameOf(movie.bindings['tv-on'])+(broken?' 재연결 필요':' 연결됨'):empty?'등록 기기의 동작을 골라 첫 루틴을 만들어 보세요.':'');
-    if(!broken)action(movie?'연결 설정':'루틴 연결',connect,false,tools);
+    const devices=model.registeredAppliances();
+    const lightsOnly=devices.length>0&&devices.every(d=>d.k==='floor_lamp');
+    let detail='';
+    if(movie)detail=nameOf(movie.bindings['tv-on'])+(broken?' 재연결 필요':' 연결됨');
+    else if(empty){
+      if(!devices.length)detail='아직 등록된 가전이 없어요. 등록 가전에서 추가해 보세요.';
+      else if(lightsOnly){
+        const bed=list().some(o=>o.k==='bed'&&visible(o));
+        if(!hasLamp())detail=bed?'배치 편집 → 가전에서 조명을 놓아 보세요.':'배치 편집에서 가전의 조명과 가구의 침대를 놓아 보세요.';
+        else detail=bed?'침대를 눌러 잘 때 조명을 끄는 루틴을 만들어 보세요.':'배치 편집 → 가구에서 침대를 놓아 보세요.';
+      }
+      else if(!list().some(o=>isAppliance(o.k)&&visible(o)))detail='배치 편집에서 등록한 가전을 방에 놓아 보세요.';
+      else detail='가전을 눌러 살펴보거나 배치 편집에서 옮겨 보세요.';
+    }
+    show('내 루틴',detail);
+    if(!broken&&(movie||!lightsOnly))action(movie?'연결 설정':'루틴 연결',connect,false,tools);
     action('루틴 추가',openBatch,false,tools);
     action('루틴 만들기',()=>openComposer(),false,tools);
     if(movie){
@@ -1467,7 +1537,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     }
     if(records.length)action('루틴 연결 설정',()=>configureFurniture(furniture));
     if(furniture.k==='sofa'&&!saved())action('영화 보기 설정',()=>connect(furniture));
-    if(furniture.k==='bed'&&!linked.some(r=>r.name==='취침 모드'))
+    if(furniture.k==='bed'&&!linked.some(r=>r.scene==='bedtime'||r.name==='취침 모드'))
       action('취침 모드 만들기',()=>openComposer(null,furniture));
     else action('새 루틴 만들기',()=>openComposer(null,furniture));
     action('닫기',()=>tap(null));
@@ -1585,10 +1655,20 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     for(const [k,v] of Object.entries(options))url.searchParams.set(k,v);
     return url;
   }
-  function connectFromInventory(t){
+  function requestRoutineSetup(t){
+    recipe=t===model.movieTemplate?null:t;
+    const url=new URL(location.href);
+    url.searchParams.delete('inventoryConnect');
+    url.searchParams.set('connect','1');
+    url.searchParams.set('template',t.id);
+    history.replaceState(history.state,'',url);
+    setPanel('routineSetup');
+  }
+  function openMyRoutine(t){
     recipe=t===model.movieTemplate?null:t;
     if(model.homeSource==='unavailable'){setPanel('idle');return}
-    if(!hasHome()){setPanel('setup');return}
+    if(!hasHome()){requestRoutineSetup(t);return}
+    clearConnectLink();
     if(t===model.movieTemplate){
       if(saved()&&needsRepair())beginRepair();else connect();
     }else openRecipe(t);
@@ -1662,7 +1742,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
         if(known){
           action(record?(broken?'다시 연결':'저장한 연결 보기'):'내 방에 맞추기',()=>{
             dialog.close();if(editMode)toggleEdit();
-            if(my)connectFromInventory(t);
+            if(my)openMyRoutine(t);
             else location.assign(inventoryUrl('my',{inventoryConnect:t.id,source:model.discovery(t.id)||source}));
           },false,section);
         }
@@ -1845,6 +1925,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
   function route(which,adapt=false){
     const url=new URL('/editor',location.href);url.searchParams.set('space',which);
     if(params.get('observe')==='1')url.searchParams.set('observe','1');
+    if(params.get('app')==='thinq')url.searchParams.set('app','thinq');
     if(adapt){url.searchParams.set('connect','1');url.searchParams.set('source',source);
       if(panel==='appliancePlaying'&&recipe)url.searchParams.set('template',recipe.id);
     }
@@ -1860,12 +1941,23 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
   function openLibrary(){
     photoPicker?.reset();
     $('collectionResult').hidden=true;$('libraryBrowse').hidden=false;
-    $('libraryTitle').textContent=my?'ThinQ 등록 가전':'가전 수집';
-    $('libraryNote').textContent=my?(sample?(hasHome()?'체험용 ThinQ 계정에 등록된 가전이에요.':'연결된 계정이 없어요. 체험용 기기로 등록 목록을 확인할 수 있어요.'):
-      model.homeSource==='thinq'?'ThinQ 등록 기기 중 제품 DB에서 모델을 확인한 가전이에요.':'ThinQ 등록 목록을 읽지 못했어요.'):'사진은 기기 안에서만 사용해요. 후보 체험에는 예시 제품이 표시돼요.';
+    $('libraryTitle').textContent=my?'등록 가전':'가전 수집';
+    $('openCamera').hidden=!my;
+    $('libraryDemo').hidden=!(my&&sample&&model.state.cameraAppliances?.length&&model.state.myFixtureId!=='sample-home-v1');
+    $('libraryDemo').onclick=()=>{prepare();openLibrary()};
+    $('openCamera').onclick=()=>{
+      const back=new URL('/editor',location.origin);
+      back.searchParams.set('space','my');back.searchParams.set('camera','register');
+      for(const key of ['app','observe'])if(params.has(key))back.searchParams.set(key,params.get(key));
+      const scan=new URL('/scan','https://lg-camera-lab.pages.dev');
+      scan.searchParams.set('returnTo',back.href);
+      location.assign(scan.href);
+    };
+    $('libraryNote').textContent=my?(sample?(hasHome()?'등록한 가전은 배치 편집에서 방에 놓을 수 있어요.':'연결된 계정이 없어요. 모델명 라벨을 촬영해 가전을 추가할 수 있어요.'):
+      model.homeSource==='thinq'?'이 계정에서 방에 배치할 수 있는 등록 가전이에요.':'ThinQ 등록 목록을 읽지 못했어요.'):'사진은 기기 안에서만 사용해요. 후보 체험에는 예시 제품이 표시돼요.';
     $('collectionPhoto').hidden=my;
     $('openCatalog').hidden=!catalog;$('catalogBrowse').hidden=true;
-    $('libraryStatus').textContent='';showProducts();$('library').showModal();
+    $('libraryStatus').textContent='';showProducts();if(!$('library').open)$('library').showModal();
   }
   function showCollectionResult(product,row,fromCatalog=false){
     const dialog=$('library'),offset=row.getBoundingClientRect().top-dialog.getBoundingClientRect().top;
@@ -1893,7 +1985,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
   }
   function showProducts(keys){
     const host=$('libraryItems');host.replaceChildren();
-    const entries=my?model.registeredAppliances().filter(d=>ProductCatalog.hasModel(d.k)):
+    const entries=my?model.registeredAppliances().filter(d=>d.camera||d.k==='floor_lamp'||ProductCatalog.hasModel(d.k)):
       (keys||ProductCatalog.representatives()).filter(ProductCatalog.hasModel).map(k=>ProductCatalog.restore(M.products,k));
     for(const d of entries){
       if(ProductCatalog.componentOnly(d.k))continue;
@@ -1901,6 +1993,11 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
       pic.width=40;pic.height=36;pic.setAttribute('aria-hidden','true');
       if(M.products[d.k])M.thumbnail(pic,d.k,tone());
       label.textContent=d.name||M.products[d.k].n;
+      if(d.camera){
+        const info=document.createElement('small');
+        info.textContent=d.modelCode+(M.products[d.k]?.spriteKey==='camera_generic'?' · 기본 아이콘':'');
+        label.append(info);
+      }
       row.dataset.product=d.k||'';row.append(pic,label);host.append(row);
       if(!M.products[d.k])label.append(' · 배치 미지원');
       if(!my){
@@ -1929,7 +2026,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     $('libraryButton').hidden=readOnly;$('libraryButton').disabled=!!playback;
     $('libraryButton').textContent=my?'등록 가전':'가전 수집';
     $('friendRoom').href=route('example');$('mini').href=route('menu');
-    $('manageTVs').hidden=!my||!sample||!hasHome()||!!playback||editMode;
+    $('manageTVs').hidden=!my||!sample||model.state.myFixtureId==='sample-light-v1'||!hasHome()||!!playback||editMode;
     $('spaces').hidden=false;$('friendRoom').hidden=friend;$('mini').hidden=menu;
     $('dreamLink').href=route('dream');$('myLink').href=route('my');
     if(!readOnly)$(my?'myLink':'dreamLink').setAttribute('aria-current','page');
@@ -2003,7 +2100,8 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     }
     if(renderRecipes())return;
     if(quick){
-      show('내 루틴',nameOf(playback.bindings['tv-on'])+' 재생 중 · 실제 가전은 작동하지 않아요');
+      const light=playback.bindings['light-dim']?'조명 30%':'조명 제외';
+      show('내 루틴',nameOf(playback.bindings['tv-on'])+' 재생 중 · '+light+' · 실제 가전은 작동하지 않아요');
       action('재생 종료',()=>closeMovie(),true).classList.add('stop');return;
     }
     if(panel==='repair'){
@@ -2017,17 +2115,26 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     }
     if(panel==='devices'){
       show('체험용 TV 관리','등록을 해제하면 해당 TV는 루틴의 연결 목록에서 빠집니다.');
-      for(const d of tvCatalog())deviceAction(d);
+      for(const d of tvCatalog()){
+        const key=model.demoModels[d.id==='my-tv-1'?'tvset':'standbyme'];
+        if(!owned(key).some(unit=>unit.camera))deviceAction(d);
+      }
       action('완료',()=>setPanel('idle'),true);return;
     }
     if(my&&model.homeSource==='unavailable'){
       show('마이룸','ThinQ 등록 목록을 불러오지 못했어요. 연결 설정을 확인해 주세요.');
       action('다시 불러오기',()=>location.reload());return;
     }
-    if(panel==='setup'||(panel==='idle'&&my&&!hasHome())){
-      show('마이룸','ThinQ 앱에 등록된 가전만 놓을 수 있어요. 체험용 기기에는 냉장고, 무선청소기, 로봇청소기도 있어요.');
+    if(panel==='routineSetup'){
+      show((recipe||model.movieTemplate).name+' 연결','체험용 기기를 준비한 뒤 이 루틴에 쓸 가전을 선택하세요.');
       action('체험용 기기 사용',prepare,true);
-      if(!recipe)action('다른 가전 루틴',()=>setPanel('recipeList'));return;
+      action('방 둘러보기',()=>setPanel('idle'));return;
+    }
+    if(panel==='setup'||(panel==='idle'&&my&&!hasHome())){
+      show('마이룸','등록 가전에서 내 가전을 추가하거나 체험용 기기로 방을 둘러보세요.');
+      action('체험용 기기 사용',prepare,true);
+      if(sample&&!hasHome())action('조명 한 대로 체험',prepareLightHome);
+      action('다른 가전 루틴',()=>setPanel('recipeList'));return;
     }
     if(panel==='playing'){
       const light=!!playback.bindings['light-dim'];
@@ -2042,7 +2149,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
       const missing=model.registeredTVs().length?'등록된 TV가 전원 켜기를 지원하지 않아요.':'연결할 TV가 없어요.';
       show('영화 보기 연결',(liveTVs().length?'TV 필수':'TV 필수 · '+missing)+' · 조명 선택 · 커튼은 연결할 기기 없음');
       tvPicker('재생할 TV');
-      if(sample&&!liveTVs().length)action('체험용 TV 관리',manageTVs);
+      if(sample&&model.state.myFixtureId!=='sample-light-v1'&&!liveTVs().length)action('체험용 TV 관리',manageTVs);
       for(const a of model.actions.filter(a=>a.kind==='light')){
         const device=model.candidates(a)[0];if(!device)continue;
         const on=bindings[a.actionId]===device.id;
@@ -2053,7 +2160,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
       }
       action('미리보기',()=>startMovie(),true).disabled=!liveTVs().some(d=>d.id===bindings['tv-on']);
       action('다른 가전 루틴',()=>setPanel('recipeList'));action('여러 루틴 설정',openBatch);
-      action('루틴 만들기',()=>openComposer());return;
+      action('루틴 만들기',()=>openComposer());action('방 둘러보기',()=>setPanel('idle'));return;
     }
     if(panel==='furniture'){renderFurniture();return}
     if(panel==='product'){
@@ -2117,10 +2224,12 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
       const suffix=sample?'':'.'+model.homeSource;
       if(!friend&&(e.key==='lg-miniroom.state'+suffix||e.key===(my?'lg-miniroom.dot.my'+suffix:'dotroom')||e.key===null))location.reload();
     });
-    if(my&&params.has('connect')){
-      recipe=templates.find(t=>t.id===params.get('template'))||null;
-      if(!hasHome())setPanel('setup');else if(recipe)openRecipe(recipe);else connect();
-      if(hasHome()||!recipe)clearConnectLink();
+    if(my&&(params.has('inventoryConnect')||params.has('connect'))){
+      // Older movie links omit the template. A named routine must resolve to its own template.
+      const id=params.get('inventoryConnect')??params.get('template')??model.movieTemplate.id;
+      const requested=batchTemplates.find(t=>t.id===id);
+      if(requested)openMyRoutine(requested);
+      else{clearConnectLink();notice('가져온 루틴을 찾을 수 없어요. 마이룸에서 다시 선택해 주세요.')}
     }
     if(history.state?.dotMovie)history.replaceState(null,'');
     if(my&&params.has('inventoryRun')){
@@ -2130,14 +2239,23 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
       if(record&&hasHome()){returnToBag=customReady(record);runCustom(record,'idle')}
       else{openBag();notice('이 계정에서 저장한 루틴을 확인해 주세요.')}
     }
-    if(my&&params.has('inventoryConnect')){
-      const t=batchTemplates.find(t=>t.id===params.get('inventoryConnect'));
-      const url=new URL(location.href);url.searchParams.delete('inventoryConnect');history.replaceState(history.state,'',url);
-      if(t)connectFromInventory(t);
-    }
     if(!readOnly&&params.get('inventory')==='1'){
       const url=new URL(location.href);url.searchParams.delete('inventory');history.replaceState(history.state,'',url);
       openBag();
+    }
+    if(my&&(params.has('modelCode')||params.get('camera')==='register')){
+      openLibrary();
+      try{
+        if(params.has('modelCode')||params.has('id')){
+          const message=model.registerFromCamera(params);
+          inventory();render();openLibrary();$('libraryStatus').textContent=message;
+        }
+        const clean=new URL(location.href);
+        for(const field of [...clean.searchParams.keys()]){
+          if(!['space','app','observe','room'].includes(field))clean.searchParams.delete(field);
+        }
+        history.replaceState(history.state,'',clean);
+      }catch(error){$('libraryStatus').textContent=error.message;}
     }
     if(samplePreview)startSamplePreview();
     if(model.storageMessage)notice(model.storageMessage);

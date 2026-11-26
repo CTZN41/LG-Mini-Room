@@ -2,16 +2,54 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LG 미니룸</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080809">
+  <title>LG ThinQ · 홈</title>
+  <link rel="icon" href="data:,">
   <script>
-    // Keep existing shared links while using the same isometric room at every entry.
-    const target=new URL('/editor'+location.search,location.href);
-    const space=location.hash.slice(1);
-    if(['menu','example','dream','my'].includes(space))target.searchParams.set('space',space);
-    else if(!target.searchParams.has('space')&&(location.hash||location.search))target.searchParams.set('space','menu');
-    location.replace(target.href);
+    const query = new URLSearchParams(location.search);
+    if (location.hash || (location.search && !query.has('tab'))) {
+      const legacy = new URL('/editor' + location.search, location.href);
+      const space = location.hash.slice(1);
+      if (['menu','example','dream','my'].includes(space)) legacy.searchParams.set('space',space);
+      else if (!legacy.searchParams.has('space')) legacy.searchParams.set('space','menu');
+      location.replace(legacy.href);
+    }
   </script>
+  <link rel="stylesheet" href="/thinq/shell.css">
+  <script defer src="/thinq/shell.js"></script>
 </head>
-<body><a href="/editor">LG 미니룸 열기</a></body>
+<body class="thinq">
+  <main id="screens">
+    <section id="home" class="screen home" aria-label="홈">
+      <header><h1>우리 집 <span aria-hidden="true">⌄</span></h1></header>
+      <article class="home-card"><img src="/thinq/support.webp" alt=""><div><strong>제품에 이상 징후가 발견되면 전문 상담사가 알려드려요.</strong><a href="/?tab=care">지금 알아보기</a></div></article>
+      <img class="home-art" src="/thinq/home.webp" alt="">
+    </section>
+    <section id="devices" class="screen devices" aria-label="디바이스" hidden>
+      <header><h1>우리 집 <span aria-hidden="true">⌄</span></h1></header>
+      <a class="device-card" href="/editor?space=my&amp;app=thinq"><i data-icon="my"></i><strong>마이룸</strong><small>등록한 가전 보기</small></a>
+      <img class="devices-art" src="/thinq/devices.webp" alt="">
+    </section>
+    <section id="care" class="screen care" aria-label="케어" hidden>
+      <header><h1>이달의 리포트</h1></header>
+      <h2>우리집 제품 케어</h2>
+      <article><img src="/thinq/care.webp" alt=""><p>연결된 제품의 상태를 진단하고 문제 발생을 예방할 수 있어요.</p></article>
+      <h2>제품 에너지 사용량</h2>
+      <article><img src="/thinq/energy.webp" alt=""><p>지원 제품 또는 파트너사 계정을 연결하면 에너지 사용량을 알 수 있어요.</p></article>
+      <h2>제품 사용 리포트</h2>
+      <article><img src="/thinq/usage.webp" alt=""><p>지원되는 제품을 연결하면 사용 패턴을 볼 수 있어요.</p></article>
+    </section>
+    <section id="menu" class="screen menu" aria-label="메뉴" hidden>
+      <header><h1>LG ThinQ</h1></header>
+      <div class="quick"><span><i data-icon="user"></i>마이페이지</span><span><i data-icon="support"></i>고객 지원</span></div>
+      <div class="promo"><img src="/thinq/coupon.webp" alt=""><strong>시크릿 쿠폰 프로모션<small>ThinQ 회원 최대 12% 할인</small></strong></div>
+      <h2>제품 사용과 관리</h2>
+      <div class="group"><div><i data-icon="diagnose"></i>스마트 진단</div><div><i data-icon="info"></i>제품 정보와 보증</div><div><i data-icon="book"></i>제품 사용설명서</div><div><i data-icon="calendar"></i>LG전자 구독</div></div>
+      <h2>제품 및 앱 활용</h2>
+      <div class="group"><div><i data-icon="play"></i>ThinQ PLAY</div><a href="/editor?space=dream&amp;app=thinq"><i data-icon="my"></i>LG 미니룸<b aria-hidden="true">›</b></a><div><i data-icon="routine"></i>스마트 루틴</div><div><i data-icon="book"></i>ThinQ 활용하기</div><div><i data-icon="book"></i>ThinQ Recipe</div></div>
+    </section>
+  </main>
+  <noscript>마이룸을 열려면 JavaScript를 켜 주세요.</noscript>
+</body>
 </html>

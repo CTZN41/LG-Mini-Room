@@ -82,6 +82,8 @@ const guestVisit = location.pathname === '/experience';
 if (!guestVisit) readState();
 export let homeSource='demo';
 let accountDevices=[];
+const cameraDeviceCache=new WeakMap();
+const normalizeCode=code=>String(code||'').normalize('NFKC').trim().toUpperCase();
 async function fetchHome(){
   const response=await fetch('/api/my-appliances',{cache:'no-store'});
   if(!response.ok)throw Error();
@@ -126,6 +128,9 @@ export const demoModels={
 };
 function matchedAccountDevices(devices){
   return devices.flatMap(d=>{
+    if(d.category==='조명'||d.k==='floor_lamp'){
+      return [{...d,k:'floor_lamp',kind:'light',capability:d.capability||'brightness.set'}];
+    }
     const k=ProductCatalog.matchModel(d.category,d.modelCode);
     if(!k)return [];
     return [{...d,k,...(d.category==='TV'?{kind:'tv',capability:'power.set'}:{})}];
@@ -153,17 +158,54 @@ export function pruneRetiredCollection(){
   });
 }
 export function registeredAppliances(){
-  if(homeSource!=='demo')return accountDevices;
-  return sampleAppliances(state);
+  if(homeSource==='unavailable')return [];
+  const base=homeSource==='demo'?sampleAppliances(state):accountDevices;
+  return base.concat(cameraDevices(state));
+}
+function cameraDevices(home){
+  const rows=home?.cameraAppliances;
+  if(!Array.isArray(rows)||!rows.length)return [];
+  if(cameraDeviceCache.has(rows))return cameraDeviceCache.get(rows);
+  const result=rows.map(record=>{
+    const item=ProductCatalog.cameraProduct(DotScene.products,record);
+    return {id:'camera-unit:'+record.modelCode,k:item.k,name:record.displayName,modelCode:record.modelCode,camera:true,
+      ...(item.catalogFamily==='TV'||['tvset','standbyme'].includes(item.behaviorKey)?{kind:'tv',capability:'power.set'}:{})};
+  });
+  cameraDeviceCache.set(rows,result);return result;
+}
+export function registerFromCamera(params){
+  if(homeSource==='unavailable')throw Error('등록 목록을 다시 불러온 뒤 새로고침해 주세요.');
+  const record={};
+  for(const field of ['id','modelCode','displayName','category']){
+    const value=params.get(field)?.trim();
+    if(!value||value.length>200||/[\x00-\x1f\x7f]/.test(value))return '제품 정보를 확인할 수 없어요. 라벨을 다시 촬영해 주세요.';
+    record[field]=value;
+  }
+  record.modelCode=normalizeCode(record.modelCode);
+  // Only keep the product thumbnail, never a data URL or an uploaded image.
+  record.imageUrl='';
+  try{
+    const url=new URL(params.get('imageUrl'));
+    if(url.protocol==='https:'&&!url.username&&!url.password&&url.href.length<=2048)record.imageUrl=url.href;
+  }catch{}
+  const exists=registeredAppliances().some(d=>normalizeCode(d.modelCode||DotScene.products[d.k]?.modelCode)===record.modelCode);
+  if(exists)return '이미 등록된 가전이에요.';
+  update(draft=>{(draft.cameraAppliances??=[]).push(record)});
+  ProductCatalog.cameraProduct(DotScene.products,record);
+  return record.displayName+' 등록 완료 · 등록 가전에 추가됐어요.';
 }
 function sampleAppliances(home){
+  if(home?.myFixtureId==='sample-light-v1'){
+    return [{...devices.find(d=>d.id==='my-light-1'),name:'침실 조명',k:'floor_lamp'}];
+  }
   if(home?.myFixtureId!=='sample-home-v1')return [];
   const keys={'my-tv-1':demoModels.tvset,'my-tv-2':demoModels.standbyme,'my-light-1':'floor_lamp'};
+  const scanned=new Set((home.cameraAppliances||[]).map(record=>record.modelCode));
   const fixed=devices.filter(d=>d.kind==='tv'?sampleTvIds(home).includes(d.id):home.myLayout['light-slot']===d.id);
   return [...fixed.map(d=>({...d,k:keys[d.id]})),
     ...Object.entries(demoModels).filter(([old])=>!['tvset','standbyme'].includes(old))
       .map(([old,k])=>({k,id:home.sampleDeviceIds?.[k]||home.sampleDeviceIds?.[old]||'sample-'+old}))]
-    .filter(d=>d.k==='floor_lamp'||isCollectibleProduct(d.k));
+    .filter(d=>d.k==='floor_lamp'||(isCollectibleProduct(d.k)&&(!scanned.size||!scanned.has(DotScene.products[d.k]?.modelCode))));
 }
 // Discoveries are shared across rooms. One key per template makes concurrent discoveries independent.
 export const discoveryPrefix='lg-miniroom.discovered.';
@@ -179,7 +221,7 @@ export async function inventoryHome(){
   const suffix=home.mode==='demo'?'':'.thinq';
   const stored=home.mode==='demo'?demo:thinq;
   const layout=read('lg-miniroom.dot.my'+suffix);
-  const registered=home.mode==='demo'?sampleAppliances(stored):matchedAccountDevices(home.devices);
+  const registered=(home.mode==='demo'?sampleAppliances(stored):matchedAccountDevices(home.devices)).concat(cameraDevices(stored));
   const placed=layout?(layout.layouts?.[layout.room]||[]).filter(o=>registered.some(d=>d.id===o.deviceId&&d.k===o.k)):null;
   return {records:stored?.savedRoutines||[],placed,registered};
 }
