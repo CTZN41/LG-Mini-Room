@@ -12,10 +12,16 @@ async function manage(){await p.locator('#more').click();await tap('체험용 TV
 async function screenHash(device){
 return p.evaluate(dev=>{
  const s=JSON.parse(localStorage['lg-miniroom.dot.my']),o=s.layouts[s.room].find(o=>o.deviceId===dev);
- const {x,y,s:sp}=DotScene.place(s.room,s.theme,o),wide=o.k==='tvset',xx=wide?28:9,yy=wide?19:12;
- const screenX=o.f?sp.w-xx-6:xx;
- const pixels=document.querySelector('#scene').getContext('2d').getImageData(x+screenX,y+yy,6,8).data;
- let h=0;for(const v of pixels)h=(31*h+v)|0;return h;
+ const {x,y,s:sp}=DotScene.place(s.room,s.theme,o);
+ const [sx,sy,w,h]=sp.screen;
+ const ctx=document.querySelector('#scene').getContext('2d');
+ let hash=0;
+ for(let u=2;u<w-2;u++){
+   const px=o.f?sp.w-1-sx-u:sx+u;
+   const column=ctx.getImageData(x+px,y+sy+Math.round(u/2)+2,1,h-4).data;
+   for(const value of column)hash=(31*hash+value)|0;
+ }
+ return hash;
 },device);
 }
 await p.goto(url);await tap('체험용 기기 사용');

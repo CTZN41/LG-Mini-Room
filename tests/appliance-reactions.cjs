@@ -83,12 +83,12 @@ async function exercise(browser,space,width,height,reduced){
   const arrived=id=>page.waitForFunction(id=>window.pose?.reaction?.itemId===id,id);
   await tap(7);await arrived(7);
   assert.equal(await page.locator('#lifeTitle').innerText(),'스탠드 조명');
-  assert.match(await page.locator('#lifeDetail').innerText(),/꺼진 조명/);
-  await btn('조명 켜기').click();assert.match(await page.locator('#lifeDetail').innerText(),/켜진 조명/);
+  assert.equal(await page.locator('#lifeDetail').innerText(),'');
+  await btn('조명 켜기').click();assert.equal(await page.locator('#lifeDetail').innerText(),'');
   await btn('조명 끄기').click();await btn('닫기').click();
   await tap(1);await arrived(1);
   assert.equal(await page.locator('#lifeTitle').innerText(),'타워 에어컨');
-  assert.match(await page.locator('#lifeDetail').innerText(),/귀를 살짝 접어요/);
+  assert.equal(await page.locator('#lifeDetail').innerText(),'');
   assert.equal(await btn('미리보기').count(),0);
   assert.equal(await page.evaluate(()=>pose.reaction.kind),'air');
   const first=await page.evaluate(()=>pose.cat);
@@ -100,7 +100,7 @@ async function exercise(browser,space,width,height,reduced){
   assert.notDeepEqual(await page.evaluate(()=>pose.cat),first);
   await tap(1);await tap(2);await arrived(2);
   assert.equal(await page.locator('#lifeTitle').innerText(),'워시타워 민트');
-  assert.match(await page.locator('#lifeDetail').innerText(),/양말/);
+  assert.equal(await page.locator('#lifeDetail').innerText(),'');
   assert.equal(await page.evaluate(()=>pose.reaction.kind),'washer');
   assert.notDeepEqual(await page.evaluate(()=>pose.cat),first);
   if(!reduced){
@@ -116,7 +116,7 @@ async function exercise(browser,space,width,height,reduced){
     await tap(id);await arrived(id);
     assert.equal(await page.evaluate(()=>pose.reaction.kind),kind);
     assert.equal(await page.locator('#lifeTitle').innerText(),title);
-    assert.match(await page.locator('#lifeDetail').innerText(),/고양이가/);
+    assert.equal(await page.locator('#lifeDetail').innerText(),'');
     assert.equal(await btn('미리보기').count(),0);
     assert.deepEqual(await page.evaluate(()=>pose.appliances),{});
     const stillFrame=await page.locator('#scene').evaluate(c=>c.toDataURL());
@@ -203,7 +203,7 @@ async function exercise(browser,space,width,height,reduced){
       if((await page.locator('#keyboardTarget').innerText()).includes('로봇청소기'))break;
     }
     await page.keyboard.press('Enter');
-    assert.match(await page.locator('#lifeDetail').innerText(),/빈 통로가 없어/);
+    assert.equal(await page.locator('#lifeDetail').innerText(),'');
   }
   assert.deepEqual(errors,[]);await page.context().close();
   console.log('PASS',space,width,height,reduced?'reduced motion':'animated','tap, retarget, preview and edit');

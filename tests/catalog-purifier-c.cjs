@@ -1,3 +1,4 @@
+const {expectedTitle}=require('./catalog-room-title.cjs');
 const assert=require('node:assert/strict');
 const {createHash}=require('node:crypto');
 const {chromium}=require('playwright');
@@ -111,7 +112,7 @@ async function verify(browser,width,height){
     assert.equal(new Set(art).size,4);
     for(const model of models){
       await target(model);
-      await p.waitForFunction(n=>document.querySelector('#lifeTitle').textContent===n&&document.querySelector('#productPhoto').naturalWidth>0,model);
+      await p.waitForFunction(n=>document.querySelector('#lifeTitle').textContent===n&&document.querySelector('#lifeDetail').textContent==='',await expectedTitle(p,'공기청정기',model));
       await p.waitForFunction(()=>roomFrame?.reaction?.kind==='purifier');
       await p.locator('#lifeActions').getByRole('button',{name:'닫기'}).tap();
       await tap('editMode');await target(model);

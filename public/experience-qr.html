@@ -1,0 +1,25 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>미니룸 체험 QR</title><link rel="stylesheet" href="/experience.css"><script src="/experience-qr.js"></script></head>
+<body class="poster"><main><b>LG 미니룸</b><h1>영화가 있는 거실</h1><p>휴대폰 카메라로 미니룸에 입장하세요.</p>
+<div id="qr" aria-label="미니룸 체험 링크 QR 코드"></div><a class="primary" id="entry" href="/experience">이 기기에서 체험하기</a><p id="local"></p><form id="venue" hidden><label>휴대폰에서 접속할 서버 주소<input id="address" type="url" placeholder="http://192.168.0.10:4185" required></label><button>QR 변경</button></form></main>
+<script>
+const entry=new URL('/experience',location.origin);
+if(new URLSearchParams(location.search).get('observe')==='1')entry.searchParams.set('observe','1');
+const local=['localhost','127.0.0.1','[::1]'].includes(location.hostname);
+const venue=document.querySelector('#venue');
+venue.hidden=!local;
+function display(url){
+ document.querySelector('#entry').href=url.href;
+ const code=qrcode(0,'M');code.addData(url.href);code.make();
+ document.querySelector('#qr').innerHTML=code.createSvgTag({cellSize:6,margin:24,scalable:true});
+ document.querySelector('#local').textContent=url.origin===location.origin&&local?
+ '이 QR은 PC 미리보기용이에요. 현장에서는 휴대폰으로 접속할 수 있는 서버 주소를 입력하세요.':url.href;
+}
+venue.onsubmit=e=>{
+ e.preventDefault();const input=document.querySelector('#address'),url=new URL(input.value);
+ if(!['https:','http:'].includes(url.protocol)||url.username||url.password){input.setCustomValidity('HTTP 또는 HTTPS 서버 주소를 입력하세요.');input.reportValidity();return}
+ const target=new URL(entry.pathname+entry.search,url.origin);display(target);
+};
+document.querySelector('#address').oninput=e=>e.target.setCustomValidity('');
+display(entry);
+</script></body></html>

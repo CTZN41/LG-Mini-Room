@@ -18,7 +18,7 @@
 python -c "import pathlib,sqlite3; db=sqlite3.connect('file:data/lg_appliances.db?mode=rw',uri=True); db.executescript(pathlib.Path('data/remove-standalone-mini-wash.sql').read_text(encoding='utf-8')); db.close()"
 ```
 
-**드림룸 → C 현관 투존**에서 360° AS206NGHA, 에어로타워 FS064PSJA, 에어로퍼니처 AS063PWGCR, 월핏 AS356LSAA를 비교한다. 제품을 누르면 모델명과 사진이 열리고 고양이가 반응한다. 배치 편집에서 회전한 결과는 같은 C룸에 저장된다. 이전 전시 링크도 이 방으로 들어온다. 기존 개인 배치의 키·좌표·방향은 유지되고, 종전에 배치한 공청기도 해당 모델의 최신 그림을 사용하며 바닥 점유 크기는 유지한다. [DB·C룸 통합 검수](tests/catalog-purifier-c.cjs)
+**드림룸 → C 현관 투존**에서 360° AS206NGHA, 에어로타워 FS064PSJA, 에어로퍼니처 AS063PWGCR, 월핏 AS356LSAA를 비교한다. 제품을 누르면 모델 코드를 뺀 판매 제품명이 표시되고 고양이가 반응한다. 배치 편집에서 회전한 결과는 같은 C룸에 저장된다. 이전 전시 링크도 이 방으로 들어온다. 기존 개인 배치의 키·좌표·방향은 유지되고, 종전에 배치한 공청기도 해당 모델의 최신 그림을 사용하며 바닥 점유 크기는 유지한다. [DB·C룸 통합 검수](tests/catalog-purifier-c.cjs)
 
 제습기 40개 모델은 상단 손잡이와 측면 물통 형태, 몸체와 손잡이 색으로 구분한 14개 도트를 쓴다. **드림룸 → C 현관 투존**에서 샌드 베이지 DQ203PCCA를 누르면 모델 사진이 열리고 고양이와 제품 표시등이 반응한다. 다른 모델은 **가전 수집 → 제품 DB에서 찾기 → 제습기**에서 고를 수 있다.
 
@@ -142,3 +142,22 @@ foreach ($suite in (Get-ChildItem tests/*.cjs | Sort-Object Name)) {
   if ($LASTEXITCODE -ne 0) { throw "$($suite.Name) 실패" }
 }
 ```
+
+## 방문자용 QR 체험
+
+`/experience`는 새로 열 때마다 소파 한 개로 시작하는 마케팅용 거실이다. `/experience/qr`에서 현장 QR을 표시한다. 기존 앱 서버에서도 두 경로를 제공한다. 행사 네트워크에서는 아래처럼 방문자 전용 서버만 열 수 있다. PowerShell에서 프로젝트 폴더로 이동한 뒤 실행한다. 처음 설치할 때는 `npm.cmd install`로 QR 생성 패키지를 준비한다.
+
+```powershell
+$env:MINIROOM_VISITOR_ONLY = '1'
+$env:LG_MINI_ROOM_HOST = (Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway -and $_.IPv4Address } | Select-Object -First 1).IPv4Address.IPAddress
+$env:LG_MINI_ROOM_PORT = '4185'
+node server.mjs
+```
+
+서버에 표시된 주소의 `/experience/qr`을 PC에서 열고 같은 네트워크의 휴대폰으로 스캔한다. 방문자 전용 서버는 체험 화면과 정적 에셋만 제공한다. 계정, DB, ThinQ 키가 필요 없다. 55LX1QKNA의 검수된 제품 사진과 외형을 체험에 묶었다.
+
+TV와 조명을 놓고 끌어서 옮긴 뒤 TV를 눌러 영화 보기를 선택한다. 제품 상세·미리보기·체험 종료에서 ThinQ로 이동한다. iOS는 App Store, Android는 Google Play에서 설치 또는 열기를 선택하며 데스크톱은 LG 설치 안내로 이동한다. 체험 배치는 메모리에서만 유지한다.
+
+관찰할 때만 QR 페이지 URL 끝에 `?observe=1`을 붙인다. 체험 종료 화면에서 현재 방문의 기록을 내려받을 수 있다. 스토어 버튼을 누른 이벤트는 이동 선택을 의미한다. 앱 설치·실행 결과를 수집하지 않는다.
+
+2026-11-26 검증 · Chrome 320×568 및 390×844 터치 에뮬레이션에서 배치, 드래그, 제품 상세, TV 단독/조명 포함 미리보기, 닫기·뒤로 가기 시 픽셀 복원, 플랫폼별 링크 선택, 저장 격리를 확인했다. 표시된 QR도 이미지에서 URL을 디코딩했다. 실물 폰에서의 카메라 인식, 행사 Wi-Fi, 설치된 앱 열기는 현장 검수 항목이다.

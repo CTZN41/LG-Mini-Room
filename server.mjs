@@ -3,7 +3,8 @@ import { createServer } from "node:http";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { serveCatalog } from "./catalog.mjs";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
 
 const runFile=promisify(execFile);
 let pendingInventory;
@@ -23,12 +24,23 @@ async function sendInventory(request,response){
 
 const host = process.env.LG_MINI_ROOM_HOST || "127.0.0.1";
 const port = Number(process.env.LG_MINI_ROOM_PORT ?? "4173");
+const visitorOnly = process.env.MINIROOM_VISITOR_ONLY === "1";
+const guestPages = new Map([
+  ["/experience", ["experience.html", "text/html; charset=utf-8"]],
+  ["/experience/qr", ["experience-qr.html", "text/html; charset=utf-8"]],
+  ["/experience.js", ["experience.js", "text/javascript; charset=utf-8"]],
+  ["/experience.css", ["experience.css", "text/css; charset=utf-8"]],
+  ["/experience-tv.jpg", ["experience-tv.jpg", "image/jpeg"]],
+]);
+const guestAssets = new Set(["/dot-assets.js","/dot-scene.js","/purifier-profiles.js","/catalog-art.js","/product-catalog.js","/state.js"]);
 const pages = new Map([
+  ...guestPages,
   ["/", ["index.html", "text/html; charset=utf-8"]],
   ["/editor", ["dot-room.html", "text/html; charset=utf-8"]],
   ["/dot-room.html", ["dot-room.html", "text/html; charset=utf-8"]],
   ["/dot-editor.css", ["dot-editor.css", "text/css; charset=utf-8"]],
   ["/dot-assets.js", ["dot-assets.js", "text/javascript; charset=utf-8"]],
+  ["/purifier-profiles.js", ["purifier-profiles.js", "text/javascript; charset=utf-8"]],
   ["/catalog-art.js", ["catalog-art.js", "text/javascript; charset=utf-8"]],
   ["/product-catalog.js", ["product-catalog.js", "text/javascript; charset=utf-8"]],
   ["/dot-scene.js", ["dot-scene.js", "text/javascript; charset=utf-8"]],
@@ -46,8 +58,17 @@ const server = createServer(async (request, response) => {
   }
 
   const path = (request.url ?? "").split("?", 1)[0];
-  if(path==="/api/catalog/models"||path==="/api/catalog/bundles"||path==="/api/catalog/bodies"||path==="/api/catalog"||path==="/api/catalog/photo"||path==="/api/catalog/product")
-    return serveCatalog(new URL(request.url,'http://localhost'),response);
+  if (path === "/experience-qr.js") {
+    try {
+      const body = await readFile(require.resolve("qrcode-generator"));
+      response.writeHead(200, {"Content-Type":"text/javascript; charset=utf-8"}).end(request.method === "HEAD" ? undefined : body);
+    } catch { response.writeHead(503).end("Install dependencies with npm ci"); }
+    return;
+  }
+  if (visitorOnly && path === "/") { response.writeHead(302,{Location:"/experience"}).end(); return; }
+  if (visitorOnly && !guestPages.has(path) && !guestAssets.has(path)) { response.writeHead(404).end(); return; }
+  if(path==="/api/catalog/retired-sales"||path==="/api/catalog/models"||path==="/api/catalog/bundles"||path==="/api/catalog/bodies"||path==="/api/catalog"||path==="/api/catalog/photo"||path==="/api/catalog/product")
+    return (await import('./catalog.mjs')).serveCatalog(new URL(request.url,'http://localhost'),response);
   if(path==="/api/my-appliances")return sendInventory(request,response);
   const page = pages.get(path);
 

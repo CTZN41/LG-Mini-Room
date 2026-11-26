@@ -10,9 +10,7 @@ async function check(browser,width,height){
   const button=name=>page.getByRole('button',{name,exact:true});
   const tap=name=>button(name).tap();
   const bag=page.locator('#bagRows');
-  const lamp={id:'lamp-one',name:'침실 조명',k:'floor_lamp'};
-  let devices=[lamp];
-  await page.route('**/api/my-appliances',r=>r.fulfill({json:{mode:'thinq',devices}}));
+  await page.route('**/api/my-appliances',r=>r.fulfill({json:{mode:'demo'}}));
   await page.addInitScript(()=>document.addEventListener('DOMContentLoaded',()=>{
     const paint=DotScene.paint;
     DotScene.paint=function(...args){window.renderedRoom=args[5];return paint(...args)};
@@ -23,16 +21,20 @@ async function check(browser,width,height){
     await tap('가전 수집');await tap(name+' 수집');await tap('방에 놓기');
   }
   try{
-    await go('dream');await collect('TV+거실장');
+    await go('dream');await collect('TV 55LX1QKNA');
     assert.match(await page.locator('#comboHint').innerText(),/영화 보기 가능 · TV 켜기/);
-    await tap('배치 완료');await collect('스탠드 조명');
+    await tap('소품');await page.locator('#products [data-key=floor_lamp]').tap();
     assert.match(await page.locator('#comboHint').innerText(),/영화 보기에 추가 · 조명 밝기 30%/);
     await page.locator('#remove').tap();await page.reload();await tap('배치 편집');await tap('소품');
     await page.locator('#products [data-key=floor_lamp]').tap();
     assert.equal(await page.locator('#comboHint').innerText(),'');
+    await page.evaluate(async()=>{
+      const {update}=await import('/state.js');
+      update(s=>{s.myFixtureId='sample-home-v1';s.myLayout['light-slot']='my-light-1';s.registeredTvIds=[]});
+    });
     await go('my');await tap('배치 편집');await tap('소품');await page.locator('[data-key=floor_lamp]').tap();
     await tap('가구');await page.locator('[data-key=bed]').tap();await tap('배치 완료');
-    const key='lg-miniroom.dot.my.thinq';
+    const key='lg-miniroom.dot.my';
     const bed=await page.evaluate(key=>JSON.parse(localStorage[key]).layouts.B.find(o=>o.k==='bed'),key);
     // Open the bed through the room's accessible object selector.
     await page.locator('#view').focus();
@@ -45,7 +47,7 @@ async function check(browser,width,height){
     await page.waitForFunction(id=>renderedRoom?.sleepBed===id&&renderedRoom.tucked===1,bed.id);
     await tap('내 루틴에 저장');await tap('닫기');
     await tap('루틴 만들기');await page.getByLabel('루틴 이름').fill('취침 모드');
-    await page.getByRole('combobox',{name:'침실 조명',exact:true}).selectOption('light-dim');
+    await page.getByRole('combobox',{name:'거실 조명',exact:true}).selectOption('light-dim');
     await tap('미리보기');await tap('내 루틴에 저장');await page.reload();await tap('인벤토리');
     const cards=bag.locator('article[data-routine-id]');
     await cards.nth(1).waitFor();
@@ -68,7 +70,8 @@ async function check(browser,width,height){
     await tap('재생 종료');await card(ids[1]).waitFor();await tap('인벤토리 닫기');
     await tap('취침 모드 (1)');await page.waitForFunction(id=>renderedRoom?.sleepBed===id,bed.id);
     await tap('재생 종료');
-    devices=[];await page.reload();await tap('인벤토리');
+    await page.evaluate(async()=>{const {update}=await import('/state.js');update(s=>{delete s.myLayout['light-slot']})});
+    await page.reload();await tap('인벤토리');
     await card(ids[0]).getByRole('button',{name:'다시 연결'}).tap();
     assert.ok(await button('미리보기').isDisabled());
     assert.deepEqual(errors,[]);

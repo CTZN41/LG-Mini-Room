@@ -1,3 +1,4 @@
+const {expectedTitle}=require('./catalog-room-title.cjs');
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const base=process.argv[2]||'http://127.0.0.1:4173';
@@ -29,7 +30,7 @@ async function check(browser,width,height){
     const before=await layout(),display=before.layouts.C.find(o=>o.k===key(featured));assert.ok(display.exhibit);
     await select(featured);
     await page.waitForFunction(m=>document.querySelector('#lifeTitle').textContent===m&&
-      document.querySelector('#productPhoto').naturalWidth>0&&window.frame?.reaction?.kind==='dehumidifier',featured);
+      document.querySelector('#lifeDetail').textContent===''&&window.frame?.reaction?.kind==='dehumidifier',await expectedTitle(page,'제습기',featured));
     assert.ok(await page.evaluate(()=>!window.frame.mist));
     await page.locator('#lifeActions').getByRole('button',{name:'닫기'}).tap();
     await tap('libraryButton');await tap('openCatalog');await page.locator('#catalogFamilies button').filter({hasText:featured}).tap();
@@ -61,7 +62,7 @@ async function check(browser,width,height){
     await tap('placeCollected');await tap('flip');await tap('editMode');
     const placed=(await layout()).layouts.C.find(o=>o.k===key(pink));assert.ok(placed);assert.equal(placed.turn,1);
     await page.reload();await ready();assert.deepEqual((await layout()).layouts.C.find(o=>o.k===key(pink)),placed);
-    await select(pink);await page.waitForFunction(m=>document.querySelector('#lifeTitle').textContent===m,pink);
+    await select(pink);await page.waitForFunction(m=>document.querySelector('#lifeTitle').textContent===m,await expectedTitle(page,'제습기',pink));
     // Upgrade a previously edited Phase 1 room, then honour removal on the next visit.
     await page.evaluate(k=>{
       const l=JSON.parse(localStorage.dotroom);l.cDisplayVersion=1;l.layouts.C=l.layouts.C.filter(o=>o.k!==k&&!o.k.startsWith('catalog:purifier:'));

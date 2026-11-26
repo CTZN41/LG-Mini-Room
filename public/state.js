@@ -78,7 +78,8 @@ function readState(){
     }
   } catch {blocked=true; storageMessage='저장 데이터를 열 수 없어요. 예시 방을 둘러볼 수 있어요.';}
 }
-readState();
+const guestVisit = location.pathname === '/experience';
+if (!guestVisit) readState();
 export let homeSource='demo';
 let accountDevices=[];
 async function fetchHome(){
@@ -136,6 +137,15 @@ export function pruneRetiredCollection(){
   if(!state.collection.some(retired)&&!['collectionSources','photoSelections'].some(field=>
     Object.keys(state[field]||{}).some(retired)))return;
   update(s=>{
+    for(const key of s.collection){
+      const old=ProductCatalog.retiredSale(key);
+      if(!old)continue;
+      for(const unit of old.keys){
+        if(!s.collection.includes(unit))s.collection.push(unit);
+        if(s.collectionSources?.[key]!=null)s.collectionSources[unit]??=s.collectionSources[key];
+      }
+      if(s.photoSelections?.[key]!=null)s.photoSelections[old.primary]??=s.photoSelections[key];
+    }
     s.collection=s.collection.filter(isCollectibleProduct);
     for(const field of ['collectionSources','photoSelections']){
       for(const k of Object.keys(s[field]||{}))if(retired(k))delete s[field][k];
@@ -254,7 +264,8 @@ export function customRoutine(name,steps,recordId){
 
 // Observation is opt-in and scoped to the current browser tab.
 export const observing = new URLSearchParams(location.search).get('observe') === '1';
-const observationKey = 'lg-miniroom.events';
+const observationKey = guestVisit ? 'lg-miniroom.guest.events' : 'lg-miniroom.events';
+let guestSessionId;
 function observationRows(){
   const rows=JSON.parse(sessionStorage.getItem(observationKey)||'[]');
   if(!Array.isArray(rows))throw Error('관찰 기록을 열 수 없어요.');
@@ -267,10 +278,11 @@ export function logObservation(event,room,source,templateId='movie-night',produc
   if(!observing)return;
   try{
     const rows=observationRows();
-    let sessionId=sessionStorage.getItem('lg-miniroom.session');
+    let sessionId=guestVisit ? guestSessionId : sessionStorage.getItem('lg-miniroom.session');
     if(!sessionId){
       sessionId=Array.from(crypto.getRandomValues(new Uint32Array(4)),n=>n.toString(16).padStart(8,'0')).join('');
-      sessionStorage.setItem('lg-miniroom.session',sessionId);
+      if(guestVisit)guestSessionId=sessionId;
+      else sessionStorage.setItem('lg-miniroom.session',sessionId);
     }
     const row={event,sessionId,time:new Date().toISOString(),room,source};
     if(templateId)row.templateId=templateId;
@@ -287,7 +299,9 @@ export function savedObservationSource(fallback,templateId='movie-night'){
 }
 export function exportObservation(){
   if(!observing)return;
-  const events=observationRows().map(({event,sessionId,time,room,source,templateId,productKey})=>({event,sessionId,time,room,source,templateId,productKey}));
+  const rows=observationRows();
+  const selected=guestVisit ? rows.filter(row=>row.sessionId===guestSessionId) : rows;
+  const events=selected.map(({event,sessionId,time,room,source,templateId,productKey})=>({event,sessionId,time,room,source,templateId,productKey}));
   const file=new Blob([JSON.stringify({version:1,events},null,2)],{type:'application/json'});
   const link=document.createElement('a'),url=URL.createObjectURL(file);
   link.href=url;link.download='miniroom-observation-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';

@@ -70,11 +70,10 @@ main{display:flex;flex-direction:column;gap:0;padding:0}.studio{flex:1}
 .visiting main{grid-template-columns:minmax(0,1fr)}.visiting #drawer,.visiting .selection{display:none}
 #living{flex:none;background:var(--paper);border:2px solid var(--line);padding:9px 12px;color:var(--ink);display:flex;gap:6px 12px;align-items:center;flex-wrap:wrap}
 #living strong{font-size:16px}#lifeDetail{font-size:13px}#lifeActions{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
-#living.model-card{display:grid;grid-template-columns:62px minmax(0,1fr);gap:2px 10px;align-content:center}
-.model-card :is(#productPhoto,#productDot){grid-column:1;grid-row:1/span 3;width:62px;height:64px;object-fit:contain}
-.model-card :is(#lifeTitle,#unknownModel,#lifeDetail){grid-column:2;overflow-wrap:anywhere}
+#living.model-card{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:6px}
+.model-card #lifeTitle{overflow-wrap:anywhere}
 .model-card #lifeDetail:empty{display:none}
-.model-card #lifeActions{grid-column:1/-1;margin:2px 0 0}
+.model-card #lifeActions{margin:0}
 #editPhoto{width:34px;height:36px;object-fit:contain;background:white}
 #unknownEditModel{display:block;font-size:11px}
 #lifeActions .primary{background:var(--accent)}
@@ -159,9 +158,6 @@ main{display:flex;flex-direction:column;gap:0;padding:0}.studio{flex:1}
 #collectionResult button{min-height:44px}
 #placeCollected{background:var(--accent)}
 #routineBagButton{font-size:13px;color:var(--ink)}
-#bundleParts{display:grid;gap:8px}
-#bundleParts button{display:flex;align-items:center;gap:10px;padding:4px 10px;text-align:left;overflow-wrap:anywhere}
-#bundleParts canvas{flex:none;image-rendering:pixelated}
 #bagRows article{padding:12px 0;border-top:1px solid var(--edge)}
 #comboHint:empty{display:none}
 #comboHint:not(:empty){padding:5px 10px;background:var(--paper);color:var(--ink);border-top:1px solid var(--line);font-size:14px;line-height:1.35}

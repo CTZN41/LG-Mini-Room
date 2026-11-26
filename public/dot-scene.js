@@ -76,7 +76,7 @@ const DotScene = (() => {
       if(distance<4) outline.data.set(distance<3?[255,234,148,255]:[62,32,53,255],((y+3)*ring.width+x+3)*4);
     }
     rc.putImageData(outline,0,0);
-    return {im:art,flipped,ring,pixels,w,h,ax:sp.ax,ay:sp.ay,mistOutlet:sp.mistOutlet,outlet:sp.outlet,drumCenter:sp.drumCenter,lid:sp.lid,screen:sp.screen};
+    return {im:art,flipped,ring,pixels,w,h,ax:sp.ax,ay:sp.ay,mistOutlet:sp.mistOutlet,outlet:sp.outlet,drumCenter:sp.drumCenter,doorEdge:sp.doorEdge,lid:sp.lid,screen:sp.screen};
   }
   async function load() {
     const jobs=[];
@@ -119,7 +119,7 @@ const DotScene = (() => {
   function orientedSprite(o,t){
     const item=products[o.k],part=item.hasDock&&(o.robotPart==='station'||o.robotPart==='mobile')?'_'+o.robotPart:'';
     const key=(item.spriteKey||o.k)+part;
-    if(item.body){
+    if(item.body&&!item.nativeWasher){
       const back=rear(o),cacheKey=key+(back?'_rear':'');
       if(!images.has(cacheKey)){
         const raw=CatalogArt.renderBody(item,back);
@@ -418,14 +418,14 @@ const catWatching=raster(23,27,c=>{
       const color='#9fe0bd';
       for(let i=0;i<3;i++){
         const rise=(phase+i*2)%6;
-        const [cx,cy]=s.outlet||[Math.round(s.w/2),3];
+        const [cx,cy]=s.outlet||s.mistOutlet||[Math.round(s.w/2),3];
         const x=cx+(i-1)*5;
         rect(ctx,x,cy-rise*2,2,3,color);
         rect(ctx,x+1,cy-1-rise*2,2,1,color);
       }
     }else if(kind==='washer'){
       const item=products[o.k], [drumX,drumY]=s.drumCenter||[item.modelCode?12:10,item.drumY??96];
-      if(topOpeningWasher(item)){
+      if(topOpeningWasher(item)||(!rear(o)&&s.lid&&item.body?.detail==='opaqueDoor')){
         drawLidIndicator(ctx,o,s,phase<3);
       }else if(!rear(o)){
         const angle=phase*Math.PI/3;
@@ -464,6 +464,7 @@ const catWatching=raster(23,27,c=>{
   }
   function drawTapEffect(ctx,o,s,fx,originX,originY){
     const {progress,kind}=fx.reaction;
+    if(kind==='washer'&&products[o.k].catalogFamily==='건조기'&&rear(o))return;
     if(kind==='lamp'||kind==='humidifier')return; // These effects also apply during the approach.
     const localX=x=>o.f?s.w-x:x;
     if(kind==='dehumidifier'){
@@ -484,7 +485,7 @@ const catWatching=raster(23,27,c=>{
       ctx.save();ctx.globalAlpha=pulse(progress,.02,.98);
       for(let i=0;i<2;i++){
         const rise=(progress*1.5+i*.5)%1;
-        const [cx,cy]=s.outlet||[10,1];
+        const [cx,cy]=s.outlet||s.mistOutlet||[10,1];
         const x=localX(cx-3+i*6+Math.round(2*Math.sin(2*Math.PI*rise)));
         const y=cy-Math.round(17*rise);
         rect(ctx,x,y,2,4,'#acf0d1');rect(ctx,x+1,y-2,2,2,'#e0fff0');
@@ -496,7 +497,8 @@ const catWatching=raster(23,27,c=>{
       if(!rear(o)){
         ctx.save();
         ctx.globalAlpha=pulse(progress,.19,.78)*.85;
-        rect(ctx,localX(9),39,1,5,'#fff4cc');rect(ctx,localX(9),42,2,1,'#fff4cc');
+        const [x,y]=s.doorEdge||[9,39];
+        rect(ctx,localX(x),y,1,5,'#fff4cc');rect(ctx,localX(x),y+3,2,1,'#fff4cc');
         ctx.restore();
       }
     }else if(kind==='vacuum'){
@@ -509,7 +511,7 @@ const catWatching=raster(23,27,c=>{
       }
     }else if(kind==='robot_vacuum'){
       drawRobotLight(ctx,o,s,Math.floor(progress*4)%2===1);
-    }else if(topOpeningWasher(products[o.k])){
+    }else if(topOpeningWasher(products[o.k])||(!rear(o)&&s.lid&&products[o.k].body?.detail==='opaqueDoor')){
       ctx.save();
       if(o.f){ctx.translate(s.w,0);ctx.scale(-1,1)}
       drawLidIndicator(ctx,o,s,progress<.5);

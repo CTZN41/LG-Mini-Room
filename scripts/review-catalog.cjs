@@ -3,6 +3,8 @@ const path=require('node:path');
 const {DatabaseSync}=require('node:sqlite');
 const {chromium}=require('playwright');
 const reviews=require('../docs/catalog-art-reviews.json');
+const dryerReview=require('../dryer-profiles.cjs');
+const purifierReview=require('../public/purifier-profiles.js');
 
 async function reviewCatalog(filter,base){
   const db=new DatabaseSync(process.env.MINIROOM_CATALOG_DB||path.join(__dirname,'../data/lg_appliances.db'),{readOnly:true});
@@ -23,14 +25,20 @@ async function reviewCatalog(filter,base){
     const dots=await page.evaluate(list=>list.map(({category,model})=>{
       const key=ProductCatalog.matchModel(category,model),item=ProductCatalog.restore(DotScene.products,key);
       if(!item||!key)throw Error('실행 서버의 DB 모델 불일치: '+model);
-      return {key,spriteKey:item.spriteKey||key};
+      const bodyReview=['세탁기','TV','냉장고','무선청소기','로봇청소기','제습기','가습기'].includes(category)?{decision:item.body?.decision||'기존 도트 유지',
+        reason:item.body?.description||item.appearance||'기존 모델 전용 도트'}:null;
+      return {key,spriteKey:item.spriteKey||key,bodyReview};
     }),rows);
     return rows.map((row,i)=>{
       const review=reviews[row.model];
-      const decision=review?.category===row.category&&review.group===row.bodyGroup?review:null;
-      return {...row,...dots[i],photo:base+'/api/catalog/photo?id='+row.id,
-        decision:row.photoStatus==='보류'?'사진 보류':decision?.decision||'미판정',
-        previousSprite:decision?.before||null,reason:decision?.reason||null};
+      const pilot=review?.category===row.category&&review.group===row.bodyGroup?review:null;
+      const latest=(row.category==='공기청정기'&&purifierReview.models.get(row.model))
+        ||(row.category==='건조기'&&dryerReview.models.get(row.model))||dots[i].bodyReview||pilot;
+      const {key,spriteKey}=dots[i];
+      return {...row,key,spriteKey,photo:base+'/api/catalog/photo?id='+row.id,
+        decision:row.photoStatus==='보류'?'사진 보류':latest?.decision||'미판정',
+        previousSprite:latest?.before||null,reason:latest?.reason||null,
+        ...(pilot?{phase6:{decision:pilot.decision,previousSprite:pilot.before}}:{})};
     });
   }finally{await browser.close();}
 }

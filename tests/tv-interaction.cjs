@@ -40,7 +40,7 @@ try{for(const space of ['my','dream']){
   await p.evaluate(key=>{const d=JSON.parse(localStorage[key]),a=d.layouts[d.room];d.layouts[d.room]=a.filter(x=>['standbyme','tvset','sofa','floor_lamp'].includes(x.k));Object.assign(a.find(x=>x.k==='tvset'),{x:0,y:56,f:1});Object.assign(a.find(x=>x.k==='standbyme'),{x:78,y:6,f:0});localStorage[key]=JSON.stringify(d)},layoutKey);await p.reload();
  }
  await btn('배치 편집').waitFor();await capture();await tap('tvset');await p.waitForTimeout(850);
- let near=await p.evaluate(()=>pose);assert.ok(near.seat);assert.match(await p.locator('#lifeDetail').innerText(),/가까운 소파/);
+ let near=await p.evaluate(()=>pose);assert.ok(near.seat);assert.equal(await p.locator('#lifeDetail').innerText(),'');
  assert.equal(await p.locator('#lifeTitle').innerText(),space==='dream'?'TV+거실장':'거실 TV');
  async function expectMoving(k){
    const before=await p.evaluate(k=>glassPixels(k),k);
@@ -60,7 +60,7 @@ try{for(const space of ['my','dream']){
  await p.emulateMedia({reducedMotion:'no-preference'});await expectMoving('standbyme');
  const expected=await p.evaluate(key=>{const s=JSON.parse(localStorage[key]),tv=s.layouts[s.room].find(o=>o.k==='standbyme'),{w,d}=DotScene.dims(tv),cx=tv.x+w/2,cy=tv.y+d+8,z=DotScene.roomData(s.room).zones.find(([x1,y1,x2,y2])=>cx>=x1&&cx<x2&&cy>=y1&&cy<y2)?.[4]||0;return DotScene.project(s.room,cx,cy,z)},layoutKey);
  assert.ok(Math.hypot(far.cat.x-expected[0],far.cat.y-expected[1])<10,'far='+JSON.stringify(far.cat)+' expected '+expected);
- assert.match(await p.locator('#lifeDetail').innerText(),/앞에 서서/);
+ assert.equal(await p.locator('#lifeDetail').innerText(),'');
  await btn('영화 보기').tap();await btn('재생 종료').waitFor();
  if(space==='my'){assert.match(await p.locator('#lifeDetail').innerText(),/침실 TV 재생/);await btn('내 루틴에 저장').tap();await btn('영화 보기').waitFor();
   await tap('tvset');await btn('TV 끄기').waitFor();await btn('영화 보기').tap();assert.match(await p.locator('#lifeDetail').innerText(),/거실 TV 재생/);assert.equal(await p.evaluate(()=>JSON.parse(localStorage['lg-miniroom.state']).savedRoutines[0].bindings['tv-on']),'my-tv-2');

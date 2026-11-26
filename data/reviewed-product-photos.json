@@ -1,0 +1,2319 @@
+{
+  "reviewDate": "2026-11-26",
+  "scope": "보류 검수 Phase 1–4. 제품군·모델명별 대표 행을 기준으로 선정하고 같은 모델의 판매행 전체에 적용.",
+  "models": [
+    {
+      "phase": 1,
+      "category": "건조기",
+      "model": "RV1029C4T/C7T",
+      "before": [
+        {
+          "id": 987,
+          "sha256": "5a5629d5c5d3a2920de991f3e031f2a6f499b0c7bfc1de95c4c7d3ec919e34e5"
+        }
+      ],
+      "decision": "remove",
+      "reason": "대표 사진에 건조기 두 대. C4T는 기존 단품과 사진 유지. C7T 단품 판매 사진에는 10kg 배지가 있어 신규 등록 제외.",
+      "references": [
+        "https://www.lge.co.kr/support/product-RV1029C4T",
+        "https://www.lge.co.kr/support/product-RV1029C7T",
+        "https://prod.danawa.com/info/?pcode=15252656",
+        "https://price.enuri.com/catalog/73842699"
+      ]
+    },
+    {
+      "phase": 2,
+      "category": "공기청정기",
+      "model": "AS405BWRP",
+      "before": [
+        {
+          "id": 1021,
+          "sha256": "05b1ff8b8c6b8f9e059d23c04900ffb22909771c0c128b1f7586c993248877ee"
+        }
+      ],
+      "decision": "keep",
+      "reason": "LG가 표시한 모델명과 정면 사진을 공식 카탈로그의 스탠드 본체 및 토출·흡입 그릴과 대조.",
+      "source": "https://www.lge.co.kr/support/product-AS405BWRP",
+      "photo": "https://www.lge.co.kr/kr/images/air-purifier/md10628830/md10628830-350x350.jpg",
+      "sha256": "4100f233d3cbe1ea26dd08aae7635fc33ddd4bd1025232c7251f54da7ba98d26",
+      "references": [
+        "https://www.lge.co.kr/support/product-AS405BWRP",
+        "https://www.lge.co.kr/kr/ebook/2026/may/himart/catImage/642/20260506_himart_catalogue.pdf"
+      ]
+    },
+    {
+      "phase": 2,
+      "category": "공기청정기",
+      "model": "LZ-H154GB",
+      "before": [
+        {
+          "id": 1106,
+          "sha256": "510d2104336aa5f96c19597eec6a99e27acf9e0b37bd0f3c4e9da38cf27ae2ce",
+          "reviewedSha256": "65394c8218e9ad94eac0375f38e5a77ddb09a223474bd32968045ecae25f8ffd"
+        }
+      ],
+      "decision": "remove",
+      "reason": "덕트 연결형 환기 본체. 방문객 동선에서 보이는 환기구만으로 모델을 식별할 수 없어 사진 수집 대상에서 제외.",
+      "source": "https://www.lgkukje.com/sub_2_1.html?prCid=61&prProductId=943&st=view",
+      "photo": "https://www.lgkukje.com/data/product/LZ-H154GB_300_1.jpg",
+      "references": [
+        "https://www.lgkukje.com/sub_2_1.html?prCid=61&prProductId=943&st=view",
+        "https://www.lge.co.kr/support/product-LZ-H154GB",
+        "https://www.lge.co.kr/support/solutions-20154781313530",
+        "https://www.lge.co.kr/upload/PDF/DMZ/24148/1112121414_MFL67403201.pdf"
+      ],
+      "retiredGroup": "V0059"
+    },
+    {
+      "phase": 2,
+      "category": "공기청정기",
+      "model": "Z-E0250U2SC",
+      "before": [
+        {
+          "id": 1028,
+          "sha256": "5890a51198a4305c3e2b5a46b81cdef37904c9a8166db7932ea26675e859e159",
+          "reviewedSha256": "8da3570caac2e0a35732e5d8e7f93c3da2e42725fb4e4cfb438b50eca59b1377"
+        }
+      ],
+      "decision": "remove",
+      "reason": "덕트 연결형 환기 본체. 방문객 동선에서 보이는 환기구만으로 모델을 식별할 수 없어 사진 수집 대상에서 제외.",
+      "source": "https://www.lge.co.kr/support/product-Z-E0250U2SC",
+      "photo": "https://www.lge.co.kr/kr/images/ventilation-system/md10508826/md10508826-350x350.jpg",
+      "references": [
+        "https://www.lge.co.kr/support/product-Z-E0250U2SC",
+        "https://www.lge.co.kr/support/solutions-20154781313530",
+        "https://www.lge.co.kr/business/ventilation-system/z-e0250u2sc"
+      ],
+      "retiredGroup": "V0057"
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "27LX6TKGAC",
+      "before": [
+        {
+          "id": 294,
+          "sha256": "7ec4f7328bfdb12b563cb82b5bfa0821fd5813201edb33bcdc17076a37cf850f"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-27LX6TKGAC",
+        "https://price.enuri.com/catalog/134748399",
+        "https://prod.danawa.com/info/?cate=22256582&pcode=90500765",
+        "https://prod.danawa.com/info/?pcode=90500765"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "27U511SBW",
+      "before": [
+        {
+          "id": 85,
+          "sha256": "9b1eec6be8450189fadbb30459352120fe327916568ca04502ca0ff1b9ebcb94"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 이동형 패키지에는 긴 스탠드가 있으나 LG 동일 코드 갤러리의 본체는 짧은 탁상 받침.",
+      "references": [
+        "https://www.lge.co.kr/support/product-27U511SBW",
+        "https://www.lge.co.kr/monitors/27u511sbwstd1?sKwd=%EC%97%98%EC%A7%80+%EC%8A%A4%EC%9C%99&sRank=21&sTab=unit_product_list",
+        "https://www.lge.co.kr/product/monitors/27u511sbw?modelId=MD10816826&pdpType=PURCHASE&sKwd=%2CA0u&sRank=20&sTab=unit_product_list"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "32LH560B",
+      "before": [
+        {
+          "id": 831,
+          "sha256": "466ffc9da626b86b287c1b7efee7a4efcf50367660b033dcbba643880cee92fa"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/uploads/kr/business/download/catalog/g2b_catalog_0506.PDF#page=10",
+      "photo": "https://www.lge.co.kr/uploads/kr/business/download/catalog/g2b_catalog_0506.PDF",
+      "sha256": "02fc3f95b252e4408afbb23cecf6eeef51a522c2281de4f4fa6bc2fb04e574a7",
+      "asset": "reviewed-photo-extracts/32LH560B.png",
+      "references": [
+        "https://www.lge.co.kr/uploads/kr/business/download/catalog/g2b_catalog_0506.PDF#page=10",
+        "https://www.lge.co.kr/support/product-32LH560B"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "32SR50FP",
+      "before": [
+        {
+          "id": 461,
+          "sha256": "f5c9cd07d1461271202d301ef3aeaaf04873b4e7f66bb596d9c20c8d75304baf"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 이동형 패키지 사진에 32인치 표시가 겹침. 같은 스탠드를 장착한 단독 사진을 확정하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-32SR50FP",
+        "https://price.enuri.com/catalog/124693482",
+        "https://prod.danawa.com/info/?pcode=55044647",
+        "https://store.ohou.se/goods/2886177"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "32U889SAW",
+      "before": [
+        {
+          "id": 251,
+          "sha256": "6e850f2328f85a633ae87c89632848ab2e36d7d3e5ca95a197126c219c5e556c"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 이동형 패키지 사진에 별도 물품이 함께 보임. 공식 단품 스탠드와 원래 판매 구성이 일치하는지 확정하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-32U889SAW",
+        "https://www.lge.co.kr/kr/business/product/common/redirectProductDetail.do?prdId=MD00068542"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "42LS75C",
+      "before": [
+        {
+          "id": 798,
+          "sha256": "8961b8ee1a8b040c83a0ab2c659e08d2f6fe12857e3cc3431fa57d315cd23ed4"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-42LS75C",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00025906/gallery/medium01.jpg",
+      "sha256": "82e1d386f8e11dd9b5d77d34f5e1f8e0a624f2bf4f95b229e21f5dd9bf9cb3d5",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-42LS75C",
+        "https://www.lge.co.kr/support/product-42LS75C"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "43LM5600ENA",
+      "before": [
+        {
+          "id": 816,
+          "sha256": "3c2109caf6caea6704ce2188eff8b6bc38dce7b9ea5f229796cbfcef35bf46fd"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-43LM5600ENA",
+        "https://www.ssg.com/item/itemView.ssg?itemId=1000034672577"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "43LT340C0UB",
+      "before": [
+        {
+          "id": 733,
+          "sha256": "0c1871e95f92264625197c02fd7161ab96c044afb27746eac4fe0ee684f32a1b"
+        }
+      ],
+      "decision": "remove",
+      "reason": "확인한 지원 페이지의 공유 이미지는 LG 로고. 기존 사진에는 화면 규격이 겹침.",
+      "references": [
+        "https://www.lge.co.kr/support/product-43LT340C0UB",
+        "https://www.lg.com/ec/soporte/producto/lg-43LT340C0UB.AUS"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "43LT540H0NB",
+      "before": [
+        {
+          "id": 804,
+          "sha256": "9043d267952247b356b8a8ad34af951e1dd3a27710580bf96f625031e98f7b4a"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/ebook/2022/july/jo/catImage/99/20220708_catalogue_jo.pdf#page=13",
+      "photo": "https://www.lge.co.kr/kr/ebook/2022/july/jo/catImage/99/20220708_catalogue_jo.pdf",
+      "sha256": "7c899f27aa30300495a3a1adcede1d856d0f0a4998c6cbcecc2f7249b032449c",
+      "asset": "reviewed-photo-extracts/43LT540H0NB.png",
+      "references": [
+        "https://www.lge.co.kr/kr/ebook/2022/july/jo/catImage/99/20220708_catalogue_jo.pdf#page=13",
+        "https://www.lge.co.kr/support/product-43LT540H0NB"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "43SM5KE",
+      "before": [
+        {
+          "id": 799,
+          "sha256": "3311306ca8e9ddff111e91adf8c121c6b6f9fcd53f263bd8652ebae5e106e45f"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-43SM5KE",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00042282/gallery/medium01.jpg",
+      "sha256": "648e527246dfbf2060ba542ff6cec34d4b353224664c340c577358e2db10d169",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-43SM5KE",
+        "https://www.lge.co.kr/support/product-43SM5KE"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "43UK752P0NB",
+      "before": [
+        {
+          "id": 170,
+          "sha256": "e00894f9eb6eb20e696d89abbaacb3498b96ac1514f6e715642999b58aa62498"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-43UK752P0NB",
+        "https://department.ssg.com/item/itemView.ssg?itemId=1000763138241&salestrNo=1004&siteNo=6009",
+        "https://emart.ssg.com/item/itemView.ssg?itemId=1000829127822&salestrNo=6005&siteNo=6001",
+        "https://item.gmarket.co.kr/Item?goodsCode=4628008417",
+        "https://itempage3.auction.co.kr/DetailView.aspx?itemno=F565535360"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "43UM3DG",
+      "before": [
+        {
+          "id": 661,
+          "sha256": "75a5fb8beb4755e176a66d4752614eaae8f1f854845a093e7ae0cfbd33a22ef6"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-43UM3DG",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00064603/gallery/medium01.jpg",
+      "sha256": "7c98caca8746e9ea5ba54e4fa2d80d6d5c0b6b44647d21eeddc1373600b923f2",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-43UM3DG",
+        "https://www.lge.co.kr/support/product-43UM3DG"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "49S4P",
+      "before": [
+        {
+          "id": 366,
+          "sha256": "bd7110db4fafbf3edae5cca9088d0f0a8259395dd74555868ff3fca1672de0ae"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-49S4P",
+        "https://prod.danawa.com/info/?pcode=90159263",
+        "https://tvpartscanada.com/en/led-backlight-strips/96025-hisense-55-55s5-2x72-4014c-49s4p-backlight-strips-2-new.html",
+        "https://tvpartscanada.com/qc/led-light-strips/96025-hisense-55-55s5-2x72-4014c-49s4p-backlight-strips-2-new.html"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "49SE3KE",
+      "before": [
+        {
+          "id": 751,
+          "sha256": "f3325a0132304ed927b32694ea7a7168a2d7cbab6084c8d178c59a1347d2a92d"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-49SE3KE",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00042262/gallery/medium01.jpg",
+      "sha256": "6d206205d46fff7c8004e0e85b2606f7962ed8f3b3802f1ad17b012f30a5babb",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-49SE3KE",
+        "https://www.lge.co.kr/support/product-49SE3KE"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "49SM5KE",
+      "before": [
+        {
+          "id": 805,
+          "sha256": "ece304d183ace77e5a089111546e9dc694d7a02405eeea665b5d5316051d1caa"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-49SM5KE",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00042283/gallery/medium01.jpg",
+      "sha256": "648e527246dfbf2060ba542ff6cec34d4b353224664c340c577358e2db10d169",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-49SM5KE",
+        "https://www.lge.co.kr/support/product-49SM5KE"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "49UH7F",
+      "before": [
+        {
+          "id": 753,
+          "sha256": "813830823eb3ce868b99b62832c9012719c098c1d470512acf910318acbfc981"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://jenr.lgeb2b.kr/product/view/12/74",
+      "photo": "https://jenr.lgeb2b.kr/data/product/7a28bd9619e52e6d3cb5ed1afe9db7f3.jpg",
+      "sha256": "66fd75e1bf8cde4257799798188b1ad5d0400c40b1d23346c00bfe6cb5914767",
+      "references": [
+        "https://jenr.lgeb2b.kr/product/view/12/74",
+        "https://www.lge.co.kr/support/product-49UH7F"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "49UM3DG",
+      "before": [
+        {
+          "id": 662,
+          "sha256": "533643be0cda945ec3c4b7aa3cffc467470472280a8418d234292f7f1adc44fb"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-49UM3DG",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00064602/gallery/medium01.jpg",
+      "sha256": "7c98caca8746e9ea5ba54e4fa2d80d6d5c0b6b44647d21eeddc1373600b923f2",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-49UM3DG",
+        "https://www.lge.co.kr/support/product-49UM3DG"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "49VL5B",
+      "before": [
+        {
+          "id": 663,
+          "sha256": "580404ac41b6f5a0bf4dcd30e428e26f5af85fa138299dae1ae969f8c5714e9c"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "searchLead": "https://www.lge.co.kr/kr/business/contents/installation/product-detail.do?categoryCd=&division=CATEGORY&installFlag=T&seq=1231",
+      "references": [
+        "https://www.lge.co.kr/support/product-49VL5B"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "49VL5F",
+      "before": [
+        {
+          "id": 664,
+          "sha256": "c0e695a95f63a4e090fbbb249614e5c5ee0a31df2a61ce94b5b1933ffafb83b2"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-49VL5F",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00062524/gallery/medium01.jpg",
+      "sha256": "60295a0125fc1d132980a62b8d9437d973c5f9821046ab5d44bb7c488ecbf855",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-49VL5F",
+        "https://www.lge.co.kr/support/product-49VL5F"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "49XF3E",
+      "before": [
+        {
+          "id": 740,
+          "sha256": "8a754a1e35c3a0ac49de63a00f9830af11faf1eadddc328c6b2a0a47cb68050e"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-49XF3E",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00039961/gallery/medium01.jpg",
+      "sha256": "10361eca7402a44526db48524819b2bf5b2a72c5f0d83f254a8d72dae92d278f",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-49XF3E",
+        "https://www.lge.co.kr/support/product-49XF3E"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "49XS2E",
+      "before": [
+        {
+          "id": 541,
+          "sha256": "88637c6b3660a061a5a077ee93af79450382ea88b5819dd556fc7053720010a3"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-49XS2E",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00039941/gallery/medium01.jpg",
+      "sha256": "b0293c6e98f4e3e3578bebf33a10ecba67b2035b609163b791bbcc69d151ed17",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-49XS2E",
+        "https://www.lge.co.kr/support/product-49XS2E"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "49XS4J",
+      "before": [
+        {
+          "id": 594,
+          "sha256": "0d710483f4e326615e6172368b5a7d78ab5a5cbfb5d2bba71b4c7a80a4c6b663"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-49XS4J",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00063945/gallery/medium01.jpg",
+      "sha256": "cdb323896761a7fec0ae4e7c2d3ebf46c2e7e9981a2ae5c812ac20ad237f0b65",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-49XS4J",
+        "https://www.lge.co.kr/support/product-49XS4J"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "50UK752P0NB",
+      "before": [
+        {
+          "id": 171,
+          "sha256": "bc6031eae0e8aa3fd3d83e19fcd780ae44b496bfc37469d7aa9467efa50654bb"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-50UK752P0NB",
+        "https://department.ssg.com/item/itemView.ssg?itemId=1000763138177&salestrNo=1004&siteNo=6009",
+        "https://shinsegaemall.ssg.com/item/itemView.ssg?itemId=1000763121860&salestrNo=6005&siteNo=6004"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "50UL3G-B",
+      "before": [
+        {
+          "id": 566,
+          "sha256": "26b4366bb9bba31de29127e0090c8549e556191079fe5ecccb1affed9bf79d4c"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lg.com/br/business/paineis-profissionais/digital-signage/padrao-digital-signage/50ul3g-b/",
+      "photo": "https://www.lg.com/content/dam/channelbtb/lgcom/br/images/business/50ul3g-b_awz_essp_br_b/gallery/D-01.jpg",
+      "sha256": "7e84cba8acf8f0ef8260d1a41154396a606e9a710ac674eeb29b0d4c68eb2a3f",
+      "references": [
+        "https://www.lg.com/br/business/paineis-profissionais/digital-signage/padrao-digital-signage/50ul3g-b/",
+        "https://www.lge.co.kr/support/product-50UL3G-B"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "50UR342C9NC",
+      "before": [
+        {
+          "id": 542,
+          "sha256": "e5aac736ae089f5bd1786f3cc31f67c44185f54a5228018951cc2c60ffa89f19"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-50UR342C9NC",
+        "https://www.skstoa.com/display/goods/31644349",
+        "https://www.ssg.com/item/itemView.ssg?itemId=1000546727656",
+        "https://nosearch.com/product/living/tv/detail/50UR342C9NC"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55EJ5E-B",
+      "before": [
+        {
+          "id": 567,
+          "sha256": "e4dbfef9441f9b1bf04359a5328e1b97c9ec2bc49b1d865ddf28f1f119b16be4"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lg.com/hk/business/information-display/oled-signage/55ej5e-b/",
+      "photo": "https://www.lg.com/content/dam/channel/wcms/hk/images/oled-signage/55ej5e-b_ahk_echk_hk_b/55EJ5E-B_AHK_ECHK_HK_B-450x450.jpg",
+      "sha256": "6e8d7aad45fe8dbf7a1b2fd5376c9bde41294348a28f3371d55d1d455056419f",
+      "references": [
+        "https://www.lg.com/hk/business/information-display/oled-signage/55ej5e-b/",
+        "https://www.lge.co.kr/support/product-55EJ5E-B"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55HU5F",
+      "before": [
+        {
+          "id": 595,
+          "sha256": "3e5d7b5ed681a7fe05d0c111e35c9b86413a8dd2a1d044fe466ec6e15e4be3ff"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-55HU5F"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55LH6610",
+      "before": [
+        {
+          "id": 833,
+          "sha256": "4f1296b96e9875f432e96b13c607493e5f07fcb995816def5ce93bb1414aadba"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-55LH6610",
+        "https://www.lge.co.kr/support/product-55LH6610-NB"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55LV540H",
+      "before": [
+        {
+          "id": 824,
+          "sha256": "674cc677b232f2e90a06a3c04dda47de293055c214addf5e7cec07051f445426"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-55LV540H",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00040941/gallery/medium01.jpg",
+      "sha256": "5ebb4aad2a4119b3f62d53aff231c726c4442ed8b25f603d72180ce88c6cb36f",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-55LV540H",
+        "https://www.lge.co.kr/support/product-55LV540H"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55NA1C80ANA",
+      "before": [
+        {
+          "id": 236,
+          "sha256": "3059b0fcf2b21ebe08f8e7b2b2a6511885c845f44ded490053baa504fa3f8c25"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-55NA1C80ANA",
+        "https://onnurideal.com/products/ONP-086377?source_item=6e343dd6-4643-4cf6-bd02-44fd62e087a9&source_label=TV%2F%EC%98%81%EC%83%81%EA%B0%80%EC%A0%84&source_section=category_seo"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55SE3KD",
+      "before": [
+        {
+          "id": 597,
+          "sha256": "8220a8b95da368ab8872b0168fe9fd7486489aba24a09a6d850766e163a118d8"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-55SE3KD",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00033684/gallery/medium01.jpg",
+      "sha256": "e6c1b4165513ca8fa0986d857ffb4634ced370a1f112caca5c0da8900187ac07",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-55SE3KD",
+        "https://www.lge.co.kr/support/product-55SE3KD"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55SE3KE",
+      "before": [
+        {
+          "id": 754,
+          "sha256": "61ba61a44042eb738f1c6be54c9827d936b67f6e5bbd6f75cb72666e2c9b8a03"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-55SE3KE",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00042263/gallery/medium01.jpg",
+      "sha256": "6d206205d46fff7c8004e0e85b2606f7962ed8f3b3802f1ad17b012f30a5babb",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-55SE3KE",
+        "https://www.lge.co.kr/support/product-55SE3KE"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55SM5KD",
+      "before": [
+        {
+          "id": 665,
+          "sha256": "c7baa2098773bddd0526fa5b37584cba24792a7efbafb98ef35bd41db2bb479e"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lg.com/hk_en/business/information-display/digital-signage/standard-digital-signage/55sm5kd/?search=%7B%7D%5C%5C%5C",
+      "photo": "https://www.lg.com/content/dam/channel/wcms/hk_en/images/digital-signage/55sm5kd-b_ahk_echk_hk_en_b/T_L_450x450.jpg",
+      "sha256": "e9df97c469301dd77e012f7120b2522b7965f7fc037fcb504c3fcb1faa4f2823",
+      "references": [
+        "https://www.lg.com/hk_en/business/information-display/digital-signage/standard-digital-signage/55sm5kd/?search=%7B%7D%5C%5C%5C",
+        "https://www.lge.co.kr/support/product-55SM5KD"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55SVH7E",
+      "before": [
+        {
+          "id": 616,
+          "sha256": "6a842adec44a8221b7f76a9d9108b2b3b24a81d7ad3a13acbae07d7ee22c93a9"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-55SVH7E",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00047141/gallery/medium02.jpg",
+      "sha256": "096441b7cd6c4440b09f3a3e1a57556ddaec4cddd9e9adf954a43e25459814cc",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-55SVH7E",
+        "https://www.lge.co.kr/support/product-55SVH7E"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55UH5C",
+      "before": [
+        {
+          "id": 793,
+          "sha256": "b42ce888d4d609fd241b1c81bc7451243e4a5aa394e0537187b3e22dde88d2cb"
+        },
+        {
+          "id": 794,
+          "sha256": "b42ce888d4d609fd241b1c81bc7451243e4a5aa394e0537187b3e22dde88d2cb"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-55UH5C",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00025895/gallery/medium01.jpg",
+      "sha256": "b87943fb830b432b4ca9906fc5e4316f6385ae283e20ea7053afb6b4eb91a699",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-55UH5C",
+        "https://www.lge.co.kr/support/product-55UH5C"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55UH7F",
+      "before": [
+        {
+          "id": 759,
+          "sha256": "cd3c8bd1886dd7855f6b27ea951b6b72126505c063b7e636174b94c4bf75c78e"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://jenr.lgeb2b.kr/product/view/12/73",
+      "photo": "https://jenr.lgeb2b.kr/data/product/a5b20fb8fcb46307d7601e75050e2910.jpg",
+      "sha256": "66fd75e1bf8cde4257799798188b1ad5d0400c40b1d23346c00bfe6cb5914767",
+      "references": [
+        "https://jenr.lgeb2b.kr/product/view/12/73",
+        "https://www.lge.co.kr/support/product-55UH7F"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55UK681C",
+      "before": [
+        {
+          "id": 818,
+          "sha256": "c7c534c760d67f70fe7b080144551fff8c87465c2861fafd4493d7d5fec3142a"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-55UK681C",
+        "https://www.lge.co.kr/support/product-55UK681C-NC"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55UM3DG",
+      "before": [
+        {
+          "id": 666,
+          "sha256": "471725dbe31083535042b61f5b5c716bd5b9b387574081b779145c606e36d413"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-55UM3DG",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00064542/gallery/medium08.jpg",
+      "sha256": "7c98caca8746e9ea5ba54e4fa2d80d6d5c0b6b44647d21eeddc1373600b923f2",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-55UM3DG",
+        "https://www.lge.co.kr/support/product-55UM3DG"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55UN7800HNA",
+      "before": [
+        {
+          "id": 786,
+          "sha256": "dc092132ba38987ba13e8952694b02bfcf6402d2402254b87abfc775f359419a"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-55UN7800HNA",
+        "https://nosearch.com/product/living/tv/detail/55UN7800HNA"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55UR342C9NC",
+      "before": [
+        {
+          "id": 590,
+          "sha256": "57d5bb514336e2b9e5e0d7c471025f29d8e4cab5cd074be977ca1d0c37ca4e77"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-55UR342C9NC",
+        "https://item.gmarket.co.kr/Item?goodsCode=4389299762",
+        "https://www.ssg.com/item/itemView.ssg?itemId=1000419502271",
+        "https://www.ssg.com/item/itemView.ssg?itemId=1000475325111"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55UT340H",
+      "before": [
+        {
+          "id": 772,
+          "sha256": "b6353263b1ea4a5efa3cbb92ddfb9410b274247ce58cf540a19bc3926d556dd6"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://solutions.lg.com/us/hospitality-tvs/lg-55ut340h",
+      "photo": "https://media.us.lg.com/transform/ecomm-PDPGallery-1100x730/414e217e-cc77-4333-bad6-3f613a6a113a/MD07000328-desktop-01?io=transform:fill,width:596",
+      "sha256": "7896b459b3fc248bf3ce043db482c437d4f39b5c455f0a412b5f374028c7ea2e",
+      "references": [
+        "https://solutions.lg.com/us/hospitality-tvs/lg-55ut340h",
+        "https://www.lge.co.kr/support/product-55UT340H"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55UT640S",
+      "before": [
+        {
+          "id": 774,
+          "sha256": "6b615c892f76fb5021557cb5819325a2d6d497064985b52723ffeda130d73a8f"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lg.com/id/business/commercial-display/commercial-tv/hotel-tv/55ut640s/",
+      "photo": "https://www.lg.com/content/dam/channelbtb/lgcom/id/images/business/55ut640s0ta_ati_eain_id_b/gallery/N01_medium01.jpg",
+      "sha256": "9512256a071df62d66e35d95609860978ceacba6ee4783b2fab4076c6e535d8f",
+      "references": [
+        "https://www.lg.com/id/business/commercial-display/commercial-tv/hotel-tv/55ut640s/",
+        "https://www.lge.co.kr/support/product-55UT640S"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55UU340C",
+      "before": [
+        {
+          "id": 809,
+          "sha256": "8d9d43bfc6f69e68eee96c6cd90b53c6c94968c0115fdd597b78cfb3bf88557b"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-55UU340C",
+        "https://catalog.allenvisual.com/avcat/ctl1848/index.cfm?manufacturer=lg-electronics-usa&product=55uu340c",
+        "https://www.lg.com/us/support/product/lg-55UU340C.AUS",
+        "https://www.lg.com/us/support/product/lg-55UU340C.AUS?f-ec_category_3=Lifestyle+Products%2CProjectors%2CTVs"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55VH7B",
+      "before": [
+        {
+          "id": 827,
+          "sha256": "350b7827a41d17fe524c823b69696f1382d28ede23923e6ad952047dcc638ffe"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-55VH7B",
+        "https://www.lge.co.kr/support/product-55VH7B-BD"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55VL5F",
+      "before": [
+        {
+          "id": 667,
+          "sha256": "029e9f70182b294a1e0b45d1e4b317cf1080214670bdcea528e25715da9dda8a"
+        },
+        {
+          "id": 714,
+          "sha256": "8089340c56f98fa39d43b9493e0ecab3598112dbc0446d802ab0e62c3bb15278"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "searchLead": "https://www.lg.com/content/dam/channelbtb/lgcom/global/business/download/resources/ct00000221/VL5F%20Series_Datasheet%28low%29_LG%20Video%20Wall_200220_20200814_151220_.pdf",
+      "references": [
+        "https://www.lge.co.kr/support/product-55VL5F"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55VM5E",
+      "before": [
+        {
+          "id": 598,
+          "sha256": "3527904146bcc88033d1d52529e7b24c363725ea8506795897b6e0ac0dee0683"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-55VM5E",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00050941/gallery/medium02.jpg",
+      "sha256": "1a17470f5f7a8b8704afec9e771527bebd8201beb0273d13c6a76b47f6995b87",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-55VM5E",
+        "https://www.lge.co.kr/support/product-55VM5E"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55XF3E",
+      "before": [
+        {
+          "id": 742,
+          "sha256": "fbac9019091ce01c4187883a108da388ab6950a403fcee36ef56371d7c332746"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-55XF3E",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00039943/gallery/medium01.jpg",
+      "sha256": "10361eca7402a44526db48524819b2bf5b2a72c5f0d83f254a8d72dae92d278f",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-55XF3E",
+        "https://www.lge.co.kr/support/product-55XF3E"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55XS4J",
+      "before": [
+        {
+          "id": 599,
+          "sha256": "61df81c4d563a8b37f5b46d2b4d0737600252e9edfda30cad2130eee2b7acc0d"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-55XS4J",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00063944/gallery/medium01.jpg",
+      "sha256": "cdb323896761a7fec0ae4e7c2d3ebf46c2e7e9981a2ae5c812ac20ad237f0b65",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-55XS4J",
+        "https://www.lge.co.kr/support/product-55XS4J"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "55XS4P",
+      "before": [
+        {
+          "id": 368,
+          "sha256": "b835449362cd99cf315ccce2690804f626fead689a1a22f1c5f63190db9c19ec"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-55XS4P",
+        "https://kormolab.com/product/55xs4p",
+        "https://lgedadam.co.kr/product/lg%EC%A0%84%EC%9E%90%EC%9D%B8%EC%A6%9D%EC%A0%90-lg-%EC%8B%A4%EB%82%B4%EC%9A%A9-%EA%B3%A0%ED%9C%98%EB%8F%84-%EC%82%AC%EC%9D%B4%EB%8B%88%EC%A7%80-55xs4p-55%EC%9D%B8%EC%B9%98-%EC%A0%84%EA%B5%AD%EB%AC%B4%EB%A3%8C%EB%B0%B0%EC%86%A1%EC%84%A4%EC%B9%98%EB%B9%84/586/"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65EP5G",
+      "before": [
+        {
+          "id": 578,
+          "sha256": "62e89d8e89853bbea9b100a22e9dda1a5a958c51bc26f99dfdd5aee3015d6352",
+          "reviewedSha256": "3690d0df4787cfb46902419bcf3e0446cd5df89124011410ff16a6c7396d8872"
+        }
+      ],
+      "decision": "remove",
+      "reason": "방송·영상 후반 제작용 색보정 모니터. 작업 공간이 주용도이며 방문객 촬영 사례를 확인하지 못했다.",
+      "source": "https://dhb2b.lgeb2b.kr/product/view/12/249",
+      "photo": "https://dhb2b.lgeb2b.kr/data/product/26afa73cf6716c652bcc245c933ca246.jpg",
+      "references": [
+        "https://dhb2b.lgeb2b.kr/product/view/12/249",
+        "https://www.lge.co.kr/support/product-65EP5G",
+        "https://www.lg.com/global/business/oled-signage/lg-65ep5g"
+      ],
+      "retiredGroup": "V1902"
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65NA1C90AMA",
+      "before": [
+        {
+          "id": 161,
+          "sha256": "23d09fb285f95532c97bf38d27d218ba6cb2787f2ebfca302b722266b4d97b1e"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-65NA1C90AMA",
+        "https://item.gmarket.co.kr/Item?goodsCode=4708137910",
+        "https://m.danawa.com/product/product.html?code=106753880",
+        "https://www.costco.co.kr/ElectronicsComputers/Televisions/152-177cm-TV/LG-NanoCell-TV-65NA1C90AMA-163cm-65/p/693833",
+        "https://www.costco.co.kr/ElectronicsComputers/Televisions/152-177cm-TV/LG-NanoCell-TV-65NA1C90AMA-163cm-65/p/793833"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65SE3KD",
+      "before": [
+        {
+          "id": 568,
+          "sha256": "b4eeecf3d4ca4a418148063458af2074bb59cb208d664328ed5c24ef1f338c12"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-65SE3KD",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00033685/gallery/medium01.jpg",
+      "sha256": "e6c1b4165513ca8fa0986d857ffb4634ced370a1f112caca5c0da8900187ac07",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-65SE3KD",
+        "https://www.lge.co.kr/support/product-65SE3KD"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65SM5KD",
+      "before": [
+        {
+          "id": 569,
+          "sha256": "fd20137f00f4d096670ce4c9cd71ba9c88824fa3aceacf97e8df32c03f72fd49"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lg.com/hk_en/business/information-display/digital-signage/standard-digital-signage/65sm5kd/",
+      "photo": "https://www.lg.com/content/dam/channel/wcms/hk_en/images/digital-signage/65sm5kd-b_ahk_echk_hk_en_b/T_L_450x450.jpg",
+      "sha256": "e9df97c469301dd77e012f7120b2522b7965f7fc037fcb504c3fcb1faa4f2823",
+      "references": [
+        "https://www.lg.com/hk_en/business/information-display/digital-signage/standard-digital-signage/65sm5kd/",
+        "https://www.lge.co.kr/support/product-65SM5KD"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65UH5B",
+      "before": [
+        {
+          "id": 576,
+          "sha256": "8572e2d6868e490d075119bc34e1ac3789c3c580076619d08dbbaf9edb1c7d7f"
+        }
+      ],
+      "decision": "remove",
+      "reason": "확보한 글로벌 단독 컷은 65UH5B-B 페이지. 국내 등록 코드와 세부 구성을 확정하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-65UH5B",
+        "https://www.lg.com/uk/business/commercial-display/digital-signage/standard/65uh5b-b/"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65UH5E",
+      "before": [
+        {
+          "id": 764,
+          "sha256": "b29795728d2e77d0a0b92ca5bdbbb5e0b86671a1a81b3b691e009c3cb675db11"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-65UH5E",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00053581/gallery/medium01.jpg",
+      "sha256": "ed2cf20de7edaae2881cedb52cc8b1656cf7486fb5d15bb395619c42b5285836",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-65UH5E",
+        "https://www.lge.co.kr/support/product-65UH5E"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65UH7F",
+      "before": [
+        {
+          "id": 538,
+          "sha256": "792e67e5fb3343b6b8127634364e3b3324f1d763c0b4769f0206f0c1ba07f529"
+        },
+        {
+          "id": 762,
+          "sha256": "85dba1942e9489b9fdfdd6ae2bd1848f9ab63a07eec13adc95bc86a3121c3f85"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://jenr.lgeb2b.kr/product/view/12/72",
+      "photo": "https://jenr.lgeb2b.kr/data/product/ec5f4b589f406cce06d8311a533c089c.jpg",
+      "sha256": "66fd75e1bf8cde4257799798188b1ad5d0400c40b1d23346c00bfe6cb5914767",
+      "references": [
+        "https://jenr.lgeb2b.kr/product/view/12/72",
+        "https://www.lge.co.kr/support/product-65UH7F"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65UK681C",
+      "before": [
+        {
+          "id": 819,
+          "sha256": "04205020b4252954598152fe019ef9994b5770ffd57074e98b19af8eaaf5d78d"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-65UK681C",
+        "https://www.lge.co.kr/support/product-65UK681C-NC",
+        "https://www.lge.co.kr/support/product-65UK681C-NC?sKwd=65UK681C-NC&sRank=1&sTab=all_product_list"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65UK752P0NB",
+      "before": [
+        {
+          "id": 173,
+          "sha256": "7488869556148abc9d63e83a6e537ba9b3180568f871b695766b4ee8df213633"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-65UK752P0NB",
+        "https://shinsegaemall.ssg.com/item/itemView.ssg?itemId=1000786737242&salestrNo=6005&siteNo=6004",
+        "https://shinsegaemall.ssg.com/item/itemView.ssg?itemId=1000799594244&salestrNo=6005&siteNo=6004",
+        "https://shinsegaemall.ssg.com/item/itemView.ssg?itemId=1000885130022&salestrNo=6005&siteNo=6004",
+        "https://www.ssg.com/item/itemView.ssg?itemId=1000786737242&salestrNo=6005&siteNo=6004"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65UL3E",
+      "before": [
+        {
+          "id": 539,
+          "sha256": "f1f119a45b41304114b6d76714e6288337a85809800e21a1aeb3da7378556e89"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-65UL3E",
+        "https://www.lg.com/ru/business/professional-display/lg-65ul3e",
+        "https://www.lg.com/uk/business/commercial-display/digital-signage/standard/65ul3e-b/"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65UM3DG",
+      "before": [
+        {
+          "id": 669,
+          "sha256": "7d947532d7266d7f79ad026d91010d7d2a6f3419d7daaa83f4dbfba686f84ab6"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-65UM3DG",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00064541/gallery/um3dg_gallery16_758X500.jpg",
+      "sha256": "faef0f27fc29762feaf899c2019b6f00c53b0693ba55b73ab5a657f0d2732e3f",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-65UM3DG",
+        "https://www.lge.co.kr/support/product-65UM3DG"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65UR342C9NC",
+      "before": [
+        {
+          "id": 609,
+          "sha256": "5df66da36d6a9ed0d592cfd27d80feb2f01dce651e8165a1cae599adf119ee57"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-65UR342C9NC",
+        "https://item.gmarket.co.kr/Item?goodsCode=3645488967",
+        "https://m.ssg.com/item/itemView.ssg?itemId=1000419502194",
+        "https://www.ssg.com/item/itemView.ssg?itemId=1000419500622"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "65UT640S",
+      "before": [
+        {
+          "id": 779,
+          "sha256": "d678fd93999fccea6a0b2a896c8e9c4c08459162817cb0854c80a071cbfea8ad"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lg.com/id/business/commercial-display/commercial-tv/hotel-tv/65ut640s/",
+      "photo": "https://www.lg.com/content/dam/channelbtb/lgcom/id/images/business/65ut640s0ta_ati_eain_id_b/gallery/N01_medium01.jpg",
+      "sha256": "9512256a071df62d66e35d95609860978ceacba6ee4783b2fab4076c6e535d8f",
+      "references": [
+        "https://www.lg.com/id/business/commercial-display/commercial-tv/hotel-tv/65ut640s/",
+        "https://www.lge.co.kr/support/product-65UT640S"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "70UL3E",
+      "before": [
+        {
+          "id": 659,
+          "sha256": "688f0e190e2765e3b1f2d29bd107fc450577478284f6b1138c0fd2ade6a2fafd"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-70UL3E",
+        "https://store.ohou.se/goods/2636374"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "70UN781C0NA",
+      "before": [
+        {
+          "id": 767,
+          "sha256": "c2d0257ba84979dd70770135a8676a1e244598ce55f9d28ea5d4c169a5242d6f"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-70UN781C0NA",
+        "https://nosearch.com/product/living/tv/detail/70UN781C0NA"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "75NA1C90AMA",
+      "before": [
+        {
+          "id": 163,
+          "sha256": "d04c811da0306191ecec4d6215d8c6ea636c35e31f52991bc918d25282eef3f4"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-75NA1C90AMA",
+        "https://m.danawa.com/product/product.html?code=106753934",
+        "https://m2.danawa.com/product/product.html?code=108398072",
+        "https://onnurideal.com/products/ONP-097783?source_item=7844567e-6704-4c11-8eba-f984daab212e&source_label=TV&source_section=category_seo",
+        "https://nosearch.com/product/living/tv/detail/75NA1C90AMA"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "75QN1C70BMA",
+      "before": [
+        {
+          "id": 61,
+          "sha256": "b00d4007b9a335705e899fb9616ac908b10270e1811f831bf71ae2a927410895"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-75QN1C70BMA",
+        "https://price.enuri.com/catalog/148853951",
+        "https://price.enuri.com/catalog/148853957",
+        "https://price.enuri.com/catalog/148853957?toggle=card",
+        "https://price.enuri.com/catalog/148853973"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "75UH5C",
+      "before": [
+        {
+          "id": 830,
+          "sha256": "b3510ed644a8a6fb65cf285bc086f63e4720970a6f0484ff185cf640e4c64aa2"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-75UH5C",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00023981/gallery/medium01.jpg",
+      "sha256": "b87943fb830b432b4ca9906fc5e4316f6385ae283e20ea7053afb6b4eb91a699",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-75UH5C",
+        "https://www.lge.co.kr/support/product-75UH5C"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "75UH5E",
+      "before": [
+        {
+          "id": 806,
+          "sha256": "792e7a36835a6e9b8973c00a437f6ff3b431bdfca4622371c9f683ac290c36a4"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-75UH5E",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00048321/gallery/medium01.jpg",
+      "sha256": "ed2cf20de7edaae2881cedb52cc8b1656cf7486fb5d15bb395619c42b5285836",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-75UH5E",
+        "https://www.lge.co.kr/support/product-75UH5E"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "75UK752P0NB",
+      "before": [
+        {
+          "id": 174,
+          "sha256": "a78422c3a30385ae63c05bd1f866650ecad41728576eb66276cb0fcaa599826e"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-75UK752P0NB",
+        "https://department.ssg.com/item/itemView.ssg?itemId=1000763138057&salestrNo=1004&siteNo=6009"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "75UM3C",
+      "before": [
+        {
+          "id": 570,
+          "sha256": "f399efcd3d54e229995f648c88f59d1b1ca39f952f1f2ba782e101e27ba5f18c"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-75UM3C",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00036741/gallery/medium02.jpg",
+      "sha256": "dede79f6f7942eb81c983a7afa71f758d4d2a6a8b5d97b96b27bcadcd6cc17c8",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-75UM3C",
+        "https://www.lge.co.kr/support/product-75UM3C"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "75UM3E",
+      "before": [
+        {
+          "id": 801,
+          "sha256": "f47bd823d2de921e743a87bc9bf9de5c663ce75ad53231e87c59a710035749fb"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-75UM3E",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00048324/gallery/medium01.jpg",
+      "sha256": "e114ebf336b879a4516776fde175906c94996480f05c4dbef743ebabcb211058",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-75UM3E",
+        "https://www.lge.co.kr/support/product-75UM3E"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "75UR342C9NC",
+      "before": [
+        {
+          "id": 613,
+          "sha256": "8739b060f2c102550e9dbbb4ee84ebd2d9c08170c4320c8a6eeaeb49f3e31c91"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-75UR342C9NC",
+        "https://www.ssg.com/item/itemView.ssg?itemId=1000501255546",
+        "https://www.ssg.com/item/itemView.ssg?itemId=1000581617440",
+        "https://nosearch.com/product/living/tv/detail/75UR342C9NC"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "75UT640S",
+      "before": [
+        {
+          "id": 775,
+          "sha256": "a7aa07a9b90ec37a764d08ebe13ec152da013ccc165530d420e5948b8beda021"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lg.com/id/business/commercial-display/commercial-tv/hotel-tv/75ut640s/",
+      "photo": "https://www.lg.com/content/dam/channelbtb/lgcom/id/images/business/75ut640s0ta_ati_eain_id_b/gallery/N01_medium01-COPY-1.jpg",
+      "sha256": "bdbd935f4757f869f524e182f8c529239aa616d09e842e0a575b84a1c0d4dab9",
+      "references": [
+        "https://www.lg.com/id/business/commercial-display/commercial-tv/hotel-tv/75ut640s/",
+        "https://www.lge.co.kr/support/product-75UT640S"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "75XF3C",
+      "before": [
+        {
+          "id": 743,
+          "sha256": "6ebe6b05d628b645e331707b36af1dab915c4c89ce7d177acddc4557fc33db87"
+        }
+      ],
+      "decision": "remove",
+      "reason": "LG 카탈로그에 사양은 있으나 여러 모델의 매장 설치 사진을 공유.",
+      "references": [
+        "https://www.lge.co.kr/support/product-75XF3C",
+        "https://www.lge.co.kr/kr/business/product/display/lg-75XF3C"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "75XS4G",
+      "before": [
+        {
+          "id": 672,
+          "sha256": "0b8e66754ab7cb442783766879e10739ef5546066456fc29148674944cc30bc3"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-75XS4G",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00064302/gallery/XS4G_hero_758X500.jpg",
+      "sha256": "96480acd1c4cde175334aa4b0cd6242558abc9d74d985b0d0b2a6655a3f0c6b6",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-75XS4G",
+        "https://www.lge.co.kr/support/product-75XS4G"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "86NA1C90AMA",
+      "before": [
+        {
+          "id": 165,
+          "sha256": "b2cbc5aac008e40694a39a1b0946f6447e378665a7c0b72732b95513f5be0deb"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-86NA1C90AMA",
+        "https://m.gsshop.com/prd/prd.gs?gsid=srcheshop-tvresult&ispre=Y&kwd=%ED%8B%B0%EB%B9%84&mseq=401142&prdid=1108415443&rank=13&srp_ab=srchMA_df",
+        "https://m.gsshop.com/prd/prd.gs?gsid=srcheshop-tvresult&ispre=Y&kwd=LG&mseq=401142&prdid=1108415443&rank=84&srp_ab=srchMA_df",
+        "https://prod.danawa.com/info/?pcode=106753907",
+        "https://prod.danawa.com/info/?pcode=108407957"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "86UH5C",
+      "before": [
+        {
+          "id": 629,
+          "sha256": "c5cffae1b426ecc4ee0f7d65975561e030a047764a024f51efa0d333938eb175"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-86UH5C",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00025893/gallery/medium01.jpg",
+      "sha256": "b87943fb830b432b4ca9906fc5e4316f6385ae283e20ea7053afb6b4eb91a699",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-86UH5C",
+        "https://www.lge.co.kr/support/product-86UH5C"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "86UH5E",
+      "before": [
+        {
+          "id": 795,
+          "sha256": "2f57c16fae9c20d2e7008e816cf7796d3a2155f8857f4683972b264201b6c9eb"
+        },
+        {
+          "id": 807,
+          "sha256": "2f57c16fae9c20d2e7008e816cf7796d3a2155f8857f4683972b264201b6c9eb"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-86UH5E",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00048322/gallery/medium01.jpg",
+      "sha256": "ed2cf20de7edaae2881cedb52cc8b1656cf7486fb5d15bb395619c42b5285836",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-86UH5E",
+        "https://www.lge.co.kr/support/product-86UH5E"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "86UK752P0NC",
+      "before": [
+        {
+          "id": 175,
+          "sha256": "c31a54e2534ced6a1252d91e6eb1a7d30574f98b0bc541075fbac84c911371e3"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-86UK752P0NC",
+        "https://department.ssg.com/item/itemView.ssg?itemId=1000804783055&salestrNo=1004&siteNo=6009",
+        "https://department.ssg.com/item/itemView.ssg?itemId=1000804784670&salestrNo=1004&siteNo=6009",
+        "https://www.ssg.com/item/itemView.ssg?itemId=1000820464116"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "86UL3G",
+      "before": [
+        {
+          "id": 620,
+          "sha256": "90ec62eddd6bca8edf954b5e2807e9361131621df90d1f68eaabcd864ff0f800"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-86UL3G",
+        "https://www.lg.com/us/support/product/lg-86UL3G-B.AUS"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "86UM3C",
+      "before": [
+        {
+          "id": 621,
+          "sha256": "51c58a78c8c95888e8231f89de281a3d774373230bd8bc6155b8551ebf72a53c"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-86UM3C",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00040601/gallery/medium01.jpg",
+      "sha256": "e114ebf336b879a4516776fde175906c94996480f05c4dbef743ebabcb211058",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-86UM3C",
+        "https://www.lge.co.kr/support/product-86UM3C"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "86US340C",
+      "before": [
+        {
+          "id": 630,
+          "sha256": "6681ff3a4a3dc6ca465e18823797e8499102b86cbc677f5c621056c407ff8040"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-86US340C",
+        "https://prod.danawa.com/info/?pcode=16662353",
+        "https://solutions.lg.com/us/digital-signage/lg-86us340c0ud"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "86UT640S",
+      "before": [
+        {
+          "id": 776,
+          "sha256": "37b14883127e340938a2e44c1d386a22ffac13b671c690cc4934f5b528763ed9"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lg.com/id/business/commercial-display/commercial-tv/hotel-tv/86ut640s/",
+      "photo": "https://www.lg.com/content/dam/channelbtb/lgcom/id/images/business/86ut640s0ta_ati_eain_id_b/gallery/N01_medium01.jpg",
+      "sha256": "bdbd935f4757f869f524e182f8c529239aa616d09e842e0a575b84a1c0d4dab9",
+      "references": [
+        "https://www.lg.com/id/business/commercial-display/commercial-tv/hotel-tv/86ut640s/",
+        "https://www.lge.co.kr/support/product-86UT640S"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "98LS95D",
+      "before": [
+        {
+          "id": 577,
+          "sha256": "db1f630a7586e15ae43f51f87ecd6e18f1498be396aff9d5108ed3d1a670ce29"
+        }
+      ],
+      "decision": "keep",
+      "reason": "모델별 제품 갤러리에서 배지 없이 화면과 본체 외곽이 함께 보이는 단독 컷 확인.",
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-98LS95D",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00028262/gallery/medium01.jpg",
+      "sha256": "d20a0b0347a17443c4005b8fd8c3142051debb15fc80370f01c22d249cc8b126",
+      "references": [
+        "https://www.lge.co.kr/kr/business/product/display/lg-98LS95D",
+        "https://www.lge.co.kr/support/product-98LS95D"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "98UM3DG",
+      "before": [
+        {
+          "id": 622,
+          "sha256": "5b41084275056c01e7cb0f4b972b2e04e310fda524cedfdd0a39a2484d54cea5"
+        },
+        {
+          "id": 688,
+          "sha256": "89fb728e24412a7a4b4cbd5239998c43a081df2c7e5f1d0d0881aacd33b4e797"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "searchLead": "https://assetserver.net/_assets/lg/pdf/98um3dgh-manual.pdf",
+      "references": [
+        "https://www.lge.co.kr/support/product-98UM3DG"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "98UM3E",
+      "before": [
+        {
+          "id": 683,
+          "sha256": "092822d71658a77440853fb058702353d32d9aa7522cf73e84a8becb9a9f7b19"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 전면 사진에 화면 규격 또는 판매 표식이 겹침. 같은 코드·구성의 깨끗한 단독 사진을 확인하지 못함.",
+      "searchLead": "https://prodmedialgbusiness.alkemy.digital/wp-content/uploads/2020/02/LG-Schede-Tecniche_INFORMATION-DISPLAY_03_2020.pdf",
+      "references": [
+        "https://www.lge.co.kr/support/product-98UM3E"
+      ]
+    },
+    {
+      "phase": 3,
+      "category": "TV",
+      "model": "LAPA136",
+      "before": [
+        {
+          "id": 271,
+          "sha256": "38669b7fe4db32c0b7b9caf790a34337db1f59bfad9436308bf2dcee934cd637"
+        }
+      ],
+      "decision": "remove",
+      "reason": "제품 페이지의 대표 사진은 설치 공간을 포함한 연출 장면.",
+      "references": [
+        "https://www.lge.co.kr/support/product-LAPA136",
+        "https://www.lge.co.kr/product/displays/lapa136-gf1?modelId=MD10585838&pdpType=PURCHASE&sKwd=3000&sRank=24&sTab=unit_product_list",
+        "https://contents.lg-informationdisplay.com/products-solutions/led-signage/indoor-led/lg-led-all-in-one/LAPA136",
+        "https://www.lgcommercialdisplay.com/products-solutions/led-signage/indoor-led/lg-led-all-in-one/LAPA136"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "M272PR35BL",
+      "before": [
+        {
+          "id": 2117,
+          "sha256": "0d94e54901789c1d5f9635be150e5ca1c6f9346eb888040fabaf20e57db9af35"
+        }
+      ],
+      "decision": "remove",
+      "reason": "공식 사진은 BL/R 통합 표기이고 기존 이미지와 열린 문 방향이 다름.",
+      "references": [
+        "https://www.lge.co.kr/support/product-M272PR35BL",
+        "https://www.lge.co.kr/kr/business/product/builtin/cooling-list/lg-M272PR35BL-R"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "M516GQQ012",
+      "before": [
+        {
+          "id": 1510,
+          "sha256": "6d7f2326ebeb945969ec1fb2a80b1044e6d5c45885ef1b5f53007bb928e91b8f"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 사진의 용량 표식 또는 음식 연출. 같은 도어 배색과 방향의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-M516GQQ012",
+        "https://price.enuri.com/catalog/139279183"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "M623GNN092",
+      "before": [
+        {
+          "id": 1961,
+          "sha256": "72ecd2b94d51333affda931afd5b6b7f84e986ac31257f6dd7ca06eadc2a244d"
+        }
+      ],
+      "decision": "keep",
+      "reason": "LG의 동일 모델 단독 사진과 색상가변 글라스 사양 확인. 사진 색은 조명 연출 예시이며 고정 패널 색을 의미하지 않음.",
+      "source": "https://www.lge.co.kr/support/product-M623GNN092",
+      "photo": "https://www.lge.co.kr/kr/images/refrigerators/md09428826/md09428826-350x350.jpg",
+      "sha256": "567fc9c0e6df406717e8af8f7e4170d58fd78ee652ccb01ca404dd7e24fb1ee5",
+      "references": [
+        "https://www.lge.co.kr/support/product-M623GNN092",
+        "https://www.lge.co.kr/product/refrigerators/m623gnn092"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "M623GNN0A2",
+      "before": [
+        {
+          "id": 1835,
+          "sha256": "b0def5ac8c2ca8d96ceb16403c978aa13262fbdae1663158a2569d077a7a5b35"
+        }
+      ],
+      "decision": "keep",
+      "reason": "LG의 동일 모델 단독 사진과 색상가변 글라스 사양 확인. 사진 색은 조명 연출 예시이며 고정 패널 색을 의미하지 않음.",
+      "source": "https://www.lge.co.kr/support/product-M623GNN0A2",
+      "photo": "https://www.lge.co.kr/kr/images/refrigerators/md09867830/md09867830-350x350.jpg",
+      "sha256": "0b74cca6145352cfcb1236cebdf2a5e50c08e5fccdab7e5eef0c2b5985f3fbeb",
+      "references": [
+        "https://www.lge.co.kr/support/product-M623GNN0A2",
+        "https://www.lge.co.kr/product/refrigerators/m623gnn0a2"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "M624GNN0A2",
+      "before": [
+        {
+          "id": 1801,
+          "sha256": "588af0878b3263aa89b7b66d6fe9deae2b4c3fcb9cc790dca8c5a59e7a5f27b9"
+        }
+      ],
+      "decision": "keep",
+      "reason": "LG의 동일 모델 단독 사진과 색상가변 글라스 사양 확인. 사진 색은 조명 연출 예시이며 고정 패널 색을 의미하지 않음.",
+      "source": "https://www.lge.co.kr/support/product-M624GNN0A2",
+      "photo": "https://www.lge.co.kr/kr/images/refrigerators/md10010867/md10010867-350x350.jpg",
+      "sha256": "0b74cca6145352cfcb1236cebdf2a5e50c08e5fccdab7e5eef0c2b5985f3fbeb",
+      "references": [
+        "https://www.lge.co.kr/support/product-M624GNN0A2",
+        "https://www.lge.co.kr/product/refrigerators/m624gnn0a2"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "M624GNN3A2",
+      "before": [
+        {
+          "id": 1790,
+          "sha256": "8ced147b558d5fb3f5729ab38f8ce298da874056bd5646959327fba0e148c38e"
+        }
+      ],
+      "decision": "keep",
+      "reason": "LG의 동일 모델 단독 사진과 색상가변 글라스 사양 확인. 사진 색은 조명 연출 예시이며 고정 패널 색을 의미하지 않음.",
+      "source": "https://www.lge.co.kr/support/product-M624GNN3A2",
+      "photo": "https://www.lge.co.kr/kr/images/refrigerators/md10010866/md10010866-350x350.jpg",
+      "sha256": "968bc71fd1f64496e31b2c5a9ca88a9dedd059952fee7e0c2d31756019188823",
+      "references": [
+        "https://www.lge.co.kr/support/product-M624GNN3A2",
+        "https://www.lge.co.kr/product/refrigerators/m624gnn3a2"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "M875AAA472",
+      "before": [
+        {
+          "id": 1707,
+          "sha256": "ff95595a154d8726858d9d3d248d77aefabb22da4f925f29fb7cf1a84b96bdac"
+        }
+      ],
+      "decision": "remove",
+      "reason": "선택형 패널에 구성 선택 표시가 겹침. 등록 모델에 고정된 도어 배색을 확정할 수 없음.",
+      "references": [
+        "https://www.lge.co.kr/support/product-M875AAA472",
+        "https://www.lge.co.kr/business/refrigerators/m875aaa472"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "M875MQQ231S",
+      "before": [
+        {
+          "id": 1421,
+          "sha256": "90235d02760a8f0be976b18b53a9a78f0d36f5ceccf8f704d2d2150e9886bd48"
+        }
+      ],
+      "decision": "keep",
+      "reason": "동일 모델명·에센스 화이트 판매 페이지와 흰색 네 도어 전면 확인.",
+      "source": "https://catalog.11st.co.kr/pc/438714083?poc=pc&sortCds=DLV_INCLUDE",
+      "photo": "https://cdn.011st.com/11dims/resize/600x600/quality/75/11src/cat/25/7/1/4/0/8/3/GOSAn/438714083_2.jpg",
+      "sha256": "d6ed8a0692901cf2c8a4f8b6d8635aa4d60d276924214398310b0abdd1195d2f",
+      "references": [
+        "https://catalog.11st.co.kr/pc/438714083?poc=pc&sortCds=DLV_INCLUDE",
+        "https://www.lge.co.kr/support/product-M875MQQ231S"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "M875MRQ231S",
+      "before": [
+        {
+          "id": 1422,
+          "sha256": "58ad660ad803bc482ebaf553c1dfdbdaa28e7cc6ffc832ea5091997676f0f230"
+        }
+      ],
+      "decision": "keep",
+      "reason": "LG 카탈로그의 모델명 바로 위 네 도어. 상단 크림 그레이와 하단 에센스 화이트를 확인.",
+      "source": "https://www.lge.co.kr/kr/ebook/2025/may/careship_hicare/catImage/565/202505_careship_hicare_catalogue.pdf#page=29",
+      "photo": "https://www.lge.co.kr/kr/ebook/2025/may/careship_hicare/catImage/565/202505_careship_hicare_catalogue.pdf",
+      "sha256": "e2cd6ea079653ee4bf6df14c19291bbc1d3dde5f6c6dbce37c02fed459a42c9a",
+      "asset": "reviewed-photo-extracts/M875MRQ231S.png",
+      "references": [
+        "https://www.lge.co.kr/kr/ebook/2025/may/careship_hicare/catImage/565/202505_careship_hicare_catalogue.pdf#page=29",
+        "https://www.lge.co.kr/support/product-M875MRQ231S"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "Q342AAA133",
+      "before": [
+        {
+          "id": 2040,
+          "sha256": "553602200157c522dc5fdfd9b3bdcae930ef4a75b4b86cd07e2f771eb64952dc"
+        }
+      ],
+      "decision": "remove",
+      "reason": "패널 미포함 모델의 대표 도어에 선택 표시. 확정된 패널 구성 사진을 확보하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-Q342AAA133",
+        "https://www.lge.co.kr/product/refrigerators/q342aaa133"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "R-L267YM",
+      "before": [
+        {
+          "id": 2192,
+          "sha256": "8781b722137550f726cc88b52345fa1ab9b956e7dfdc1bc4fe5c6bb3ccce6a0c"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 사진의 용량 표식 또는 음식 연출. 같은 도어 배색과 방향의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-R-L267YM",
+        "https://prod.danawa.com/info/?pcode=3793111",
+        "https://www.enuri.com/detail.jsp?modelno=13075300"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "R-L281BML",
+      "before": [
+        {
+          "id": 2193,
+          "sha256": "a6a352f8fb310d2cf1e7a072586a679ee7c165b5bc2f9b9b6f21bd1be3312b13"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 사진의 용량 표식 또는 음식 연출. 같은 도어 배색과 방향의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-R-L281BML",
+        "https://prod.danawa.com/info/?pcode=14127950",
+        "https://prod.danawa.com/info/?pcode=3778431",
+        "https://www.11st.co.kr/products/2108115003"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "RCL284JBL",
+      "before": [
+        {
+          "id": 2105,
+          "sha256": "9daf66fb379facffbc5e192a8187760d62bb57fabd600b0ec3e5f8a8fbbe8111"
+        }
+      ],
+      "decision": "remove",
+      "reason": "공식 사진이 JBL/BR 공용이고 내부에 식품을 넣은 상태.",
+      "references": [
+        "https://www.lge.co.kr/support/product-RCL284JBL",
+        "https://www.lge.co.kr/kr/business/product/builtin/cooling-list/lg-RCL284JBL-BR"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "RCL284JBR",
+      "before": [
+        {
+          "id": 2106,
+          "sha256": "032c0e771c543cbe5ddbafb0b0c3cbe56a3329166e0f9b1c7ffc832b6ba9c124"
+        }
+      ],
+      "decision": "remove",
+      "reason": "공식 사진이 JBL/BR 공용이고 내부에 식품을 넣은 상태.",
+      "references": [
+        "https://www.lge.co.kr/support/product-RCL284JBR",
+        "https://item.gmarket.co.kr/Item?goodsCode=4408471211&utparam-url=%7B%22x_object_id%22%3A%224408471211%22%2C%22x_object_type%22%3A%22item%22%2C%22pvid%22%3A%227ed02e59-e953-4807-9efd-d9cd796cecac%22%2C%22pvid_sys%22%3A%22gmarket+server%22%2C%22origin_price%22%3A%221218000%22%2C%22promotion_price%22%3A%221212540%22%2C%22coupon_price%22%3A%22%22%2C%22trafficType%22%3A%22organic%22%2C%22adProduct%22%3A%22%22%2C%22adSubProduct%22%3A%22%22%2C%22ab_buckets%22%3A%22%22%2C%22query%22%3A%22%22%7D",
+        "https://lgaction.com/shop_view/119",
+        "https://lgms.co.kr/product/lg-dios-%EB%B9%8C%ED%8A%B8%EC%9D%B8-%EB%83%89%EC%9E%A5%EC%A0%84%EC%9A%A9%EA%B3%A0-274l-rcl284jbr-%EC%A0%84%EA%B5%AD%EB%AC%B4%EB%A3%8C%EC%84%A4%EC%B9%98%EB%B0%B0%EC%86%A1/520/",
+        "https://price.enuri.com/catalog/118076720"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "S831SN75",
+      "before": [
+        {
+          "id": 2176,
+          "sha256": "b81ba68adbab15ab1ca9b504ec96c8b6caa4d83567c891e4039c1501109cfaf2"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 사진의 용량 표식 또는 음식 연출. 같은 도어 배색과 방향의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-S831SN75",
+        "https://prod.danawa.com/info/?pcode=6535147",
+        "https://www.ssg.com/item/itemView.ssg?itemId=1000054567363"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "S833S30Q",
+      "before": [
+        {
+          "id": 2168,
+          "sha256": "6d21b50246cde6810f52d51bddb7091309cba7988abf1ce0cbd99269f392987b"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 사진의 용량 표기와 대체 사진의 수상·홍보 배지 때문에 제외.",
+      "references": [
+        "https://www.lge.co.kr/support/product-S833S30Q",
+        "https://bizn.donga.com/3/all/20200904/102796741/3"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "X321AA3",
+      "before": [
+        {
+          "id": 1862,
+          "sha256": "53aa94e288b2b460e313cc48d2d8c923d3974d6b31cecb0a26b6e722a1f5bf02"
+        },
+        {
+          "id": 2097,
+          "sha256": "ad5263937ddfb347b6983b1f5520a74ff12c729dbd3f6df048886d8c47e970d3"
+        },
+        {
+          "id": 2104,
+          "sha256": "d0f7b84e1057d3469bcd3df87b4091bbd06a17a375ce3c7940b3040fb3c5298d"
+        }
+      ],
+      "decision": "remove",
+      "reason": "패널 미포함인 본체에 서로 다른 패널 판매행이 연결됨. 한 장의 패널 사진을 전체에 지정할 수 없음.",
+      "references": [
+        "https://www.lge.co.kr/support/product-X321AA3",
+        "https://www.lge.co.kr/product/care-solutions/refrigerators/x321mw3s?modelId=MD09120851&pdpType=SUBSCRIPTION&sKwd=%EC%BB%A8%EB%B2%84%ED%84%B0%EB%B8%94%ED%8C%A8%ED%82%A4%EC%A7%80&sRank=23&sTab=unit_subscribe_list",
+        "https://www.lge.co.kr/product/convertible-refrigerators/x321aa3?modelId=MD09110851&pdpType=PURCHASE&sKwd=%EC%BB%A8%EB%B2%84%ED%84%B0%EB%B8%94+1%EB%93%B1%EA%B8%89+%EB%83%89%EC%9E%A5%EC%A0%84%EC%9A%A9%EA%B3%A0&sRank=10&sTab=unit_product_list"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "X321MBS",
+      "before": [
+        {
+          "id": 2130,
+          "sha256": "28ff7c82132bf2ce733c75dd69b8b52a1e0e355b00be82371880a060da560d24"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 사진의 용량 표식 또는 음식 연출. 같은 도어 배색과 방향의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-X321MBS",
+        "https://www.cjhello-hirental.co.kr/product/detail.html?cate_no=109&display_group=1&product_no=1890",
+        "https://nosearch.com/product/kitchen/mini_refrigerator/detail/X321MBS"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "X321MGS",
+      "before": [
+        {
+          "id": 2131,
+          "sha256": "2ae02e6c2433595de6e1a40fdc7cae4de775cffd3fdeb4d059c03659ff4f2414"
+        }
+      ],
+      "decision": "keep",
+      "reason": "동일 코드 판매 페이지와 기존 자료의 회색 단일 도어·왼쪽 손잡이 일치.",
+      "source": "https://www.cjgmarket.co.kr/shop/item.php?category=1&it_id=20211120093501151111&page=1",
+      "photo": "https://cjgmarket.co.kr/data/shop/20211120/00891ed1740e952d9d01a65b9a498480.jpg",
+      "sha256": "78d2dc9b265e69a13db5362a4cca22006258c17f61f3f69fad351e5552b713a8",
+      "references": [
+        "https://www.cjgmarket.co.kr/shop/item.php?category=1&it_id=20211120093501151111&page=1",
+        "https://www.lge.co.kr/support/product-X321MGS"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "X321MWS",
+      "before": [
+        {
+          "id": 2132,
+          "sha256": "d19cd229db765f920b3599fef2a389829b33c28e1ae07823dd2920e70a24a307"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 사진의 용량 표식 또는 음식 연출. 같은 도어 배색과 방향의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-X321MWS",
+        "https://prod.danawa.com/info/?pcode=15686054",
+        "https://www.enuri.com/detail.jsp?modelno=76609128",
+        "https://nosearch.com/product/kitchen/mini_refrigerator/detail/X321MWS"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "X321SGS",
+      "before": [
+        {
+          "id": 2133,
+          "sha256": "b916bf6700ee24fd24943471d5746ae99f9b6d1349158424315e8376679ec1f3"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 사진의 용량 표식 또는 음식 연출. 같은 도어 배색과 방향의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-X321SGS",
+        "https://price.enuri.com/catalog/76609119",
+        "https://nosearch.com/product/kitchen/mini_refrigerator/detail/X321SGS"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "X321SMS",
+      "before": [
+        {
+          "id": 2134,
+          "sha256": "24e55d031f2321fd9b6bbc842fa53a6c5d5e2d530c61f45b44fbec5d79ac5b73"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 사진의 용량 표식 또는 음식 연출. 같은 도어 배색과 방향의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-X321SMS",
+        "https://cjhello-hirental.co.kr/product/detail.html?cate_no=1&display_group=6&product_no=1881",
+        "https://nosearch.com/product/kitchen/mini_refrigerator/detail/X321SMS"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "X321SSS",
+      "before": [
+        {
+          "id": 2135,
+          "sha256": "a21cd0e7341e893ba7af21ebc046d1a463b7c7592c35b62ab5aa940d1f56cf42"
+        }
+      ],
+      "decision": "keep",
+      "reason": "LG 카탈로그의 X321SSS(냉장) 표기 바로 위 실버 1도어 사진.",
+      "source": "https://www.lge.co.kr/kr/ebook/2021/november/himart/catImage/12/20211112_catalogue.pdf#page=11",
+      "photo": "https://www.lge.co.kr/kr/ebook/2021/november/himart/catImage/12/20211112_catalogue.pdf",
+      "sha256": "0d1c0ec2f0c2cb6e394082ee3987e65ebb0b24103a7ee13c10b331770a458376",
+      "asset": "reviewed-photo-extracts/X321SSS.png",
+      "references": [
+        "https://www.lge.co.kr/kr/ebook/2021/november/himart/catImage/12/20211112_catalogue.pdf#page=11",
+        "https://www.lge.co.kr/support/product-X321SSS"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "X322GP3",
+      "before": [
+        {
+          "id": 1915,
+          "sha256": "042eded25d7b7ffdc69ef33b045f0343ee919857a25efa5f92de22553aa075d6"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 사진의 용량 표식 또는 음식 연출. 같은 도어 배색과 방향의 깨끗한 단독 사진을 확인하지 못함.",
+      "references": [
+        "https://www.lge.co.kr/support/product-X322GP3",
+        "https://m.danawa.com/product/product.html?code=18072374"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "X324AA3",
+      "before": [
+        {
+          "id": 1412,
+          "sha256": "04f45e5a7289e1a62f1c2356e14f1394b13bdcadc6afbb0ddd6d40138ee0fbb8"
+        }
+      ],
+      "decision": "remove",
+      "reason": "별도 패널 선택이 필요한 모델. 대표 사진에 패널 선택 표시가 남음.",
+      "searchLead": "https://www.lge.co.kr/convertible-refrigerators/x324gn3s",
+      "references": [
+        "https://www.lge.co.kr/support/product-X324AA3"
+      ]
+    },
+    {
+      "phase": 4,
+      "category": "냉장고",
+      "model": "Y322S5",
+      "before": [
+        {
+          "id": 1929,
+          "sha256": "20f4abf31a580bb25c44d41895940efe318326baa1a8780f1ef9482fb0f36d55"
+        }
+      ],
+      "decision": "remove",
+      "reason": "기존 사진의 용량 표식 또는 음식 연출. 같은 도어 배색과 방향의 깨끗한 단독 사진을 확인하지 못함.",
+      "searchLead": "https://search.danawa.com/mobile/dsearch.php?keyword=SM-S5",
+      "references": [
+        "https://www.lge.co.kr/support/product-Y322S5"
+      ]
+    },
+    {
+      "phase": "방문객 촬영",
+      "category": "TV",
+      "model": "55CT5WN",
+      "before": [
+        {
+          "id": 367,
+          "sha256": "964e2c9158d2afc8c9ee13cdd29043324d6d335155e50a3d618bd56eb4001343"
+        }
+      ],
+      "retiredGroup": "V1816",
+      "decision": "remove",
+      "reason": "원퀵 프로의 공식 용도는 회의 참여자의 화상회의다. 같은 모델이 일반 손님 공간에 설치된 근거를 확인하지 못해 수집 대상에서 제외.",
+      "source": "https://www.lge.co.kr/business/displays/55ct5wn"
+    }
+  ],
+  "secondaryRows": [
+    {
+      "category": "TV",
+      "model": "86UM3E",
+      "phase": 3,
+      "decision": "keep",
+      "before": [
+        {
+          "id": 802,
+          "sha256": "261ff1fe2c850a57aba3e3106e42d14a30749067f90073ef736da89df4563cd4"
+        }
+      ],
+      "reason": "대표 행 외의 보류 판매행에서 인치 배지를 발견. 같은 모델의 LG B2B 본체 단독 컷으로 교체.",
+      "onlyReviewedRows": true,
+      "source": "https://www.lge.co.kr/kr/business/product/display/lg-86UM3E",
+      "photo": "https://www.lge.co.kr/kr/business/images/display/md00048325/gallery/medium01.jpg",
+      "sha256": "e114ebf336b879a4516776fde175906c94996480f05c4dbef743ebabcb211058"
+    },
+    {
+      "category": "냉장고",
+      "model": "Y321AA3",
+      "phase": 4,
+      "decision": "remove",
+      "before": [
+        {
+          "id": 2102,
+          "sha256": "3dd26eb2f20be2537aa9fa8c67a498e06dc9520401e508187763425710542292"
+        },
+        {
+          "id": 2103,
+          "sha256": "3dd26eb2f20be2537aa9fa8c67a498e06dc9520401e508187763425710542292"
+        }
+      ],
+      "reason": "미스트·솔리드 색상선택형 판매행에는 321L 표식이 있고 패널은 별도 판매. 두 마감의 확정 사진을 확보하지 못해 해당 판매행만 제외.",
+      "onlyReviewedRows": true,
+      "references": [
+        "https://www.lge.co.kr/product/convertible-refrigerators/y321aa3",
+        "https://www.lge.co.kr/support/product-Y321AA3"
+      ]
+    }
+  ]
+}

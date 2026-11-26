@@ -34,36 +34,19 @@ async function verify(browser,width,height){
       }
       return {counts,shapes:[...shapes]};
     });
-    assert.deepEqual(result.counts,{TV:818,'무선청소기':137});assert.equal(result.shapes.length,11);
+    assert.deepEqual(result.counts,{TV:769,'무선청소기':116});assert.equal(result.shapes.length,11);
     const bundles=await(await page.request.get(base+'/api/catalog/bundles')).json();
-    assert.ok(bundles.find(s=>s.model==='A727TA + MO972WA').parts.some(([c,m])=>c==='로봇청소기'&&m==='MO972WA'));
-    assert.ok(bundles.every(s=>s.parts.every(([c,m])=>c!=='미니워시'&&!m.startsWith('T-ST'))));
+    assert.deepEqual(bundles,[]);
     await tap('libraryButton');await tap('openCatalog');
     await page.locator('#catalogFamilies button').filter({hasText:'55LX1QKNA'}).tap();
     await page.locator('#catalogSearch').fill(sale);
-    await page.getByRole('button',{name:sale+' 수집',exact:true}).tap();await tap('placeCollected');
-    const parts=page.locator('#bundleParts button');
-    assert.equal(await parts.count(),2);
-    await parts.filter({hasText:'27LX6TPGA'}).tap();
-    const first=(await layout()).find(o=>o.bundleId===211);
-    assert.equal(first.k,'catalog:tv:27LX6TPGA');
-    await page.reload();await ready();
-    assert.deepEqual((await layout()).find(o=>o.id===first.id),first);
-    await tap('editMode');
-    const bundleKey='catalog:tv:'+encodeURIComponent(sale);
-    const card=page.locator('[data-key="'+bundleKey+'"]');
-    await card.tap();await page.getByRole('button',{name:'구성 선택 닫기'}).tap();
-    assert.equal((await layout()).length,initial.length+1);
-    await card.tap();await parts.filter({hasText:'OLED55B5NNA'}).tap();
-    const matching=(await layout()).filter(o=>o.bundleId===211);
-    assert.deepEqual(matching.map(o=>o.k),['catalog:tv:27LX6TPGA','catalog:tv:OLED55B5NNA']);
-    assert.ok(await page.evaluate(async bundleKey=>{
-      const model=await import('/state.js');
-      return model.collected(bundleKey)&&!model.collected('catalog:tv:27LX6TPGA')&&!model.collected('catalog:tv:OLED55B5NNA');
-    },bundleKey));
-    await page.goto(base+'/editor?space=my');await ready();await tap('editMode');
-    assert.equal(await page.locator('[data-key="'+bundleKey+'"],[data-key="catalog:tv:27LX6TPGA"]').count(),0);
-    assert.deepEqual(errors,[]);console.log('PASS',width,height,'TV/stick recipes, Dream C, bundle selection, cancellation, persistence and My Room isolation');
+    await page.getByText('검색 결과가 없어요.',{exact:true}).waitFor();
+    await page.locator('#catalogSearch').fill('OLED55B5NNA');
+    await page.getByRole('button',{name:'OLED55B5NNA 수집',exact:true}).tap();await tap('placeCollected');
+    const placed=(await layout()).find(o=>!initial.some(i=>i.id===o.id));
+    assert.equal(placed.k,'catalog:tv:OLED55B5NNA');assert.equal(placed.bundleId,undefined);
+    await page.reload();await ready();assert.deepEqual((await layout()).find(o=>o.id===placed.id),placed);
+    assert.deepEqual(errors,[]);console.log('PASS',width,height,'TV/stick recipes, Dream C, retired sale search and standalone persistence');
   }finally{await page.context().close()}
 }
 (async()=>{const browser=await chromium.launch({channel:'chrome'});try{

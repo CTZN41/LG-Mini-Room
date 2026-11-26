@@ -1,0 +1,38 @@
+{
+  "F19VDU": {
+    "page": "https://www.lge.co.kr/support/product-F19VDU",
+    "photo": "https://www.lge.co.kr/kr/images/washing-machines/md08921949/md08921949-350x350.jpg",
+    "mime": "image/webp",
+    "sha256": "081495c63d9422047600bd81328f1aa1b9a9cd270642427d4582460d6fb7252f"
+  },
+  "F24VDAP": {
+    "page": "https://www.lge.co.kr/support/product-F24VDAP",
+    "photo": "https://www.lge.co.kr/kr/images/washing-machines/md09767826/md09767826-350x350.jpg",
+    "mime": "image/webp",
+    "sha256": "e52cf13c6375acd7b892ee5009a1bbe86d8b4d3f35177d55256f0c82008def80"
+  },
+  "F24KDAP": {
+    "page": "https://www.lge.co.kr/support/product-F24KDAP",
+    "photo": "https://www.lge.co.kr/kr/images/washing-machines/md09766832/md09766832-350x350.jpg",
+    "mime": "image/webp",
+    "sha256": "de3d2c05c6b95848bbde3e4d013341dc509b192c2ffd785e366f484b123f8b7d"
+  },
+  "FX25GSGR": {
+    "page": "https://www.lge.co.kr/support/product-FX25GSGR",
+    "photo": "https://www.lge.co.kr/kr/images/washing-machines/md10295852/md10295852-350x350.jpg",
+    "mime": "image/webp",
+    "sha256": "d50a87ee3ff88baa573bbe505ae9e6f85df0bc1d94bfa21accafb65dbad53c6c"
+  },
+  "RH18VTAN": {
+    "page": "https://www.lge.co.kr/support/product-RH18VTAN",
+    "photo": "https://www.lge.co.kr/kr/images/dryers/md09752828/md09752828-350x350.jpg",
+    "mime": "image/webp",
+    "sha256": "5085aaedd414a542490669d1c9765cfe36dbecd25e8b89a2fc8888953bfc5a77"
+  },
+  "AS064PBBAR": {
+    "page": "https://www.lge.co.kr/support/product-AS064PBBAR",
+    "photo": "https://www.lge.co.kr/kr/images/air-purifier/md10330831/md10330831-350x350.jpg",
+    "mime": "image/webp",
+    "sha256": "aac71de7588ef63a798478b7969a58b9ea0d271fc684a13f6f90bc6e403e9987"
+  }
+}

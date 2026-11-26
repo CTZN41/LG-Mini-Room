@@ -9,47 +9,77 @@ const ProductCatalog=(()=>{
   const shapeNames={tvFlat:'평판 TV',tvMobile:'기둥형 이동식 TV',tvCase:'캐리백형 TV',tvFlex:'플렉스 TV',
     tvEasel:'패브릭 하단·다리형 포제',tvCompact:'탁상형 룸앤TV',stickAir:'슬림형 A9 Air',stickA5:'코드제로 A5',
     stickA7:'코드제로 A7',stickA9:'코드제로 A9',stickA9S:'코드제로 A9S',four:'4도어',french:'양문과 하단 서랍',single:'1도어',column:'세로형 컨버터블',
-    bottom:'상냉장·하냉동형',side:'양문형',freezerTop:'상냉동형',two:'2도어 대표형',plain:'냉장고 대표형',
+    miniCube:'낮은 사각 1도어',miniTall:'소형 세로 1도어',wineShort:'소형 와인셀러',wineMid:'중형 와인셀러',wineTall:'세로형 와인셀러',
+    glassDrawers:'전면 유리와 하단 서랍',drawerFour:'상단 양문과 하단 2단 서랍',bottom:'상냉장·하냉동형',side:'양문형',freezerTop:'상냉동형',two:'2도어 대표형',plain:'냉장고 대표형',
     dryer:'전면 도어 건조기',tower:'일체형 워시타워',twin:'하단 미니워시 결합형',combo:'워시콤보',
     comboMini:'워시콤보·하단 미니워시 결합형',top:'상단 도어 통돌이',small:'소형 드럼',drum:'전면 도어 드럼'};
-  const toneNames={neutral:'대표색',white:'화이트',silver:'실버',grey:'그레이',black:'차콜',brown:'브라운',
+  const toneNames={peach:'피치',berry:'자홍',coral:'코럴',wine:'레드우드',almond:'아몬드',taupe:'토프',neutral:'대표색',white:'화이트',silver:'실버',grey:'그레이',black:'차콜',brown:'브라운',
     beige:'베이지',green:'그린',mint:'민트',pink:'핑크',blue:'하늘색',navy:'네이비',violet:'라벤더',yellow:'레몬'};
-  const bundleByKey=new Map(),bundleById=new Map();
-  async function loadBundles(){
-    const res=await fetch('/api/catalog/bundles',{signal:AbortSignal.timeout(5000)});
-    if(!res.ok)throw Error('catalog bundles');
-    const familyKey=(category,model)=>{
-      const f=families.find(f=>f.name===category);return f&&keyFor(f,model);
-    };
-    for(const {id,category,model,parts} of await res.json()){
-      const key=familyKey(category,model),keys=parts.map(([c,m])=>familyKey(c,m)).filter(k=>k&&!componentOnly(k));
-      if(!key||keys.length<2)continue;
-      const bundle={id,key,keys};
-      bundleByKey.set(key,bundle);bundleById.set(id,bundle);
+  const oldSales=new Map(),oldIds=new Map();
+  async function loadRetiredSales(){
+    const res=await fetch('/api/catalog/retired-sales',{signal:AbortSignal.timeout(8000)});
+    if(!res.ok)throw Error('catalog migration');
+    for(const [id,category,code,unitCategory,unitCode,choices] of await res.json()){
+      const key=keyFor(families.find(f=>f.name===category),code);
+      const primary=matchModel(unitCategory,unitCode);
+      if(!primary)throw Error('대표 본체 누락 '+code);
+      const oldParts=choices.map(([c,m])=>matchModel(c,m)).filter(Boolean);
+      const selectable=oldParts.length>1||category==='공기청정기'?oldParts:[];
+      const entry={primary,keys:[...new Set([primary,...selectable])]};
+      if(!oldSales.has(key))oldSales.set(key,entry);
+      oldIds.set(id,entry);
     }
+  }
+  function migratePlacement(o){
+    if(!o||typeof o!=='object')return;
+    const sale=oldSales.get(o.k);
+    if(sale)o.k=sale.primary;
+    const origin=oldIds.get(o.bundleId);
+    if(origin?.keys.includes(o.k))delete o.bundleId;
   }
   async function loadBodies(){
     const res=await fetch('/api/catalog/bodies',{signal:AbortSignal.timeout(5000)});
     if(!res.ok)throw Error('catalog bodies');
-    for(const [category,model,shape,upper,lower,detail,main] of await res.json()){
-      bodyIndex.set(category+'|'+model,{shape,upper,lower,detail,main});
+    for(const [category,model,shape,upper,lower,detail,main,description,decision,inches] of await res.json()){
+      bodyIndex.set(category+'|'+model,{shape,upper,lower,detail,main,description,decision,inches});
     }
   }
-  function applyBody(item){
-    const body=bodyIndex.get(item.catalogFamily+'|'+item.modelCode);
+  function applyBody(item,body=bodyIndex.get(item.catalogFamily+'|'+item.modelCode)){
     if(!body)return;
     const {shape,upper,lower,detail,main}=body;
     item.body=body;item.spriteKey=['body',shape,upper,lower,detail].join(':');
     item.appearance=shapeNames[shape]+' · '+toneNames[upper]+(lower===upper?'':' / '+toneNames[lower]);
     if(detail==='window')item.appearance+=' · 노크온 창';
-    if(shape==='tvMobile'){item.previousFootprint={w:item.w,d:item.d};item.w=14}
+    if(item.catalogFamily==='TV'&&body.inches){
+      // Compress the diagonal range into whole pixels within the saved placement.
+      item.displayWidth=Math.max(9,Math.min(22,Math.round(10+(body.inches-27)*0.16)));
+      item.spriteKey+=':'+item.displayWidth;
+      item.appearance+=' · '+body.inches+'인치';
+    }
+    if(shape==='tvMobile'||detail==='deskWhite'){item.previousFootprint={w:item.w,d:item.d};item.w=14}
     if(detail==='dock')item.appearance+=' · 충전 타워 포함';
-    if(detail==='blackGlass')item.appearance+=' · 검정 상판과 넓은 검정 도어';
-    if(detail==='raisedControl')item.appearance+=' · 은색 도어 링과 오른쪽 상단 돌출부';
+    if(body.description)item.appearance+=' · '+body.description;
+    if(shape==='dryer'&&detail)item.behaviorKey='dryer';
     if(detail==='water')item.appearance+=' · 정수부';
     if(detail==='review')item.appearance+=' · 사진 확인 중';
     if(main)item.appearance+=' · 세트에서 '+main+' 본체 배치';
     if(item.catalogFamily==='세탁기')item.washerStyle=shape;
+  }
+  // Identical primary-unit photographs at DB image IDs 2090, 2054 and 1960.
+  const washerMaster=new Map([
+    ['F21VDSK','F21VDSKR'],['FG19WN','FG19WNR'],['FG21WN','FG19WNR'],
+    ['FG21WNR','FG19WNR'],['WL21WDU','WL2521WDUR']
+  ]);
+  function useWasherMaster(item){
+    if(item.catalogFamily!=='세탁기'||!item.body)return;
+    const unit=item.body.main||item.modelCode;
+    const code=washerMaster.get(unit)||unit;
+    const master=DOT_ASSETS.items.find(p=>p.modelCode===code&&p.washerStyle===item.body.shape);
+    if(!master)return;
+    // Keep the sale key, photo, footprint and bundle origin on the placed object.
+    item.nativeWasher=true;item.spriteKey=master.spriteKey||master.k;item.drumY=master.drumY;
+    item.body={...item.body,decision:'형태 수정',description:'대표 본체 '+code+' 전용 도트 공유'};
+    item.appearance+=' · '+code+' 도트 공유';
   }
   const humidifierArt=new Map();
   for(const [spriteKey,appearance,models] of [
@@ -65,16 +95,11 @@ const ProductCatalog=(()=>{
   for(const [shape,finish,appearance,codes] of dehumidifierProfiles){
     for(const code of codes)dehumidifierArt.set(code,{spriteKey:'db_dehumid_'+shape+'_'+finish,appearance});
   }
-  const purifierModels=[
-    {model:'AS206NGHA',shape:'round',name:'360° 원통형',w:8,d:8,appearance:'네이처 그린 · 둥근 순환 헤드'},
-    {model:'FS064PSJA',shape:'tower',name:'에어로타워',w:8,d:8,appearance:'카밍 베이지 · 세로로 갈라진 두 날개'},
-    {model:'AS063PWGCR',shape:'table',name:'에어로퍼니처',w:12,d:12,appearance:'크림 화이트 · 넓은 원형 상판'},
-    {model:'AS356LSAA',shape:'wallfit',name:'월핏',w:23,d:6,appearance:'카밍 베이지 · 넓고 낮은 그릴과 짧은 다리'}
-  ];
-  const purifierArt=[...purifierModels,
-    {model:'AS153HWFS',shape:'hitCylinder',name:'360° Hit',w:8,d:8,appearance:'단층 흰 원통 · 수평형 상부 그릴'},
-    {model:'AS356NSMA',shape:'stackedHead',name:'360° M7',w:8,d:8,appearance:'카밍 베이지 2단 · 둥근 상부 헤드'}
-  ];
+  const purifierModels=['AS206NGHA','FS064PSJA','AS063PWGCR','AS356LSAA'];
+  const purifierNames={
+    AS206NGHA:'360° 원통형',FS064PSJA:'에어로타워',AS063PWGCR:'에어로퍼니처',AS356LSAA:'월핏',
+    AS153HWFS:'360° Hit',AS356NSMA:'360° M7'
+  };
   const families=[
     ['tv','TV','55LX1QKNA',22,6,'tvset'],['fridge','냉장고','M876GBC472',15,11,'fridge_bm'],
     ['washer','세탁기','FG19WNR',12,10,'wash_m'],['dryer','건조기','RD20WNR',12,11],
@@ -107,7 +132,7 @@ const ProductCatalog=(()=>{
   const hasModel=key=>modelKeys.has(key);
   const matchModel=(category,code)=>typeof code==='string'&&modelLookup.get(category+'|'+code.trim().toUpperCase());
   function restore(products,key){
-    if(typeof key!=='string')return;
+    if(typeof key!=='string'||oldSales.has(key))return;
     if(Object.hasOwn(products,key))return products[key];
     const match=/^catalog:([a-z]+):([^:]{1,1000})$/.exec(key);
     if(!match)return;
@@ -117,21 +142,46 @@ const ProductCatalog=(()=>{
     const washer=f.slug==='washer'?products.washer_fg19wnr:null;
     const item={...washer,k:key,n:f.name+' '+model,c:'가전',w:f.w,d:f.d,elev:0,wall:0,layer:1,
       modelCode:model,spriteKey:washer?.spriteKey||'db_'+f.slug,catalogFamily:f.name,
-      behaviorKey:f.behavior,photoUrl:'/api/catalog/photo?'+new URLSearchParams({category:f.name,model,v:'2'})};
+      behaviorKey:f.behavior,photoUrl:'/api/catalog/photo?'+new URLSearchParams({category:f.name,model,v:'3'})};
     if(f.slug==='purifier'){
-      const reviewed=purifierArt.find(p=>p.model===model);
-      if(reviewed){
-        // Older layouts reserve the floor area they were saved with.
-        item.previousFootprint={w:item.w,d:item.d};
-        Object.assign(item,{w:reviewed.w,d:reviewed.d,spriteKey:'db_purifier_'+reviewed.shape,
-          n:reviewed.name+' '+model,appearance:reviewed.name+' · '+reviewed.appearance});
+      const profile=PurifierReview.models.get(model);
+      if(profile){
+        item.appearance=profile.reason;
+        if(profile.shape!=='hold'){
+          // Saved placements without an art version retain the original 8 × 8 footprint.
+          item.previousFootprint={w:item.w,d:item.d};
+          Object.assign(item,{w:profile.w,d:profile.d,spriteKey:profile.spriteKey});
+        }
+        if(purifierNames[model])item.n=purifierNames[model]+' '+model;
       }
     }
     if(f.slug==='tv')item.screen=[10,11,39,30];
     if(f.slug==='dehumid'&&dehumidifierArt.has(model))Object.assign(item,dehumidifierArt.get(model));
     if(f.slug==='humid'&&humidifierArt.has(model))Object.assign(item,humidifierArt.get(model));
     if(f.slug==='robot'&&CatalogArt.robots.has(model))Object.assign(item,CatalogArt.robots.get(model));
-    applyBody(item);products[key]=item;return item;
+    applyBody(item);useWasherMaster(item);products[key]=item;return item;
+  }
+  const namesInFlight=new Map();
+  function salesName(row,category){
+    const name=row.name.replaceAll(row.model,'').replace(/\s+/g,' ').trim();
+    if(!name||name==='LG전자')return ['LG전자',category].join(' ');
+    if(name==='LG전자 리퍼비시')return 'LG전자 '+category+' 리퍼비시';
+    return name;
+  }
+  function loadSalesName(item,category){
+    const key=item.k;
+    if(namesInFlight.has(key))return namesInFlight.get(key);
+    const params=new URLSearchParams({category,q:item.modelCode,featured:item.modelCode});
+    const request=fetch('/api/catalog?'+params,{signal:AbortSignal.timeout(5000)})
+      .then(async response=>{
+        if(!response.ok)return;
+        const {rows}=await response.json();
+        const row=rows.find(r=>r.model===item.modelCode);
+        if(row)item.salesName=salesName(row,category);
+        return item.salesName;
+      }).catch(()=>undefined).finally(()=>namesInFlight.delete(key));
+    namesInFlight.set(key,request);
+    return request;
   }
   function browser({$,scene,tone,collected,collect}){
     const familiesBox=$('catalogFamilies'),rows=$('catalogRows'),search=$('catalogSearch');
@@ -162,7 +212,7 @@ const ProductCatalog=(()=>{
           const data=await res.json();if(signal.aborted)return;
           const photo=document.createElement('img');photo.alt=row.model+' 상품 사진';
           photo.onerror=()=>photo.replaceWith(document.createTextNode('상품 사진을 표시할 수 없어요.'));
-          photo.src='/api/catalog/photo?id='+data.id;
+          photo.src='/api/catalog/photo?v=3&id='+data.id;
           content.replaceChildren(photo);
           if(data.photoStatus==='보류'){
             const note=document.createElement('small');note.textContent='사진 확인 중';content.append(note);
@@ -219,6 +269,7 @@ const ProductCatalog=(()=>{
         for(const row of data.rows){
           const item=product(family,row.model),entry=document.createElement('article'),label=document.createElement('span');
           const b=document.createElement('button'),code=document.createElement('strong'),desc=document.createElement('small');
+          item.salesName=salesName(row,family.name);
           code.textContent=row.model;desc.textContent=row.name+' · '+(item.appearance||(row.model===family.model?'대표 모델':item.catalogFamily?'제품군 대표 도트':'모델별 도트'));
           label.append(code,desc);b.disabled=collected(item.k);b.textContent=b.disabled?'수집 완료':'수집';
           b.setAttribute('aria-label',row.model+' 수집');b.onclick=()=>collect(item,entry);
@@ -237,5 +288,5 @@ const ProductCatalog=(()=>{
     $('library').addEventListener('close',cancel);
     return {gallery,resume(){ $('catalogBrowse').hidden=false;list() }};
   }
-  return {restore,browser,representatives:()=>families.map(f=>keyFor(f,f.model)).filter(hasModel),loadModels,hasModel,matchModel,purifierModels,componentOnly,loadBodies,loadBundles,bundleFor:key=>bundleByKey.get(key),bundleById:id=>bundleById.get(id)};
+  return {restore,applyBody,loadSalesName,browser,representatives:()=>families.map(f=>keyFor(f,f.model)).filter(hasModel),loadModels,hasModel,matchModel,purifierModels,componentOnly,loadBodies,loadRetiredSales,migratePlacement,retiredSale:key=>oldSales.get(key)};
 })();

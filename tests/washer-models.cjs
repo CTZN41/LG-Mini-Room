@@ -1,3 +1,4 @@
+const {expectedTitle}=require('./catalog-room-title.cjs');
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
 const base = process.argv[2] || 'http://127.0.0.1:4173';
@@ -23,11 +24,11 @@ async function tapModel(page, code) {
     throw Error('No visible pixel for ' + productKey);
   }, key(code));
   await page.touchscreen.tap(point.x, point.y);
-  await page.waitForFunction(code =>
-    document.querySelector('#lifeTitle').textContent === code &&
-    document.querySelector('#productPhoto').naturalWidth > 0 &&
-    window.lastPaint.selected === 'washer_' + code.toLowerCase(), code);
-  return page.locator('#productPhoto').getAttribute('src');
+  await page.waitForFunction(({code,title}) =>
+    document.querySelector('#lifeTitle').textContent === title &&
+    document.querySelector('#lifeDetail').textContent==='' &&
+    window.lastPaint.selected === 'washer_' + code.toLowerCase(), {code,title:await expectedTitle(page,'세탁기',code)});
+  return page.evaluate(k=>DotScene.products[k].photoUrl||DOT_ASSETS.modelPhotos[DotScene.products[k].spriteKey],key(code));
 }
 
 async function observeScene(page) {

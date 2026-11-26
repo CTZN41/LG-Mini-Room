@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const base=process.argv[2]||'http://127.0.0.1:4174';
-const sample='KAX-G52-20W';
+const sample='F24KDAP';
 
 async function check(browser,width,height){
   const page=await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
@@ -12,14 +12,14 @@ async function check(browser,width,height){
     await page.goto(base+'/editor?space=dream&room=C');await ready();
     const url=(path,params)=>base+path+'?'+new URLSearchParams(params);
     const all=await (await page.request.get(base+'/api/catalog/bodies')).json();
-    for(const [category,count] of [['냉장고',1004],['세탁기',905],['건조기',144]])
+    for(const [category,count] of [['냉장고',986],['세탁기',561],['건조기',144]])
       assert.equal(all.filter(row=>row[0]===category).length,count);
     const byModel=new Map(all.map(row=>[row[1],row]));
     assert.deepEqual(byModel.get('WA2525EGP6R').slice(2,5),['tower','green','beige']);
     assert.deepEqual(byModel.get('M876GBC472').slice(2,6),['four','beige','brown','window']);
     assert.equal(byModel.get('B315DS11')[2],'freezerTop');assert.equal(byModel.get('S836MDS002')[2],'side');
     assert.equal(byModel.get('RD20WNR')[2],'dryer');
-    assert.equal(byModel.get(sample)[2],'comboMini');assert.equal(byModel.get(sample)[6],'FH25KAX');
+    assert.equal(byModel.get(sample)[2],'drum');assert.ok(!byModel.has('KAX-G52-20W'));
     for(const m of ['FC4SC','FX4KCQ','FX4VCQ','FC4TC','FX4KC','FX4VC','FX4WC','FX4GC','FX4EC']){
       assert.ok(!byModel.has(m));
       const result=await (await page.request.get(url('/api/catalog',{category:'세탁기',q:m}))).json();
@@ -45,7 +45,7 @@ async function check(browser,width,height){
     await tap('openCatalog');await page.locator('#catalogFamilies button').filter({hasText:'FG19WNR'}).tap();
     await page.locator('#catalogSearch').fill(sample);
     const row=page.locator('#catalogRows article').filter({has:page.getByRole('button',{name:sample+' 수집',exact:true})});
-    await row.locator('summary').tap();await row.getByText(/FX4KCQ · 세탁기 하단 결합 전용/).waitFor();
+    await row.locator('summary').tap();await row.locator('img').first().waitFor();
     await row.locator('button').tap();await tap('placeCollected');await tap('flip');await tap('editMode');
     await page.reload();await ready();
     const stored=await page.evaluate(()=>JSON.parse(localStorage.dotroom).layouts.C);
@@ -62,7 +62,7 @@ async function check(browser,width,height){
       const rejected=['washer_fc4sc','catalog:washer:FX4KCQ'].every(k=>{try{api.collect(k,'catalog');return false}catch{return true}});
       return rejected&&!DotScene.sorted('C',l.layouts.C).some(o=>o.id===965);
     }));assert.deepEqual(errors,[]);
-    console.log('PASS',width,height,'2053 model records, body recipes, compound placement, mini exclusions and legacy keys');
+    console.log('PASS',width,height,'1691 model records, body recipes, single-unit placement, mini exclusions and legacy keys');
   }finally{await page.context().close()}
 }
 (async()=>{const browser=await chromium.launch({channel:'chrome'});try{

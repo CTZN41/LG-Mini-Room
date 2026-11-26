@@ -2,9 +2,9 @@ const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const base=process.argv[2]||'http://127.0.0.1:4173';
 const representatives=[
-  ['TV','55LX1QKNA',818],['냉장고','M876GBC472',1004],['세탁기','FG19WNR',905],
-  ['건조기','RD20WNR',144],['공기청정기','AS235DWSA',153],['가습기','AW141YBW',14],
-  ['제습기','DQ203PCCA',40],['로봇청소기','R560BL1',39],['무선청소기','A912PM',137]
+  ['TV','55LX1QKNA',769],['냉장고','M876GBC472',986],['세탁기','FG19WNR',561],
+  ['건조기','RD20WNR',144],['공기청정기','AS235DWSA',147],['가습기','AW141YBW',14],
+  ['제습기','DQ203PCCA',40],['로봇청소기','R560BL1',36],['무선청소기','A912PM',116]
 ];
 async function check(browser,width,height){
   const p=await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
@@ -56,7 +56,7 @@ async function check(browser,width,height){
       await p.keyboard.press('ArrowRight');
       if((await p.locator('#keyboardTarget').innerText()).includes('55LX1QKNA'))break;
     }
-    await p.keyboard.press('Enter');await p.waitForFunction(()=>document.querySelector('#lifeTitle').textContent==='55LX1QKNA'&&document.querySelector('#productPhoto').naturalWidth>0);
+    await p.keyboard.press('Enter');await p.waitForFunction(()=>document.querySelector('#lifeTitle').textContent==='LG전자 오브제컬렉션 포제 올레드 evo'&&document.querySelector('#lifeDetail').textContent==='');
     await p.getByRole('button',{name:'영화 보기',exact:true}).tap();await p.getByRole('button',{name:'재생 종료',exact:true}).tap();
     await tap('#myLink');await tap('#editMode');assert.equal(await p.locator('#products [data-key^="catalog:"]').count(),0);
     assert.deepEqual(errors,[]);console.log('PASS',width,height,'nine families, photos, search, paging, model collection, placement, restoration, TV playback, ownership');

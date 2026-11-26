@@ -22,13 +22,13 @@ async function check(browser,width,height){
       ]));
       for(const [model,art,label] of entries){
         assert.doesNotMatch(label,/제품군 대표 도트/);
-        if(model.includes(' + '))assert.match(label,/세트 중 주 로봇/);
+        assert.ok(!model.includes(' + '),'단품 카탈로그 '+model);
         dots.set(model,art);
       }
       if(first<33)await tap('catalogNext');
     }
-    assert.equal(dots.size,39);assert.equal(new Set(dots.values()).size,20);
-    assert.equal(dots.get('RO965GB'),dots.get('RO965GB + MO971GA'));
+    assert.equal(dots.size,36);assert.equal(new Set(dots.values()).size,20);
+    assert.ok(dots.has('RO965GB'));assert.ok(!dots.has('RO965GB + MO971GA'));
     assert.notEqual(dots.get('N95THO'),dots.get('N95THU'));
     assert.notEqual(dots.get('MO971GA'),dots.get('RO971GA'));
     await page.locator('#catalogSearch').fill('B95AWBH');
@@ -52,7 +52,7 @@ async function check(browser,width,height){
       if((await page.locator('#keyboardTarget').innerText()).includes('B95AWBH'))break;
     }
     await page.keyboard.press('Enter');await button('청소 시간').waitFor();
-    await page.waitForFunction(()=>document.querySelector('#productPhoto').naturalWidth>0);
+    await page.waitForFunction(()=>document.querySelector('#lifeTitle').textContent==='LG전자 오브제컬렉션 코드제로 로보킹 AI 올인원');
     async function verifyTravel(){
       try{await page.waitForFunction(()=>new Set(samples.map(parts=>parts.find(p=>p[0]==='mobile')[2])).size>=2)}
       catch(error){
@@ -70,7 +70,7 @@ async function check(browser,width,height){
     await page.evaluate(()=>{window.samples=[]});await verifyTravel();
     await button('재생 종료').tap();await page.reload();await page.locator('#libraryButton').waitFor();
     assert.deepEqual(await saved(),origin);
-    assert.deepEqual(errors,[]);console.log('PASS',width,height,'39 models, 20 thumbnails, bundle identity, fixed dock during tap and cleaning preview, restored layout');
+    assert.deepEqual(errors,[]);console.log('PASS',width,height,'36 standalone models, 20 thumbnails, fixed dock during tap and cleaning preview, restored layout');
   }finally{await page.context().close()}
 }
 (async()=>{const browser=await chromium.launch({channel:'chrome'});try{

@@ -1,0 +1,21 @@
+*{box-sizing:border-box} :root{color-scheme:light;font:16px/1.45 system-ui,"Malgun Gothic",sans-serif;color:#37273a;background:#231e26} body{margin:0} [hidden]{display:none!important}
+button,a{font:inherit;color:inherit} button,a.primary,a.thinq{cursor:pointer;touch-action:manipulation}
+button:focus-visible,a:focus-visible{outline:3px solid #4c6da4;outline-offset:2px}
+.phone{width:min(100%,480px);min-height:100svh;margin:auto;background:#fff6ef;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;background:#39253c;color:#fff6ef;padding:8px 18px;min-height:52px}
+header b,.poster b{letter-spacing:.06em} header button{background:none;border:1px solid #9b849a;color:#fff3ed;font-size:13px}
+.room{background:#583d5a;color:#fff3e7;padding:clamp(10px,3vh,32px) 8px 6px;flex:1;display:flex;flex-direction:column;justify-content:center}
+h1,h2,p{margin:0}.room h1{margin:0 12px 6px;font-size:clamp(21px,6vw,30px);letter-spacing:-.06em}
+#scene{width:100%;height:auto;max-height:47svh;object-fit:contain;image-rendering:pixelated;touch-action:none;align-self:center}
+.tray{padding:16px 18px max(16px,env(safe-area-inset-bottom));border-top:3px solid #39253c;min-height:215px}
+h2{font-size:20px;letter-spacing:-.04em}p{font-size:14px;margin:6px 0 14px;color:#665365;text-wrap:pretty}
+button,.primary,.thinq{border:2px solid #422f41;background:#fffaf5;padding:8px 12px;min-height:44px;font-weight:650}
+.primary,.thinq{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:#ffd1ad;box-shadow:2px 2px #422f41}
+#shelf{display:grid;grid-template-columns:1fr 1fr;gap:10px}#shelf button{display:grid;grid-template-columns:44px 1fr;align-items:center;text-align:left;column-gap:6px;box-shadow:2px 2px #422f41;padding:7px}
+#shelf canvas{width:44px;height:auto;image-rendering:pixelated;grid-row:span 2}#shelf small{font-size:12px;font-weight:500;color:#685168}
+#controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+dialog{width:min(90vw,340px);border:3px solid #422f41;background:#fff6ef;padding:16px}dialog::backdrop{background:#211524ba}dialog img{width:100%;height:145px;object-fit:contain;background:white}dialog form{text-align:right;margin-bottom:8px}
+.poster{min-height:100svh;display:grid;place-items:center;background:#583d5a}.poster main{background:#fff6ef;padding:32px;max-width:390px;text-align:center}.poster h1{margin-top:8px}.poster svg{max-width:230px;background:white}.poster a{margin:14px 0}
+@media(max-width:355px),(max-height:650px){.tray{padding:10px 12px;min-height:170px}.room{padding-top:8px}.room h1{font-size:21px}p{margin-bottom:8px}}
+
+.poster input{font:inherit;display:block;width:100%;padding:8px;margin:6px 0}.poster label{font-size:13px}.poster main{margin:10px}#local{overflow-wrap:anywhere}

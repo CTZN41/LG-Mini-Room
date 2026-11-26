@@ -1,3 +1,4 @@
+const {expectedTitle}=require('./catalog-room-title.cjs');
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const base=process.argv[2]||'http://127.0.0.1:4173';
@@ -89,7 +90,7 @@ async function check(browser,width,height,reduced){
     });
     for(const code of ['AW141YBW','HY705RWUA']){
       await tapProduct(code);
-      await page.waitForFunction(code=>document.querySelector('#lifeTitle').textContent===code&&fx?.reaction?.kind==='humidifier'&&fx.reaction.settle===1,code);
+      await page.waitForFunction(code=>document.querySelector('#lifeTitle').textContent===code&&fx?.reaction?.kind==='humidifier'&&fx.reaction.settle===1,await expectedTitle(page,'가습기',code));
       const state=await page.evaluate(()=>{
         const {room,theme,layouts}=JSON.parse(localStorage.dotroom),o=layouts[room].find(o=>o.id===fx.mist.itemId);
         const q=DotScene.place(room,theme,o);

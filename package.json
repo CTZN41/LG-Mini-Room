@@ -5,5 +5,8 @@
   "scripts": {
     "start": "node server.mjs",
     "test:phone": "node tests/mobile-touch.cjs"
+  },
+  "dependencies": {
+    "qrcode-generator": "2.0.4"
   }
 }

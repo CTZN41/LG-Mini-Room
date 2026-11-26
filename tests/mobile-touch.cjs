@@ -53,12 +53,12 @@ async function check(browser,width,height){
   });
   await stroke(points.x,points.inside,6);
   await button('청소 시간').waitFor();
-  assert.equal(await page.locator('#lifeTitle').innerText(),'R560BL1');
+  await page.waitForFunction(()=>document.querySelector('#lifeTitle').textContent==='LG전자 코드제로 R5');
   assert.deepEqual(await view.boundingBox(),before,'Room stays still on product tap');
   await button('닫기').tap();
   await stroke(points.x,points.near,0);
   await button('청소 시간').waitFor();
-  assert.equal(await page.locator('#lifeTitle').innerText(),'R560BL1');
+  await page.waitForFunction(()=>document.querySelector('#lifeTitle').textContent==='LG전자 코드제로 R5');
   await button('닫기').tap();
   await stroke(points.x,points.inside,24);
   assert.equal(await page.locator('#lifeTitle').innerText(),'드림룸');

@@ -1,3 +1,4 @@
+const {expectedTitle}=require('./catalog-room-title.cjs');
 const assert=require('node:assert/strict');
 const path=require('node:path');
 const {chromium}=require('playwright');
@@ -44,7 +45,7 @@ async function checkRoom(browser,width,height){
       await tap('editMode');await page.reload();await ready();
       assert.equal((await layout()).find(o=>o.id===placed.id).k,placed.k);
       await tapPlacement(page,placed.id);
-      await page.waitForFunction(m=>document.querySelector('#lifeTitle').textContent===m&&document.querySelector('#productPhoto').naturalWidth>0,model);
+      await page.waitForFunction(m=>document.querySelector('#lifeTitle').textContent===m&&document.querySelector('#lifeDetail').textContent==='',await expectedTitle(page,category,model));
       await page.locator('#lifeActions').getByRole('button',{name:'닫기'}).tap();
       await tap('editMode');await tapPlacement(page,placed.id);await tap('remove');await tap('editMode');
       assert.deepEqual(await layout(),initial);console.log('PASS',width,height,model);
@@ -59,7 +60,7 @@ async function checkRoom(browser,width,height){
   assert.ok(rows.every(row=>row.key&&row.spriteKey&&row.photo&&Array.isArray(row.components)));
   for(const [model,pilot] of Object.entries(pilots)){
     const row=rows.find(r=>r.category===pilot.category&&r.model===model);
-    assert.equal(row.decision,pilot.decision);assert.notEqual(row.spriteKey,row.previousSprite);
+    assert.equal(row.phase6.decision,pilot.decision);assert.notEqual(row.spriteKey,row.phase6.previousSprite);
   }
   console.log('PASS review worklist',rows.length,'models');
   const browser=await chromium.launch({channel:'chrome'});

@@ -3,7 +3,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 
 const defaultDB = fileURLToPath(new URL('./data/lg_appliances.db', import.meta.url));
-let db,bodyIndex,bundleIndex,modelIndex;
+let db,bodyIndex,legacyIndex,modelIndex,version;
 
 // Keep one search result per existing collection key (category, model). The lowest
 // product_id is also the canonical photo when opening an older saved placement.
@@ -12,22 +12,10 @@ const matches = `FROM products p WHERE p.category=? AND (
   EXISTS (SELECT 1 FROM product_components c WHERE c.product_id=p.product_id
           AND instr(lower(c.component_model),lower(?))))`;
 
-// An independently catalogued appliance with an explicit place in the advertised set.
-function catalogBundles(db){
-  const rows=db.prepare(`WITH canonical AS (
-    SELECT category,model_name,MIN(product_id) id FROM products GROUP BY category,model_name)
-    SELECT DISTINCT p.id,p.category,p.model_name model,u.category partCategory,u.model_name partModel
-    FROM canonical p JOIN product_components c ON c.product_id=p.id
-    JOIN canonical u ON u.model_name=c.component_model AND u.category=CASE
-      WHEN c.component_role IN ('워시타워','워시콤보','트윈워시') THEN '세탁기' ELSE c.component_role END
-    WHERE c.evidence='상품명에 표기된 구성 모델' AND u.id<>p.id
-    ORDER BY p.id,c.rowid`).all();
-  const groups=new Map();
-  for(const {id,category,model,partCategory,partModel} of rows){
-    if(!groups.has(id))groups.set(id,{id,category,model,parts:[]});
-    groups.get(id).parts.push([partCategory,partModel]);
-  }
-  return [...groups.values()].filter(group=>group.parts.length>1);
+// Compatibility data is separate from the searchable products and photo index.
+function legacySales(db){
+  return db.prepare('SELECT old_id,category,sale_code,unit_category,unit_code,old_choices FROM retired_sale_keys ORDER BY old_id').all()
+    .map(r=>[r.old_id,r.category,r.sale_code,r.unit_category,r.unit_code,JSON.parse(r.old_choices)]);
 }
 
 export async function serveCatalog(url, response) {
@@ -38,8 +26,11 @@ export async function serveCatalog(url, response) {
   const category=q.get('category')||'';
   try {
     db??=new DatabaseSync(process.env.MINIROOM_CATALOG_DB||defaultDB,{readOnly:true});
+    const current=db.prepare('PRAGMA data_version').get().data_version;
+    if(current!==version){version=current;modelIndex=bodyIndex=legacyIndex=undefined;}
+    if(url.pathname==='/api/catalog/retired-sales')return json(200,legacyIndex??=legacySales(db));
     if(url.pathname==='/api/catalog/models')return json(200,modelIndex??=db.prepare('SELECT DISTINCT category,model_name FROM products ORDER BY category,model_name').all().map(row=>[row.category,row.model_name]));
-    if(url.pathname==='/api/catalog/bundles')return json(200,bundleIndex??=catalogBundles(db));
+    if(url.pathname==='/api/catalog/bundles')return json(200,[]);
     if(url.pathname==='/api/catalog/bodies')return json(200,bodyIndex??=catalogBodies(db));
     if(url.pathname==='/api/catalog/photo'){
       const byId=q.has('id');
@@ -47,7 +38,7 @@ export async function serveCatalog(url, response) {
         WHERE ${byId?'p.product_id=?':'p.category=? AND p.model_name=?'} ORDER BY p.product_id LIMIT 1`)
         .get(...(byId?[q.get('id')]:[category,q.get('model')||'']));
       if(!photo)return json(404,{error:'photo_missing'});
-      response.writeHead(200,{'Content-Type':photo.mime_type,'Cache-Control':'private, max-age=86400'}).end(photo.data);
+      response.writeHead(200,{'Content-Type':photo.mime_type,'Cache-Control':'private, no-cache'}).end(photo.data);
       return;
     }
     if(url.pathname==='/api/catalog/product'){

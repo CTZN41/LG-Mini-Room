@@ -47,6 +47,9 @@
   }
   function valid(raw){
     if(!raw||!raw.layouts||typeof raw.layouts!=='object'||Array.isArray(raw.layouts))return false;
+    for(const group of Object.values(raw.layouts)){
+      if(Array.isArray(group))group.forEach(ProductCatalog.migratePlacement);
+    }
     if(raw.room!=null&&!Object.hasOwn(M.names,raw.room))return false;
     if(raw.theme!=null&&!['pink','lime'].includes(raw.theme))return false;
     if(raw.woodRooms!=null&&(!Array.isArray(raw.woodRooms)||!raw.woodRooms.every(r=>Object.hasOwn(M.names,r))))return false;
@@ -111,8 +114,8 @@
   }
   function addDisplayPurifiers(items){
     const positions=[[45,55],[53,48],[71,50],[78,29]];
-    return ProductCatalog.purifierModels.map((profile,i)=>
-      placeExhibit(items,'catalog:purifier:'+profile.model,positions[i],true)).every(Boolean);
+    return ProductCatalog.purifierModels.map((model,i)=>
+      placeExhibit(items,'catalog:purifier:'+model,positions[i],true)).every(Boolean);
   }
   function addDisplayDehumidifier(items){
     return placeExhibit(items,'catalog:dehumid:DQ203PCCA',[90,52],false);
@@ -224,9 +227,8 @@
   }
   function placementStatus(k,unitId){
     if(unitId)return life.canAdd(k,unitId)?'놓을 수 있음':'배치됨';
-    const bundle=liveDream&&ProductCatalog.bundleFor(k);
-    const count=list().filter(o=>o.k===k||(bundle&&o.bundleId===bundle.id)).length;
-    return (bundle?'구성 선택 · ':'')+'이 방에 '+count+'개 배치';
+    const count=list().filter(o=>o.k===k).length;
+    return '이 방에 '+count+'개 배치';
   }
   function updateTools(){
     $('sample').hidden=!selected;$('actions').hidden=!selected;
@@ -249,7 +251,7 @@
     if(selected&&!wall)$('name').textContent+=' · '+(M.heading(selected)*90)+'°';
     $('overlap').hidden=overlap.length<2;
     $('undo').disabled=!hist[room].length;
-    $('duplicate').disabled=!!(selected&&life&&!life.canAdd(selected.k,null,selected.bundleId));
+    $('duplicate').disabled=!!(selected&&life&&!life.canAdd(selected.k));
     $('products').querySelectorAll('[data-key]').forEach(b=>{
       b.setAttribute('aria-pressed',String(b.dataset.key===selected?.k&&(!b.dataset.unit||b.dataset.unit===selected?.deviceId)));
       b.disabled=!!life&&!life.canAdd(b.dataset.key,b.dataset.unit);
@@ -287,7 +289,7 @@
         status.textContent=placementStatus(item.k,unit?.id);
         b.append(status);
       }
-      b.onclick=()=>requestPlacement(item.k,unit?.id);return b;
+      b.onclick=()=>add(item.k,unit?.id);return b;
     }));
     if(!items.length)$('products').textContent=!online?'제품 DB를 사용하려면 로컬 서버에서 방을 열어 주세요.':space==='my'?'ThinQ 등록 가전이 없어요.':'가전 수집에서 제품을 골라 보세요.';
     $('products').scrollTo(0,0);
@@ -336,25 +338,10 @@
     const bg=M.bg(room,tone);cv.width=bg.width;cv.height=bg.height;
     select();drawerOpen(false);sync();inventory();refresh();home();
   }
-  function requestPlacement(k,unitId){
-    const bundle=liveDream&&ProductCatalog.bundleFor(k);
-    if(!bundle){add(k,unitId);return}
-    const picker=$('bundlePicker');
-    $('bundleParts').replaceChildren(...bundle.keys.map(key=>{
-      const item=ProductCatalog.restore(M.products,key);
-      const button=document.createElement('button'),pic=document.createElement('canvas');
-      pic.width=54;pic.height=54;pic.setAttribute('aria-hidden','true');M.thumbnail(pic,key,tone);
-      button.append(pic,document.createTextNode(item.n));
-      button.onclick=()=>{picker.close();add(key,null,bundle.id)};
-      return button;
-    }));
-    picker.showModal();
-  }
-  function add(k,unitId,bundleId){
-    if(ProductCatalog.componentOnly(k)||(life&&!life.canAdd(k,unitId,bundleId)))return;
+  function add(k,unitId){
+    if(ProductCatalog.componentOnly(k)||(life&&!life.canAdd(k,unitId)))return;
     const it=M.products[k],{W,D}=M.roomData(room);
     const o={id:id(),k,f:0,e:0,x:Math.round((W-it.w)/2),y:it.wall?0:Math.round((D-it.d)/2)};
-    if(bundleId)o.bundleId=bundleId;
     if(it.previousFootprint)o.artVersion=1;
     if(space==='my'&&k==='sofa')o.routineIds=[];
     if(!findSpace(o))return;
@@ -362,8 +349,8 @@
     const persisted=save();refresh();fit();reveal();if(persisted)life?.placementClue(o);
   }
   function placeCollected(k){
-    cat=M.products[k].c;sync();inventory();requestPlacement(k);
-    if(!$('bundlePicker').open)view.focus({preventScroll:true});
+    cat=M.products[k].c;sync();inventory();add(k);
+    view.focus({preventScroll:true});
   }
   function placementIssue(o,items){
     if((M.products[o.k].behaviorKey||o.k)==='robot_vacuum'&&M.robotCrossesStep(room,o))return '청소기나 앞쪽 이동 경로가 단차에 걸려요.';
@@ -416,7 +403,7 @@
   $('aim').onclick=()=>edit(o=>{const next=M.facingScreen(o,ordered);if(next!=null)M.turnTo(room,o,next)});
   const height=n=>edit(o=>o.e=Math.max(-M.products[o.k].elev,o.e+n));
   function duplicate(){
-    if(!selected||(life&&!life.canAdd(selected.k,null,selected.bundleId)))return;
+    if(!selected||(life&&!life.canAdd(selected.k)))return;
     const o={...selected,id:id(),x:selected.x+3,y:selected.y+3};
     if(space==='my'&&M.products[o.k].c==='가구')o.routineIds=[];
     delete o.rotationOrigin;delete o.deviceId;
@@ -586,13 +573,11 @@
   async function init(){
     logo();let raw=null;
     if(online){
-      try{await ProductCatalog.loadModels()}catch{
+      try{await ProductCatalog.loadModels();await ProductCatalog.loadRetiredSales()}catch{
         storageOK=false;$('name').textContent='제품 DB를 열 수 없어요. 서버 연결 후 새로고침해 주세요.';return;
       }
     }
-    await Promise.all([M.load(),online&&ProductCatalog.loadBundles().catch(()=>{
-      notice('세트 구성 목록을 불러오지 못했어요.');
-    }),online&&ProductCatalog.loadBodies().catch(()=>{
+    await Promise.all([M.load(),online&&ProductCatalog.loadBodies().catch(()=>{
       notice('제품별 외형 정보를 불러오지 못해 기본 도트로 표시해요.');
     })]);
     if(online){
@@ -613,7 +598,7 @@
         if(model.homeSource!=='demo')storeKey+='.'+model.homeSource;
         if(model.homeSource==='unavailable')storageOK=false;
       }
-      if(!readOnly)try{model.pruneRetiredCollection()}catch(e){notice(e.message)}
+      if(!readOnly)try{model.pruneRetiredCollection()}catch(e){storageOK=false;notice(e.message);return}
       for(const k of [...Object.values(model.demoModels),...model.registeredAppliances().map(d=>d.k)]){
         if(ProductCatalog.hasModel(k))ProductCatalog.restore(M.products,k);
       }
@@ -647,6 +632,7 @@
       history.replaceState(history.state,'',url);
     }
     $('retroRoom').hidden=!liveDream;
+    if(online)fetch('/experience/qr',{method:'HEAD'}).then(r=>{$('visitorQR').hidden=!r.ok}).catch(()=>{});
     for(const [r,name] of Object.entries(M.names)){
       const b=document.createElement('button');b.dataset.room=r;b.innerHTML='<b>'+r+'</b>'+name;
       b.onclick=()=>{
@@ -717,12 +703,8 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     if(friend||!isAppliance(k))return true;
     return my?owned(k).length>0:model.collected(k);
   }
-  function bundleAllows(k,id){
-    const source=ProductCatalog.bundleById(id);
-    return (space==='dream'||menu)&&!!source&&model.collected(source.key)&&source.keys.includes(k);
-  }
   function visible(o){
-    if(o.bundleId!=null)return bundleAllows(o.k,o.bundleId);
+    if(o.bundleId!=null)return false;
     if(M.products[o.k]?.c==='가전'&&!ProductCatalog.hasModel(o.k))return false;
     if((space==='dream'||menu)&&room()==='C'&&o.exhibit)return true;
     if(!my||!isAppliance(o.k))return allowed(o.k);
@@ -732,8 +714,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
   function freeUnit(k,unitId){
     return owned(k).find(d=>(!unitId||d.id===unitId)&&!list().some(o=>o.k===k&&o.deviceId===d.id));
   }
-  function canAdd(k,unitId,bundleId){
-    if(bundleId!=null)return bundleAllows(k,bundleId);
+  function canAdd(k,unitId){
     return allowed(k)&&(!my||!isAppliance(k)||!!freeUnit(k,unitId));
   }
   function bindUnit(o,unitId){
@@ -746,7 +727,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
   const templates=model.applianceTemplates,groups=model.applianceGroups;
   const groupFor=k=>Object.keys(groups).find(kind=>groups[kind].keys.includes(baseKey(k)));
   const recipeFor=k=>templates.find(t=>t.actions.some(a=>a.kind===groupFor(k)));
-  const tapKind=k=>k?.startsWith('fridge_')?'fridge':['vacuum','robot_vacuum','humidifier','dehumidifier'].includes(k)?k:null;
+  const tapKind=k=>k==='dryer'?'washer':k?.startsWith('fridge_')?'fridge':['vacuum','robot_vacuum','humidifier','dehumidifier'].includes(k)?k:null;
   const tapDescriptions={
     air:'고양이가 에어컨 바람을 맞으며 귀를 살짝 접어요.',
     purifier:'고양이가 공기청정기 앞에서 코를 들고 바람 냄새를 맡아요.',
@@ -1893,7 +1874,7 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     $('libraryTitle').textContent='수집 완료';$('collectedName').textContent=product.n;
     $('collectedUse').textContent=productUse(product.k);
     M.thumbnail($('collectedPic'),product.k,tone());
-    $('placeCollected').textContent=ProductCatalog.bundleFor(product.k)?'구성 가전 골라 놓기':'방에 놓기';
+    $('placeCollected').textContent='방에 놓기';
     $('placeCollected').onclick=()=>{
       dialog.close();
       if(!editMode)toggleEdit();
@@ -1938,7 +1919,6 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
     if(my&&!sample)action('목록 새로고침',()=>location.reload(),false,host);
   }
   function render(){
-    $('productPhoto').hidden=true;$('productDot').hidden=true;$('unknownModel').hidden=true;
     $('living').classList.toggle('model-card',panel==='product'&&!editMode);
     offer?.disconnect();offer=null;
     if(!((friend&&panel==='idle')||(!readOnly&&!my&&!editMode&&panel==='product'&&isTV(target))))offeredTarget=null;
@@ -2080,22 +2060,18 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
       const item=target,k=item.k;
       const product=M.products[k];
       if(product.modelCode){
-        const photo=$('productPhoto');photo.alt=product.modelCode+' 제품 사진';photo.hidden=false;
-        photo.onerror=()=>{
-          if(panel!=='product'||target!==item)return;
-          photo.hidden=true;$('productDot').hidden=false;M.thumbnail($('productDot'),k,tone());
-        };
-        photo.src=product.photoUrl||DOT_ASSETS.modelPhotos[product.spriteKey];
-        show(product.modelCode,product.appearance||(product.catalogFamily?product.catalogFamily+' 대표 도트':''));
+        const category=product.catalogFamily||(product.washerStyle?'세탁기':'가전');
+        show(product.salesName||category);
+        if(!product.salesName)ProductCatalog.loadSalesName(product,category).then(name=>{
+          if(name&&panel==='product'&&target===item&&!editMode)show(name);
+        });
         const routine=recipeFor(k);
         if(isTV(item)&&!friend){const b=action('영화 보기',()=>startMovie(),true);if(!my)observeOffer(b,item)}
         if(routine&&!compareWashers)action(routine.name,()=>openRecipe(routine,item),true);
         action('닫기',()=>tap(null));return;
       }
-      $('productDot').hidden=false;M.thumbnail($('productDot'),k,tone());$('unknownModel').hidden=false;
-      const title=my&&isTV(item)&&item.deviceId?nameOf(item.deviceId):M.products[k].n;
+      show(my&&isTV(item)&&item.deviceId?nameOf(item.deviceId):product.n);
       if(isTV(item)){
-        show(title,seat?'고양이가 가까운 소파에서 TV를 봐요.':'고양이가 TV 앞에 서서 봐요.');
         if(!friend){
           const button=action('영화 보기',()=>startMovie(),true);
           if(!my)observeOffer(button,item);
@@ -2105,10 +2081,8 @@ function createLivingRoom({model,space,compareWashers,M,$,list,id,room,tone,noti
           if(my)action('연결 설정',connect);
         }
       }else if(k==='floor_lamp'){
-        show(title,lampOn?'고양이가 켜진 조명을 올려다봐요.':'고양이가 꺼진 조명을 올려다봐요.');
         if(!friend)action(lampOn?'조명 끄기':'조명 켜기',()=>{lampOn=!lampOn;setPanel('product')});
       }else{
-        show(title,reaction?.path?.length===0?blockedRobotMessage(item):tapDescriptions[tapKind(k)||groupFor(k)]);
         const t=recipeFor(k);
         if(t)action(t.name,()=>openRecipe(t,item),true);
       }

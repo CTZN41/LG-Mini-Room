@@ -6,7 +6,7 @@ const old=JSON.stringify({room:'C',theme:'lime',layouts:{
   A:[],B:[{id:1,k:'tvset',x:1,y:49,f:1,e:0,deviceId:'my-tv-1'}],
   C:[{id:2,k:'bed',x:10,y:12,f:0,e:0}]
 }});
-const previousState=JSON.stringify({schemaVersion:1,revision:3,collection:['tvset'],dreamLayout:{},
+const previousState=JSON.stringify({schemaVersion:1,revision:3,collection:['tvset','catalog:tv:55LX1QKNA'],dreamLayout:{},
   myFixtureId:'sample-home-v1',registeredTvIds:['my-tv-1'],myLayout:{'tv-slot':'my-tv-1'},
   savedRoutines:[{templateId:'movie-night',anchorId:'sofa',bindings:{'tv-on':'my-tv-1'},exclusions:{}}]});
 
@@ -32,11 +32,16 @@ const previousState=JSON.stringify({schemaVersion:1,revision:3,collection:['tvse
       assert.equal(saved.room,'B');assert.equal(saved.theme,'lime');assert.equal(saved.layoutVersion,1);
       assert.deepEqual(saved.woodRooms,['A','B','C']);
       for(const [r,items] of Object.entries(saved.layouts)){
-        if(space==='dream'&&r==='C')assert.equal(items.filter(o=>o.artVersion===1&&o.exhibit).length,4);
+        if(space==='dream'&&r==='C'){
+          const purifiers=items.filter(o=>o.k.startsWith('catalog:purifier:')&&o.artVersion===1&&o.exhibit);
+          assert.equal(new Set(purifiers.map(o=>o.k)).size,4);
+        }
         else assert.deepEqual(items.map(o=>o.k),['sofa']);
       }
       assert.equal(await get(key+'.before-wood'),old);
-      assert.equal(await get(stateKey),previousState);
+      const expected=JSON.parse(previousState);
+      expected.collection=['catalog:tv:55LX1QKNA'];expected.revision++;
+      assert.deepEqual(JSON.parse(await get(stateKey)),expected);
       await p.locator('[data-room=C]').tap();await open(space);
       assert.equal(JSON.parse(await get(key)).room,'C');
     }

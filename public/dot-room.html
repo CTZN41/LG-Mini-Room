@@ -8,6 +8,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="dot-editor.css">
   <script defer src="dot-assets.js"></script>
+  <script defer src="purifier-profiles.js"></script>
   <script defer src="catalog-art.js"></script>
   <script defer src="product-catalog.js"></script>
   <script defer src="dot-scene.js"></script>
@@ -33,7 +34,7 @@
       <div class="zoom"><button id="out" aria-label="축소">−</button><output id="scale">100%</output><button id="in" aria-label="확대">＋</button></div>
     </nav>
     <div id="comboHint" role="status"></div>
-    <section id="living" hidden aria-label="방 상호작용"><img id="productPhoto" hidden alt=""><canvas id="productDot" hidden width="64" height="60" aria-hidden="true"></canvas><strong id="lifeTitle"></strong><small id="unknownModel" hidden>모델명 미확인</small><div id="routineTools" role="group" aria-label="루틴 관리" hidden></div><span id="lifeDetail" role="status"></span><div id="lifeActions"></div></section>
+    <section id="living" hidden aria-label="방 상호작용"><strong id="lifeTitle"></strong><div id="routineTools" role="group" aria-label="루틴 관리" hidden></div><span id="lifeDetail" role="status"></span><div id="lifeActions"></div></section>
     <div class="selection">
       <div class="selectedName"><img id="editPhoto" hidden alt=""><canvas id="sample" width="40" height="40" hidden></canvas><span><span id="name" role="status">제품을 눌러 선택</span><small id="unknownEditModel" hidden>모델명 미확인</small></span></div>
       <div id="actions" hidden>
@@ -71,10 +72,6 @@
     <div><button id="placeCollected">방에 놓기</button><button id="continueCollecting">계속 수집</button></div>
   </section>
 </dialog>
-<dialog id="bundlePicker" aria-labelledby="bundleTitle">
-  <header><h2 id="bundleTitle">배치할 구성 가전</h2><button class="close" aria-label="구성 선택 닫기">×</button></header>
-  <div id="bundleParts"></div>
-</dialog>
 <dialog id="routineBag" aria-labelledby="bagTitle">
   <header><h2 id="bagTitle">루틴 인벤토리</h2><button class="close" aria-label="인벤토리 닫기">×</button></header>
   <div id="bagRows"></div>
@@ -89,6 +86,7 @@
   <a id="friendRoom" href="/#example" hidden>예시 친구 방</a>
   <a id="retroRoom" href="?space=dream&amp;room=C" hidden>C 현관 투존 · 가전 전시</a>
   <a id="washerComparison" href="/editor?space=example&amp;compare=washers" hidden>세탁기 모델 비교</a>
+  <a id="visitorQR" hidden href="/experience/qr">방문자 체험 QR</a>
   <a id="mini" href="/#menu">LG 미니룸으로</a>
 </dialog>
 <dialog id="picture"><header><h2>방 이미지</h2><button class="close" aria-label="이미지 닫기">×</button></header><img id="exportImage" alt="편집 표시가 없는 방 전체 이미지"><a id="download" download>PNG 저장</a></dialog>

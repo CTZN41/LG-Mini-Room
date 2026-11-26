@@ -1,3 +1,4 @@
+const {expectedTitle}=require('./catalog-room-title.cjs');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
@@ -50,7 +51,7 @@ async function auditDatabase(browser) {
           family.pairs.set(pair,(family.pairs.get(pair)||0)+1);
           family.rendered++;
           if (views[0]===views[2]) family.sameRear++;
-          if (!item.body && !item.washerStyle && !item.appearance) family.common++;
+          if (category==='공기청정기'?item.spriteKey==='db_purifier':!item.body && !item.washerStyle && !item.appearance) family.common++;
           allPairs.add(pair);
         } catch (error) { failures.push({category,model,error:error.message}); }
       }
@@ -122,7 +123,7 @@ async function exerciseRoom(browser,width,height) {
       assert.deepEqual(await layout(),edited);
       await tapPlacement(page,item.id);
       await page.waitForFunction(model=>document.querySelector('#lifeTitle').textContent===model &&
-        document.querySelector('#productPhoto').naturalWidth>0,chosen.model);
+        document.querySelector('#lifeDetail').textContent==='',await expectedTitle(page,family,chosen.model));
       await page.locator('#lifeActions').getByRole('button',{name:'닫기',exact:true}).tap();
       await tap('editMode');await tapPlacement(page,item.id);await tap('remove');
       assert.deepEqual(await layout(),initial);

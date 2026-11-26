@@ -58,7 +58,7 @@ async function exercise(browser,viewport){
   }
   assert.match(await page.locator('#keyboardTarget').textContent(),/타워 에어컨/);
   await page.keyboard.press('Enter');assert.equal(await page.locator('#lifeTitle').innerText(),'타워 에어컨');
-  assert.match(await page.locator('#lifeDetail').innerText(),/고양이가/);
+  assert.equal(await page.locator('#lifeDetail').innerText(),'');
   assert.equal((await events()).some(e=>e.event==='routine_opened'),false);
   await button('쾌적한 방').tap();assert.equal(await page.locator('#lifeTitle').innerText(),'쾌적한 방');
   await button('미리보기').tap();assert.match(await page.locator('#lifeDetail').textContent(),/냉방/);
