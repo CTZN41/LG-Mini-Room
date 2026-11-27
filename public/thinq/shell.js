@@ -1,11 +1,12 @@
 (() => {
   const query = new URLSearchParams(location.search);
   const inRoom = !document.body.classList.contains('thinq');
-  if (inRoom && query.get('app') !== 'thinq') return;
+  const hompy = document.body.classList.contains('hompy');
+  if (inRoom && !hompy && query.get('app') !== 'thinq') return;
 
   const tabs = [
-    ['home', '홈', '/'], ['devices', '디바이스', '/?tab=devices'],
-    ['my', '마이룸', '/editor?space=dream&app=thinq'],
+    ['home', '홈', '/?tab=home'], ['devices', '디바이스', '/?tab=devices'],
+    ['my', '마이룸', '/miniroom/home?space='+ (query.get('space') === 'my' ? 'my' : 'dream')],
     ['care', '케어', '/?tab=care'], ['menu', '메뉴', '/?tab=menu']
   ];
   const icons = {
@@ -28,7 +29,7 @@
   }
   let active;
   if (inRoom) {
-    active = ['dream','my'].includes(query.get('space')) ? 'my' : 'menu';
+    active = hompy || ['dream','my'].includes(query.get('space')) ? 'my' : 'menu';
   } else {
     active = ['devices','care','menu'].includes(query.get('tab')) ? query.get('tab') : 'home';
     for (const screen of document.querySelectorAll('.screen')) screen.hidden = screen.id !== active;
@@ -49,10 +50,22 @@
   nav.setAttribute('aria-label','ThinQ 하단 메뉴');
   for (const [id,label,url] of tabs) {
     const link = document.createElement('a');
-    link.href = url;
+    link.href = id === 'my' && !inRoom ? '/miniroom/start' : url;
     if (id === active) link.setAttribute('aria-current','page');
     link.innerHTML = icon(id)+'<span>'+label+'</span>';
     nav.append(link);
+  }
+  if(!inRoom&&active==='devices'){
+    nav.querySelectorAll('svg').forEach((slot,i)=>{
+      const img=document.createElement('img');img.alt='';img.width=22;img.height=22;
+      img.src='/onboarding/nav-'+['home','grid','room','care','menu'][i]+'.svg';slot.replaceWith(img);
+    });
+    const entry=nav.querySelectorAll('a')[2];
+    const tip=document.createElement('span');tip.className='entry-tip';tip.setAttribute('aria-hidden','true');
+    tip.textContent='NEW  탭해서 미니룸 시작하기';entry.append(tip);
+    const clock=document.querySelector('.device-status time');
+    const tick=()=>clock.textContent=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
+    tick();setInterval(tick,30000);
   }
   footer.append(nav);
   document.body.append(footer);

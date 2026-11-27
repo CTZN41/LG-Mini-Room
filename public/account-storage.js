@@ -5,6 +5,12 @@ const roomStorage=globalThis.miniroomStorage=(()=>{
   const {user,entries}=JSON.parse(node.textContent);
   const draftKey='miniroom.account.draft.'+user.id;
   const draft=JSON.parse(sessionStorage.getItem(draftKey)||'{}');
+  // The home card uses the current editor's renderer; keep preview migrations in memory.
+  if (new URLSearchParams(location.search).get('homePreview')==='1') {
+    const copy=new Map(Object.entries(entries));
+    for(const [key,change] of Object.entries(draft))copy.set(key,change.value);
+    return {getItem:key=>copy.get(key)??null,setItem:(key,value)=>copy.set(key,String(value)),removeItem:key=>copy.delete(key),whenSynced:async()=>{}};
+  }
   const status=document.getElementById('accountSaveStatus');
   status.hidden=false;
   const notify=message=>{status.textContent=message};

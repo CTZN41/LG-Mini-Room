@@ -48,6 +48,18 @@ const guestPages = new Map([
 const guestAssets = new Set(["/dot-assets.js","/dot-scene.js","/purifier-profiles.js","/catalog-art.js","/product-catalog.js","/state.js"]);
 const pages = new Map([
   ...guestPages,
+  ["/miniroom/home", ["mini-home.html","text/html; charset=utf-8"]],
+  ["/mini-shell.css", ["mini-shell.css","text/css; charset=utf-8"]],
+  ...["jua","silkscreen"].map(name=>[`/fonts/${name}.woff`,[`fonts/${name}.woff`,"font/woff"]]),
+  ["/fonts/status.ttf", ["fonts/status.ttf","font/ttf"]],
+  ["/mini-music.css", ["mini-music.css","text/css; charset=utf-8"]],
+  ["/mini-music.js", ["mini-music.js","text/javascript; charset=utf-8"]],
+  ["/mini-home.js", ["mini-home.js","text/javascript; charset=utf-8"]],
+  ["/mini-home.css", ["mini-home.css","text/css; charset=utf-8"]],
+  ["/miniroom/start", ["onboarding.html","text/html; charset=utf-8"]],
+  ["/onboarding.js", ["onboarding.js","text/javascript; charset=utf-8"]],
+  ...['banner','bell','signals','room','transition','grass','door','door-cat','sky','loading-cat','pointer',
+    'nav-home','nav-grid','nav-room','nav-care','nav-menu'].map(name=>['/onboarding/'+name+'.svg',['onboarding/'+name+'.svg','image/svg+xml']]),
   ["/login", ["login.html","text/html; charset=utf-8"]],
   ["/login.js", ["login.js","text/javascript; charset=utf-8"]],
   ["/login.css", ["login.css","text/css; charset=utf-8"]],
@@ -95,7 +107,13 @@ const server = createServer(async (request, response) => {
   }
   if (visitorOnly && path === "/") { response.writeHead(302,{Location:"/experience"}).end(); return; }
   if (visitorOnly && !guestPages.has(path) && !guestAssets.has(path)) { response.writeHead(404).end(); return; }
-  if(path==="/api/catalog/scan"||path==="/api/catalog/retired-sales"||path==="/api/catalog/models"||path==="/api/catalog/bundles"||path==="/api/catalog/bodies"||path==="/api/catalog"||path==="/api/catalog/photo"||path==="/api/catalog/product")
+  if(path==='/api/catalog/scan'||path==='/api/catalog/camera-products'){
+    response.setHeader('Vary','Origin');
+    if(request.headers.origin==='https://lg-camera-lab.pages.dev')
+      response.setHeader('Access-Control-Allow-Origin',request.headers.origin);
+    return (await import('./catalog.mjs')).serveCatalog(new URL(request.url,'http://localhost'),response);
+  }
+  if(path==="/api/catalog/retired-sales"||path==="/api/catalog/models"||path==="/api/catalog/bundles"||path==="/api/catalog/bodies"||path==="/api/catalog"||path==="/api/catalog/photo"||path==="/api/catalog/product")
     return (await import('./catalog.mjs')).serveCatalog(new URL(request.url,'http://localhost'),response);
   if(path==="/api/routine-context"){
     const params=new URL(request.url,'http://localhost').searchParams;
@@ -121,17 +139,21 @@ const server = createServer(async (request, response) => {
 
   const [file, contentType] = page;
   try {
-    const appEntry=file==='index.html'||file==='members.html'||
-      (file==='dot-room.html'&&new URL(request.url,'http://localhost').searchParams.get('app')==='thinq');
-    if(appEntry&&!memberFor(request)){
-      response.writeHead(302,{Location:'/login','Cache-Control':'no-store'}).end();return;
-    }
-    if(file==='login.html'&&memberFor(request)){
-      response.writeHead(302,{Location:'/','Cache-Control':'no-store'}).end();return;
+    const params=new URL(request.url,'http://localhost').searchParams;
+    const inRoom=file==='dot-room.html'&&params.get('app')==='thinq';
+    const isMember=(file==='index.html'||file==='members.html'||file==='login.html'||file==='mini-home.html'||inRoom)&&memberFor(request);
+    const redirect=target=>response.writeHead(302,{Location:target,'Cache-Control':'no-store'}).end();
+    if(file==='index.html'&&!isMember&&!params.size)return redirect('/?tab=devices');
+    if(file==='members.html'&&!isMember)return redirect('/login');
+    if((inRoom||file==='mini-home.html')&&!isMember)return redirect('/miniroom/start?'+new URLSearchParams({next:request.url}));
+    if(file==='dot-room.html'&&params.get('space')==='menu'&&!params.has('observe')&&(isMember||memberFor(request)))return redirect('/miniroom/home?space=dream');
+    if(file==='login.html'&&isMember){
+      const next=params.get('next');
+      return redirect(next&&/^\/(?:editor|miniroom\/home)\?[^#\r\n]*$/.test(next)?next:params.get('from')==='miniroom'?'/miniroom/home?space=dream':'/');
     }
     let body = await readFile(new URL("./public/" + file, import.meta.url));
     if(file==='experience-qr.html'&&!visitorOnly)
-      body=Buffer.from(body.toString().replace('data-entry="/experience"','data-entry="/login"').replace('href="/experience"','href="/login"'));
+      body=Buffer.from(body.toString().replace('data-entry="/experience"','data-entry="/miniroom/start"').replace('href="/experience"','href="/miniroom/start"'));
     if(file==='dot-room.html'||file==='members.html'){
       const snapshot=bootstrap(request);
       if(snapshot){

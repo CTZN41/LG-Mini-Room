@@ -59,18 +59,19 @@ withServer(async base=>{
     await p.goto(base+'/editor?camera=resume&ticket=unused&lgcam=registered');
     await p.getByRole('link',{name:'ThinQ 홈 열기'}).waitFor();
     assert.equal((await (await p.request.get(base+'/api/members/me')).json()).user,null);
-    await p.goto(base+'/experience/qr');await p.locator('#entry').tap();await tap('회원가입');
+    await p.goto(base+'/experience/qr');await p.locator('#entry').tap();
+    await p.getByRole('link',{name:'문 열고 들어가기'}).tap();await tap('건너뛰기');await tap('회원가입');
     const join=p.locator('#join');
     for(const [label,value] of [['이름','신규 테스트'],['아이디','new-member'],['비밀번호','123456'],['닉네임','첫 방문']]){
       await join.getByLabel(label,{exact:true}).fill(value);
     }
-    await tap('가입하고 시작하기');await p.locator('#home').waitFor();
+    await tap('가입하고 시작하기');await p.waitForURL('**/miniroom/home?space=dream');
     const nav=p.getByRole('navigation',{name:'ThinQ 하단 메뉴'});
     for(const name of ['디바이스','케어','메뉴','홈']){
       const tab=nav.getByRole('link',{name,exact:true});await tab.tap();assert.equal(await tab.getAttribute('aria-current'),'page');
     }
-    await miniroom();
-    await p.getByRole('button',{name:'＋ 가전 촬영'}).waitFor();
+    await miniroom();await p.getByRole('link',{name:'문 열고 들어가기'}).tap();await tap('건너뛰기');
+    await p.locator('#enter').tap();await p.getByRole('button',{name:'＋ 가전 촬영'}).waitFor();
     const initial=await read('dotroom');
     await scan('dream',null,liveCamera);
     assert.match(await p.locator('#notice').innerText(),/취소/);assert.ok(await p.locator('#library').isHidden());
@@ -132,7 +133,7 @@ withServer(async base=>{
     });
     await tap('수납');assert.deepEqual(await read(layoutKey),beforeStow,'계정 저장 실패 뒤 배치를 유지해야 합니다.');
     await tap('수납');await p.evaluate(()=>roomStorage.whenSynced());
-    assert.ok(!(await read(layoutKey)).layouts.B.some(o=>o.deviceId===movie.bindings['tv-on']));
+    assert.ok(!(await read(layoutKey)).layouts.A.some(o=>o.deviceId===movie.bindings['tv-on']));
     await p.locator('#undo').tap();await p.evaluate(()=>roomStorage.whenSynced());
     assert.deepEqual(await read(layoutKey),beforeStow);
     await tap('배치 완료');
@@ -148,9 +149,9 @@ withServer(async base=>{
     }
     await context.close();
     const again=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
-    const next=await again.newPage();await next.goto(base);await next.locator('#login').getByLabel('아이디').fill('new-member');
+    const next=await again.newPage();await next.goto(base+'/miniroom/start');await next.getByRole('link',{name:'문 열고 들어가기'}).tap();await next.getByRole('button',{name:'건너뛰기'}).tap();await next.locator('#login').getByLabel('아이디').fill('new-member');
     await next.locator('#login').getByLabel('비밀번호').fill('123456');await next.getByRole('button',{name:'로그인',exact:true}).tap();
-    await next.getByRole('navigation',{name:'ThinQ 하단 메뉴'}).getByRole('link',{name:'마이룸',exact:true}).tap();
+    await next.locator('#enter').tap();
     await next.locator('#myLink').tap();await next.getByRole('button',{name:'영화 준비',exact:true}).tap();
     assert.ok((await next.locator('#lifeDetail').innerText()).includes(registeredTV.displayName));assert.deepEqual(errors,[]);
     if(liveCamera){

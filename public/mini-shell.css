@@ -1,0 +1,39 @@
+@font-face{font-family:Jua;src:url('/fonts/jua.woff') format('woff');font-display:swap}
+@font-face{font-family:Silkscreen;src:url('/fonts/silkscreen.woff') format('woff');font-display:swap}
+@font-face{font-family:"Status Noto";src:url('/fonts/status.ttf') format('truetype');font-weight:500;font-display:swap}
+
+:is(.hompy,.personal-browse) :is(.hud,.room-wallet){font:12px/1.2 Silkscreen,monospace;gap:8px}
+:is(.hud,.room-wallet) a{white-space:nowrap}
+:is(.hud,.room-wallet) progress{appearance:none;flex:1;min-width:20px;height:11px;border:1.5px solid #1a1c2c;border-radius:8px;overflow:hidden}
+:is(.hud,.room-wallet) progress::-webkit-progress-bar{background:white}
+:is(.hud,.room-wallet) progress::-webkit-progress-value{background:#ff8bb8}
+:is(.hud,.room-wallet) small{font:9px/1 Silkscreen,monospace;color:#514c63}
+.hompy #level,.personal-browse #roomLevel{font:12px Silkscreen,monospace;letter-spacing:.5px;background:#ff9ec5;color:#241b2c;padding:4px 8px;border-radius:6px;box-shadow:0 2px #302534}
+.hompy #level,.personal-browse #roomLevel{min-width:58px;text-align:center}
+:is(.hud,.room-wallet) small{min-width:35px}
+.hompy #coins,.personal-browse #roomPoints{min-width:54px;display:inline-flex;gap:6px;align-items:center;font:13px Silkscreen,monospace;color:#231d30}
+:is(#coins,#roomPoints)::before{content:"";width:12px;height:14px;box-sizing:border-box;background:#f6b642;border:2px solid #60402a;box-shadow:inset 2px 0 #ffe182;clip-path:polygon(20% 0,80% 0,80% 12%,100% 12%,100% 88%,80% 88%,80% 100%,20% 100%,20% 88%,0 88%,0 12%,20% 12%)}
+.hompy .quest,.personal-browse .room-quest{display:grid;place-items:center;background:white;color:#ed699e;border:1.5px solid #282232;width:30px;height:30px;flex:none;border-radius:50%;font:21px/1 sans-serif}
+.hompy .side a,.personal-browse:not(.room-overview) #roomSide>*{display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;text-orientation:upright;padding:11px 0;min-height:44px;width:34px;font:13px/1 Jua,sans-serif;letter-spacing:1px;border:1.5px solid #4c4155;border-radius:0 9px 9px 0;box-shadow:0 2px #403748;text-decoration:none;color:white}
+:is(.side,#roomSide)>:nth-child(1){--tab:#89c1f2}.personal-browse #roomSide>:nth-child(1){background:var(--tab)}
+:is(.side,#roomSide)>:nth-child(2){--tab:#f988b5}
+:is(.side,#roomSide)>:nth-child(3){--tab:#70c6b1}
+:is(.side,#roomSide)>:nth-child(4){--tab:#b996df}
+:is(.side,#roomSide)>:nth-child(5){--tab:#f5ad69}
+.hompy .side a,.personal-browse #roomSide>*{background:var(--tab)}
+.hompy .side [aria-current],.personal-browse:not(.room-overview) #roomSide>[aria-current]{background:white;color:color-mix(in srgb,var(--tab) 70%, #432844)}
+.personal-browse:not(.room-overview) #roomSide{gap:5px}
+.hompy .shoot i{width:24px;height:24px;background:currentColor;mask:var(--tool-icon) center/contain no-repeat}
+.personal-browse :is(#personalRoomName,#roomCardsTitle,#roomSide,#spaces a,#roomCardList strong),.personal-browse .top #rooms button{font-family:Jua,sans-serif;font-weight:400}
+.hompy .thinq-footer,.personal-browse .thinq-footer{height:max(80px,calc(67px + env(safe-area-inset-bottom)));padding:6px 12px max(13px,env(safe-area-inset-bottom));background:#101013}
+:is(.hompy,.personal-browse) .thinq-tabs{height:100%;padding:4px}
+:is(.hompy,.personal-browse) .thinq-tabs a{font:11px/1.15 Jua,sans-serif;min-height:0}
+:is(.hompy,.personal-browse) .thinq-tabs a[aria-current=page]{color:white;background:#ff77a8}
+:is(.hompy,.personal-browse) #bgm{height:40px;padding:5px 16px;gap:10px}
+#bgm .music-meter{flex:0 0 20px;display:flex;gap:2px;height:16px;align-items:flex-end}
+.music-meter i{flex:0 0 3px;height:8px;background:#ff96bd}
+.music-meter i:nth-child(even){background:#ffc5df}
+.music-meter i:nth-child(2){height:13px}.music-meter i:nth-child(3){height:10px}.music-meter i:nth-child(4){height:15px}
+#bgm span{font:12px/1.2 Jua,sans-serif}#bgm small{font:9px/1.2 system-ui,sans-serif}
+@media(max-height:660px){.hompy .thinq-footer,.personal-browse .thinq-footer{height:max(63px,calc(54px + env(safe-area-inset-bottom)));padding-block:4px max(5px,env(safe-area-inset-bottom))}.hompy .side a,.personal-browse:not(.room-overview) #roomSide>*{padding-block:6px;min-height:40px}}
+#scanDream,.hompy .shoot{--tool-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%207h5l2-3h4l2%203h5v13H3z%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2213%22%20r%3D%224%22/%3E%3C/svg%3E")}

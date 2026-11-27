@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#9ad0fa"><title>미니홈피 홈 · LG 미니룸</title>
+<link rel="stylesheet" href="/thinq/shell.css"><link rel="stylesheet" href="/mini-home.css">
+<script defer src="/mini-music.js"></script><script defer src="/mini-home.js"></script><script defer src="/thinq/shell.js"></script><link rel="stylesheet" href="/mini-music.css"><link rel="stylesheet" href="/mini-shell.css"></head>
+<body class="hompy">
+<header class="sky-top"><div class="status"><time id="clock"></time><img src="/onboarding/signals.svg" alt=""></div>
+<div class="hud"><a href="/members#balance" id="level">LV. —</a><progress id="xp" max="10" value="0" aria-label="다음 레벨까지의 경험치"></progress><small id="xpText">— XP</small><a href="/members#balance" id="coins" aria-label="보유 포인트">—</a><a class="quest" href="/members#quests" aria-label="퀘스트와 보상">◎</a></div></header>
+<div class="book"><main id="sheet"><header class="profile"><a class="avatar" href="/members#profile" aria-label="프로필"><img src="/onboarding/door-cat.svg" alt=""></a><div class="who"><h1 id="nickname">내 방</h1><small title="방문 집계 준비 중">TODAY — · TOTAL —</small><button class="message" data-pending="상태 메시지 설정">상태 메시지</button></div><button class="badge" data-pending="루틴 장착"><b id="routineGlyph" aria-hidden="true">☾</b><span id="badgeLabel">장착 루틴</span></button></header>
+<div class="room"><a id="enter" class="picture" aria-label="방 열기"><img id="roomImage" hidden alt=""><span id="roomStatus" role="status">방을 불러오는 중…</span></a>
+<div class="switch" aria-label="미리 볼 방"><button data-space="my">⌂ 마이룸</button><button data-space="dream">✦ 드림룸</button></div>
+<button class="routine-tag" data-pending="루틴 장착" id="roomRoutine"></button><a id="full" class="full" aria-label="방 전체 보기"><i aria-hidden="true"></i></a></div>
+<section class="list"><header><h2 id="listTitle"></h2><a id="all">ALL ›</a></header><div id="rows" aria-live="polite"></div></section>
+<a class="guest" id="guest"><header><b>방명록</b><small id="noteTotal" title="안 읽은 글 집계 준비 중">›</small></header><div id="notes"></div></a></main>
+<nav class="side" aria-label="미니홈피 메뉴"><a href="#sheet" aria-current="page">홈</a><a id="roomTab">미니룸</a><a id="bookTab">도감</a><a id="noteTab">방명록</a><a href="/members#search">친구</a></nav>
+<a id="shoot" aria-label="가전 촬영" class="shoot"><i aria-hidden="true"></i></a></div>
+<div data-bgm-slot></div>
+<dialog id="pending"><header><h2 id="pendingTitle"></h2><button class="close" aria-label="닫기">×</button></header><p>준비 중인 기능이에요.</p></dialog>
+</body></html>

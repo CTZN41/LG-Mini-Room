@@ -5,7 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#293638">
   <title>MY DOT ROOM · 도트 룸 에디터</title>
-  <script>if(new URLSearchParams(location.search).get('camera')==='resume')document.documentElement.classList.add('camera-return');</script>
+  <script>
+    const entryParams=new URLSearchParams(location.search);
+    if(entryParams.get('camera')==='resume')document.documentElement.classList.add('camera-return');
+    else if(location.protocol!=='file:'&&!['menu','example'].includes(entryParams.get('space'))){
+      document.documentElement.dataset.roomEntry=entryParams.get('space')==='my'?'my':'dream';
+      document.title=(entryParams.get('space')==='my'?'마이룸':'드림룸')+' · LG 미니룸';
+    }
+  </script>
+  <style>
+    #roomEntry{display:none}
+    html[data-room-entry] body>:not(#roomEntry){display:none!important}
+    html[data-room-entry] #roomEntry{display:grid;align-content:center;justify-items:center;gap:10px;height:100%;padding:24px;text-align:center;background:#a6d5fa url('/onboarding/sky.svg') center/cover;color:#272331}
+    #roomEntry .entry-card{display:grid;gap:12px;padding:20px 24px;max-width:100%;border:1px solid #675d6e;border-radius:12px;background:#fff}
+    #roomEntry h2,#roomEntry p{margin:0}
+  </style>
   <style>.camera-return body > :not(#cameraReturn){display:none!important}.camera-return #cameraReturn{display:block;padding:1rem}.camera-return #cameraReturn a{color:inherit}</style>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="dot-editor.css">
@@ -16,18 +30,22 @@
   <script defer src="dot-scene.js"></script>
   <script defer src="account-storage.js"></script>
   <script defer src="dot-editor.js"></script>
+  <script defer src="mini-music.js"></script>
   <link rel="stylesheet" href="thinq/shell.css">
   <script defer src="thinq/shell.js"></script>
-</head>
+<link rel="stylesheet" href="/mini-music.css"><link rel="stylesheet" href="/mini-shell.css"></head>
 <body>
+<section id="roomEntry" aria-label="미니룸"><div class="entry-card"><h2>LG 미니룸</h2><p id="roomEntryMessage" role="status" aria-label="미니룸 열기">방을 여는 중이에요…</p><button type="button" onclick="location.reload()" id="retryRoom" hidden>다시 시도</button></div></section>
 <section id="cameraReturn" hidden><p role="status">촬영을 시작한 방으로 돌아가는 중이에요.</p><a href="/" hidden>ThinQ 홈 열기</a></section>
+<header id="roomHud" aria-label="미니룸 현황"><div class="room-status"><img src="/onboarding/signals.svg" alt=""></div>
+<div class="room-wallet"><a href="/members#balance" id="roomLevel">LV. —</a><progress id="roomXp" max="10" value="0" aria-label="다음 레벨까지의 경험치"></progress><small id="roomXpText">—</small><a id="roomPoints" href="/members#balance" aria-label="보유 포인트">—</a><a class="room-quest" href="/members#quests" aria-label="퀘스트와 보상">◎</a></div></header>
 <header class="top">
   <h1 aria-label="MY DOT ROOM"><canvas id="logo" aria-hidden="true"></canvas></h1>
   <nav id="rooms" aria-label="방 구조"></nav>
   <span id="environmentLabel" aria-label="방 밖의 환경"></span>
   <button id="more" aria-label="방 메뉴" title="방 메뉴">⋯</button>
 </header>
-<nav id="spaces" hidden aria-label="미니룸"><a id="dreamLink" href="?space=dream">드림룸</a><a id="myLink" href="?space=my">마이룸</a><a id="washerShelf" hidden></a><button id="libraryButton" hidden></button><button id="routineBagButton" hidden>인벤토리</button><button id="editMode">배치 편집</button></nav>
+<nav id="spaces" hidden aria-label="미니룸"><strong id="personalRoomName" hidden></strong><a id="myLink" href="?space=my">마이룸</a><a id="dreamLink" href="?space=dream">드림룸</a><a id="washerShelf" hidden></a><button id="libraryButton" hidden></button><button id="routineBagButton" hidden>인벤토리</button><button id="editMode">배치 편집</button></nav>
 <main>
   <section class="studio" aria-label="방 배치">
     <div class="room-stage">
@@ -36,12 +54,14 @@
       <span id="keyboardTarget" role="status" hidden></span>
       <span id="placementHint" role="status"></span>
     </div>
+    <span id="roomContext" hidden></span><nav id="roomShortcuts" aria-label="방 도구" hidden></nav>
     <button id="overview" aria-label="전체 보기" title="전체 보기" aria-pressed="false"><span aria-hidden="true"></span></button>
     <div class="map-zoom" hidden><button id="out" aria-label="축소">−</button><button id="in" aria-label="확대">＋</button></div>
     </div>
     <div class="camera"><button id="scanDream" hidden>＋ 가전 촬영</button></div>
+    <div id="roomBelow"><section id="roomCards" aria-labelledby="roomCardsTitle" hidden><header><h2 id="roomCardsTitle"></h2><button id="roomCollectionAll" aria-label="수집한 가전 전체 보기" hidden>전체 보기</button></header><div id="roomCardList"></div></section>
     <div id="comboHint" role="status"></div>
-    <section id="living" hidden aria-label="방 상호작용"><strong id="lifeTitle"></strong><div id="routineTools" role="group" aria-label="루틴 관리" hidden></div><span id="lifeDetail" role="status"></span><div id="lifeActions"></div></section>
+    <section id="living" hidden aria-label="방 상호작용"><strong id="lifeTitle"></strong><div id="routineTools" role="group" aria-label="루틴 관리" hidden></div><span id="lifeDetail" role="status"></span><div id="lifeActions"></div></section></div>
     <div id="bagPlacement" hidden>
       <strong id="bagPlacementName"></strong><span>제품을 끌어 위치를 정하세요.</span>
       <div><button id="bagPlaceCancel">취소</button><button id="bagPlaceConfirm">여기에 놓기</button></div>
@@ -61,6 +81,8 @@
     <div id="products" aria-label="제품 목록"></div>
   </aside>
 </main>
+<nav id="roomSide" aria-label="미니홈피 메뉴"><a id="roomHomeLink">홈</a><a href="#view" aria-current="page">미니룸</a><button id="sideInventory">도감</button><a id="roomNotesLink">방명록</a><a href="/members#search">친구</a></nav>
+<div data-bgm-slot></div>
 <dialog id="library" aria-labelledby="libraryTitle"><header><h2 id="libraryTitle"></h2><button class="close" aria-label="가전 목록 닫기">×</button></header>
   <div id="libraryBrowse">
   <button id="openCatalog" hidden>제품 DB에서 찾기</button>
@@ -105,7 +127,6 @@
   <a href="/members">계정 및 친구 방</a>
   <button id="accountSaveStatus" hidden aria-live="polite"></button>
   <a id="friendRoom" href="/#example" hidden>예시 친구 방</a>
-  <a id="retroRoom" href="?space=dream&amp;room=C" hidden>C 현관 투존 · 가전 전시</a>
   <a id="washerComparison" href="/editor?space=example&amp;compare=washers" hidden>세탁기 모델 비교</a>
   <a id="visitorQR" hidden href="/experience/qr">방문자 체험 QR</a>
   <a id="mini" href="/#menu">LG 미니룸으로</a>

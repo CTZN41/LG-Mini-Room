@@ -24,6 +24,9 @@ def import_catalog(db, snapshot):
     db.execute('PRAGMA foreign_keys=ON')
     with db:
         db.execute('BEGIN IMMEDIATE')
+        for statement in Path(__file__).with_name('index-shared-catalog.sql').read_text(encoding='utf8').split(';'):
+            if statement.strip():
+                db.execute(statement)
         products = list(db.execute('SELECT model_name,product_name FROM products'))
         known = {code(model) for model, _ in products}
         retired = {code(model) for model, in db.execute('SELECT sale_code FROM retired_sale_keys')}

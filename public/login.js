@@ -1,4 +1,9 @@
 'use strict';
+const params = new URLSearchParams(location.search);
+const next = params.get('next');
+const room = '/miniroom/home?space=dream';
+const destination = next && /^\/(?:editor|miniroom\/home)\?[^#\r\n]*$/.test(next) ? next : params.get('from') === 'miniroom' ? room : '/';
+if (next && destination === next) document.querySelector('.replay').href += '&' + new URLSearchParams({next});
 const forms = [...document.querySelectorAll('form')];
 const statusText = document.querySelector('#status');
 function show(mode){
@@ -20,6 +25,6 @@ for(const form of forms) form.onsubmit=async event=>{
     const result=await response.json();
     if(!response.ok)throw Error(result.error||'다시 시도해 주세요.');
     if(joining)sessionStorage.setItem('miniroom.welcomeUid',result.id);
-    location.replace('/');
+    location.replace(destination);
   }catch(error){statusText.textContent=error.message;}finally{button.disabled=false;}
 };

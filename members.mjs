@@ -33,7 +33,7 @@ function database(){
   db=conn;
   return db;
 }
-const validKey=key=>typeof key==='string'&&/^(?:(?:dotroom|lg-miniroom\.dot\.my(?:\.thinq)?)(?:\.before-wood)?|lg-miniroom\.(?:state(?:\.thinq)?|dot\.dream\.retro-c|discovered\.[\w-]{1,80}|placement-clue\.[\w.-]{1,120}))$/.test(key);
+const validKey=key=>typeof key==='string'&&/^(?:(?:dotroom|lg-miniroom\.dot\.my(?:\.thinq)?)(?:\.before-(?:wood|unit-limit))?|lg-miniroom\.(?:state(?:\.thinq)?|dot\.dream\.retro-c|discovered\.[\w-]{1,80}|placement-clue\.[\w.-]{1,120}))$/.test(key);
 const profile=row=>({id:row.id,nickname:row.nickname,myPublic:!!row.my_public});
 function nickname(raw){
   if(typeof raw!=='string'||!raw.trim()||raw.trim().length>30||/[\x00-\x1f]/.test(raw))fail(400,'닉네임을 1~30자로 입력하세요.');
@@ -98,13 +98,13 @@ function validateEntry(key,value){
   if(key.includes('.state')&&(!Array.isArray(raw.collection)||!Array.isArray(raw.savedRoutines)||raw.schemaVersion!==1))fail(400,'인벤토리 저장 형식을 확인하세요.');
   if(!key.includes('.state')&&(!raw.layouts||!['A','B','C'].includes(raw.room)))fail(400,'배치 저장 형식을 확인하세요.');
 }
-function roomPreview(id,space){
+function roomPreview(id,space,viewer){
   const row=database().prepare('SELECT * FROM members WHERE id=?').get(id);
-  if(!row||!['my','dream'].includes(space)||(space==='my'&&!row.my_public))fail(404,'방을 열 수 없어요.');
+  if(!row||!['my','dream'].includes(space)||(space==='my'&&viewer!==id&&!row.my_public))fail(404,'방을 열 수 없어요.');
   const saves=entries(id);
   const layout=JSON.parse((space==='my'?saves['lg-miniroom.dot.my']||saves['lg-miniroom.dot.my.thinq']:saves.dotroom)||'null');
-  const room=layout?.room||'B', theme=layout?.theme==='lime'?'lime':'pink';
-  const starter=[{k:'sofa',x:34,y:48,f:1,turn:1}];
+  const room='A', theme=layout?.theme==='lime'?'lime':'pink';
+  const starter=[{k:'sofa',x:46,y:26,f:1,turn:1}];
   const items=(layout?.layouts?.[room]??starter).filter(o=>o&&typeof o.k==='string'&&!o.k.startsWith('camera:')).map((o,index)=>({
     id:index+1,k:o.k,x:o.x,y:o.y,e:o.e||0,f:o.f||0,turn:o.turn||0
   }));
@@ -124,9 +124,13 @@ export async function serveMembers(request,response,url){
         const q=(url.searchParams.get('q')||'').trim().slice(0,32);
         return send(200,{members:q?conn.prepare('SELECT * FROM members WHERE id=? OR nickname=? ORDER BY id LIMIT 30').all(q,q).map(profile):[]});
       }
+      if(path==='home'){
+        const space=url.searchParams.get('space')==='my'?'my':'dream';
+        return send(200,{user:profile(user),wallet:wallet(conn,user.id),notes:notes(conn,user.id,space)});
+      }
       if(path==='wallet')return send(200,wallet(conn,user.id));
       if(path==='imports')return send(200,{imports:listImports(conn,user.id)});
-      if(path==='room')return send(200,roomPreview(url.searchParams.get('id'),url.searchParams.get('space')));
+      if(path==='room')return send(200,roomPreview(url.searchParams.get('id'),url.searchParams.get('space'),user.id));
       fail(404,'경로를 찾을 수 없어요.');
     }
     if(method!=='POST')fail(405,'지원하지 않는 방식입니다.');
@@ -166,7 +170,7 @@ export async function serveMembers(request,response,url){
       setCredentials(conn,user.id,fields);return send(200,{ok:true});
     }
     if(path==='note'){
-      roomPreview(data.source,data.space);
+      roomPreview(data.source,data.space,user.id);
       const message=typeof data.message==='string'?data.message.trim():'';
       if(!message||message.length>200)fail(400,'방명록은 1~200자로 입력하세요.');
       conn.prepare('INSERT INTO guest_notes(room_owner,space,writer,message,created) VALUES(?,?,?,?,?)')

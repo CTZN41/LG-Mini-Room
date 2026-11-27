@@ -3,7 +3,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 
 const defaultDB = fileURLToPath(new URL('./data/lg_appliances.db', import.meta.url));
-let heldModels,hasCameraIndex;
+let blockedModels, cameraFeed, hasCameraIndex;
 let db,bodyIndex,legacyIndex,modelIndex,labelIndex,version;
 // Checked against the refrigerator compartment specs on LG's model pages:
 // https://www.lge.co.kr/refrigerators/h875gga011 and https://www.lge.co.kr/refrigerators/h875gga031
@@ -21,7 +21,7 @@ function catalogLabels(db, held){
 
 // Keep one search result per existing collection key (category, model). The lowest
 // product_id is also the canonical photo when opening an older saved placement.
-const matchesFor = indexed => `FROM products p WHERE p.category=? ${indexed?"AND NOT EXISTS (SELECT 1 FROM camera_held h WHERE h.model_code=upper(trim(p.model_name)))":""} AND (
+const matchesFor = () => `FROM products p WHERE p.category=? AND ${eligibleProduct()} AND (
   instr(lower(p.model_name),lower(?)) OR instr(lower(p.product_name),lower(?)) OR
   EXISTS (SELECT 1 FROM product_components c WHERE c.product_id=p.product_id
           AND instr(lower(c.component_model),lower(?))))`;
@@ -34,15 +34,51 @@ function legacySales(db){
 
 // Explicit exclusions recorded in the commercial-photo review and retire-sales.py.
 const excludedScanCodes=new Set(['LZ-H154GB','Z-E0250U2SC','65EP5G','55CT5WN','A948BWE','RD22WSQ','K83IGY','K83WGY']);
+// Availability applies to both new collection and camera recognition. Historical
+// placements still resolve through the complete product index.
+function blockedCodes(){
+  return `SELECT upper(trim(sale_code)) AS code FROM retired_sale_keys
+    UNION ALL SELECT column1 FROM (VALUES ${Array.from(excludedScanCodes, code => `('${code}')`).join(',')})
+    ${hasCameraIndex ? 'UNION ALL SELECT model_code FROM camera_held' : ''}`;
+}
+function eligibleProduct(){
+  return `upper(trim(p.model_name)) NOT IN (SELECT code FROM (${blockedCodes()}) WHERE code IS NOT NULL)`;
+}
+function cameraProducts(db){
+  const rows=db.prepare(`SELECT p.product_id,p.category,p.model_name,p.product_name,p.fridge_display_name
+    FROM products p JOIN (SELECT MIN(p.product_id) AS id FROM products p WHERE ${eligibleProduct()}
+      GROUP BY upper(trim(p.model_name)) HAVING count(DISTINCT p.category)=1) canon ON canon.id=p.product_id
+    ORDER BY p.category,p.model_name`).all();
+  const labels=new Map();
+  if(hasCameraIndex){
+    for(const {label,model_code} of db.prepare('SELECT label,model_code FROM camera_label ORDER BY model_code,label').iterate()){
+      if(!labels.has(model_code))labels.set(model_code,[]);
+      labels.get(model_code).push(label);
+    }
+  }
+  return rows.map(p=>({
+    id:String(p.product_id), brand:'LG', modelCode:p.model_name, category:p.category,
+    displayName:p.fridge_display_name||p.product_name, source:'LG 미니룸 제품 DB',
+    labelCodes:labels.get(p.model_name.trim().toUpperCase())||[]
+  }));
+}
 function scanLookup(db,code){
   if(excludedScanCodes.has(code))return {status:'review_required',reasons:['excluded']};
   if(db.prepare('SELECT 1 FROM retired_sale_keys WHERE upper(trim(sale_code))=? LIMIT 1').get(code))
     return {status:'review_required',reasons:['retired_sale']};
-  if(db.prepare('SELECT 1 FROM camera_held WHERE model_code=?').get(code))
+  if(hasCameraIndex && db.prepare('SELECT 1 FROM camera_held WHERE model_code=?').get(code))
     return {status:'review_required',reasons:['sale_package']};
-  const matches=db.prepare(`SELECT DISTINCT p.category,p.model_name AS model FROM scan_code_matches s
-    JOIN products p ON upper(trim(p.model_name))=s.model_code WHERE s.scanned_code=? ORDER BY p.category,p.model_name`).all(code);
-  if(matches.length===1)return {status:'collectible',...matches[0]};
+  const lookup=db.prepare(`SELECT p.category,p.model_name AS model,p.product_id AS id,
+      coalesce(nullif(p.fridge_display_name,''),p.product_name) AS displayName
+    FROM products p JOIN (SELECT min(product_id) AS id FROM products
+      WHERE upper(trim(model_name))=? GROUP BY category) canon ON canon.id=p.product_id
+    ORDER BY p.category`);
+  let matches=lookup.all(code);
+  if(!matches.length && hasCameraIndex){
+    const alias=db.prepare('SELECT model_code FROM camera_label WHERE label=?').get(code);
+    if(alias && !blockedModels.has(alias.model_code))matches=lookup.all(alias.model_code);
+  }
+  if(matches.length===1)return {status:'collectible',...matches[0],modelCode:matches[0].model};
   if(matches.length>1)return {status:'ambiguous',candidates:matches};
   const component=db.prepare('SELECT DISTINCT component_role FROM product_components WHERE upper(trim(component_model))=?').all(code);
   if(component.length)return {status:'review_required',reasons:component.map(r=>r.component_role==='미니워시'?'mini_wash':'component_only')};
@@ -59,17 +95,18 @@ export async function serveCatalog(url, response) {
     db??=new DatabaseSync(process.env.MINIROOM_CATALOG_DB||defaultDB,{readOnly:true});
     const current=db.prepare('PRAGMA data_version').get().data_version;
     if(current!==version){
-      version=current;modelIndex=bodyIndex=legacyIndex=labelIndex=undefined;
+      version=current;modelIndex=bodyIndex=legacyIndex=labelIndex=cameraFeed=undefined;
       hasCameraIndex=!!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='camera_held'").get();
-      heldModels=new Set(hasCameraIndex?db.prepare('SELECT model_code FROM camera_held').all().map(r=>r.model_code):[]);
+      blockedModels=new Set(db.prepare(blockedCodes()).all().map(row=>row.code));
     }
+    if(url.pathname==='/api/catalog/camera-products')return json(200,cameraFeed??=cameraProducts(db));
     if(url.pathname==='/api/catalog/scan'){
       const code=(q.get('code')||'').trim().toUpperCase();
       if(!code||code.length>200||/[\x00-\x1f\x7f]/.test(code))return json(400,{error:'invalid_code'});
       return json(200,scanLookup(db,code));
     }
     if(url.pathname==='/api/catalog/retired-sales')return json(200,legacyIndex??=legacySales(db));
-    if(url.pathname==='/api/catalog/models'&&q.get('labels')==='1')return json(200,labelIndex??=catalogLabels(db,heldModels));
+    if(url.pathname==='/api/catalog/models'&&q.get('labels')==='1')return json(200,labelIndex??=catalogLabels(db,blockedModels));
     if(url.pathname==='/api/catalog/models')return json(200,modelIndex??=db.prepare('SELECT DISTINCT category,model_name FROM products ORDER BY category,model_name').all().map(row=>[row.category,row.model_name]));
     if(url.pathname==='/api/catalog/bundles')return json(200,[]);
     if(url.pathname==='/api/catalog/bodies')return json(200,bodyIndex??=catalogBodies(db));
@@ -103,7 +140,7 @@ export async function serveCatalog(url, response) {
     const query=(q.get('q')||'').trim().slice(0,100);
     const offset=Number(q.get('offset')||0);
     if(!Number.isSafeInteger(offset)||offset<0)return json(400,{error:'invalid_offset'});
-    const matches=matchesFor(hasCameraIndex);
+    const matches=matchesFor();
     const args=[category,query,query,query];
     const total=db.prepare('SELECT COUNT(DISTINCT p.model_name) AS n '+matches).get(...args).n;
     const rows=db.prepare(`WITH page AS (SELECT (SELECT MIN(canon.product_id) FROM products canon WHERE canon.category=p.category AND canon.model_name=p.model_name) AS id ${matches}

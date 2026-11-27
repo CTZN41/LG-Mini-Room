@@ -27,9 +27,16 @@
       <img class="home-art" src="/thinq/home.webp" alt="">
     </section>
     <section id="devices" class="screen devices" aria-label="디바이스" hidden>
-      <header><h1>우리 집 <span aria-hidden="true">⌄</span></h1></header>
-      <a class="device-card" href="/editor?space=dream&amp;app=thinq"><i data-icon="my"></i><strong>마이룸</strong><small>드림룸 둘러보기</small></a>
-      <img class="devices-art" src="/thinq/devices.webp" alt="">
+      <div class="device-status" aria-hidden="true"><time></time><img src="/onboarding/signals.svg" alt=""></div>
+      <header><h1>우리 집</h1><img width="22" height="22" src="/onboarding/bell.svg" alt=""></header>
+      <a class="room-invite" href="/miniroom/start"><img src="/onboarding/banner.svg" width="40" height="32" alt=""><span><small>NEW  LG 미니룸</small><strong>내 방에 LG 가전 놓아 보기 ▸</strong></span></a>
+      <h2>가전 상태 예시</h2>
+      <ul class="device-examples">
+        <li><i>❄</i><span>거실 에어컨<small>냉방 중 · 24°C</small></span></li>
+        <li><i>🌀</i><span>공기청정기<small>좋음 · 자동 모드</small></span></li>
+        <li><i>🫧</i><span>세탁기<small>대기 중</small></span></li>
+        <li><i>🧊</i><span>냉장고<small>정상 · 3°C</small></span></li>
+      </ul>
     </section>
     <section id="care" class="screen care" aria-label="케어" hidden>
       <header><h1>이달의 리포트</h1></header>
@@ -47,7 +54,7 @@
       <h2>제품 사용과 관리</h2>
       <div class="group"><div><i data-icon="diagnose"></i>스마트 진단</div><div><i data-icon="info"></i>제품 정보와 보증</div><div><i data-icon="book"></i>제품 사용설명서</div><div><i data-icon="calendar"></i>LG전자 구독</div></div>
       <h2>제품 및 앱 활용</h2>
-      <div class="group"><div><i data-icon="play"></i>ThinQ PLAY</div><a href="/editor?space=dream&amp;app=thinq"><i data-icon="my"></i>LG 미니룸<b aria-hidden="true">›</b></a><div><i data-icon="routine"></i>스마트 루틴</div><div><i data-icon="book"></i>ThinQ 활용하기</div><div><i data-icon="book"></i>ThinQ Recipe</div></div>
+      <div class="group"><div><i data-icon="play"></i>ThinQ PLAY</div><a href="/miniroom/start"><i data-icon="my"></i>LG 미니룸<b aria-hidden="true">›</b></a><div><i data-icon="routine"></i>스마트 루틴</div><div><i data-icon="book"></i>ThinQ 활용하기</div><div><i data-icon="book"></i>ThinQ Recipe</div></div>
     </section>
   </main>
   <noscript>마이룸을 열려면 JavaScript를 켜 주세요.</noscript>

@@ -91,6 +91,7 @@ async function init(){
   await loadCopies();showWallet(await api('wallet'));
   const params=new URLSearchParams(location.search);
   if(params.has('visit'))await visit(params.get('visit'),params.get('space'));
+  if(location.hash)document.getElementById(location.hash.slice(1))?.scrollIntoView({block:'nearest'});
 }
 form('setCredentials',async data=>{await api('credentials',Object.fromEntries(data));$('setCredentials').reset();await init();$('status').textContent='로그인 정보를 저장했어요.'});
 form('profile',async data=>{await api('profile',{nickname:data.get('nickname'),myPublic:data.has('myPublic')});await init();$('status').textContent='설정을 저장했어요.'});

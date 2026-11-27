@@ -12,11 +12,11 @@ withServer(async base=>{
     const gate=new Promise(resolve=>{releaseCatalog=resolve});
     await p.route('**/api/catalog/models*',async route=>{await gate;await route.continue()});
     await p.goto(base+'/editor?space=dream');
-    const lime=p.getByRole('button',{name:'연두',exact:true});
-    assert.ok(await lime.isDisabled());
-    releaseCatalog();await lime.click();
+    const studio=p.locator('[data-room=A]');
+    assert.equal(await studio.count(),0);
+    releaseCatalog();await studio.click();
     const original=await p.evaluate(()=>JSON.parse(localStorage.dotroom));
-    assert.equal(original.theme,'lime');
+    assert.equal(original.room,'A');
     await p.goto(base+'/members');
     await p.getByRole('button',{name:'회원가입',exact:true}).click();
     await p.getByLabel('이름',{exact:true}).fill('김테스트');
@@ -27,21 +27,24 @@ withServer(async base=>{
     const id='00000001';
     await p.getByRole('status').filter({hasText:id}).waitFor();
     await p.getByRole('navigation',{name:'ThinQ 하단 메뉴'}).getByRole('link',{name:'마이룸'}).click();
-    await p.waitForURL('**/editor?space=dream&app=thinq');
+    await p.getByRole('link',{name:'문 열고 들어가기'}).click();await p.getByRole('button',{name:'건너뛰기'}).click();
+    await p.waitForURL('**/miniroom/home?space=dream');await p.locator('#enter').click();
     await p.getByRole('button',{name:'배치 편집'}).waitFor();
-    assert.equal(await p.evaluate(()=>JSON.parse(roomStorage.getItem('dotroom')).theme),'pink');
-    await p.getByRole('button',{name:'연두',exact:true}).click();
+    await p.waitForFunction(()=>JSON.parse(roomStorage.getItem('dotroom')||'{}').room==='A');
+    await p.getByRole('button',{name:'배치 편집'}).click();await p.locator('#more').click();await p.locator('#clear').click();
     await p.waitForFunction(()=>document.getElementById('accountSaveStatus').textContent==='계정에 저장됨');
     assert.deepEqual(await p.evaluate(()=>JSON.parse(localStorage.dotroom)),original);
 
     const other=await browser.newContext(),remote=await other.newPage();
     await remote.goto(base+'/experience/qr');await remote.locator('#entry').click();
+    await remote.getByRole('link',{name:'문 열고 들어가기'}).click();await remote.getByRole('button',{name:'건너뛰기'}).click();
     await remote.locator('#login').getByLabel('아이디',{exact:true}).fill('FIRST-user');
     await remote.locator('#login').getByLabel('비밀번호',{exact:true}).fill('012345');await remote.getByRole('button',{name:'로그인',exact:true}).click();
-    await remote.locator('#home').waitFor();
-    await remote.getByRole('navigation',{name:'ThinQ 하단 메뉴'}).getByRole('link',{name:'마이룸'}).click();
+    await remote.waitForURL('**/miniroom/home?space=dream');
+    await remote.locator('#enter').click();
     await remote.getByRole('button',{name:'배치 편집'}).waitFor();
-    assert.equal(await remote.evaluate(()=>JSON.parse(roomStorage.getItem('dotroom')).theme),'lime');
+    await remote.waitForFunction(()=>JSON.parse(roomStorage.getItem('dotroom')||'{}').layouts?.A?.length===0);
+    assert.equal(await remote.evaluate(()=>JSON.parse(roomStorage.getItem('dotroom')).room),'A');
     assert.equal(await remote.evaluate(()=>localStorage.dotroom),undefined);
 
     const clients=await Promise.all(Array.from({length:20},()=>browser.newContext()));
