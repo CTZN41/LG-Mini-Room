@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const defaultDB = fileURLToPath(new URL('./data/lg_appliances.db', import.meta.url));
 let heldModels,hasCameraIndex;
-let db,bodyIndex,legacyIndex,modelIndex,labelIndex,version;
+let db,bodyIndex,legacyIndex,modelIndex,labelIndex,cameraIndex,version;
 // Checked against the refrigerator compartment specs on LG's model pages:
 // https://www.lge.co.kr/refrigerators/h875gga011 and https://www.lge.co.kr/refrigerators/h875gga031
 const interiorFeatures=new Map([['H875GGA011','신선플러스 트레이'],['H875GGA031','1단 접이식 선반']]);
@@ -49,6 +49,32 @@ function scanLookup(db,code){
   return {status:'not_found'};
 }
 
+// Product list for LG CAMERA (/api/catalog/camera-products), in the camera's products.json shape.
+// Each entry is a model /api/catalog/scan answers as collectible, with the verified label codes
+// that resolve to it, so the camera can only confirm models this catalogue will accept.
+function cameraProducts(db){
+  const rows=db.prepare(`SELECT product_id AS id,category,model_name AS model,COALESCE(NULLIF(trim(fridge_display_name),''),product_name) AS name
+    FROM products WHERE product_id IN (SELECT MIN(product_id) FROM products GROUP BY category,model_name)
+    ORDER BY category,model_name`).all();
+  const labels=new Map();
+  for(const {label,model_code} of db.prepare('SELECT label,model_code FROM camera_label ORDER BY label').all()){
+    if(!labels.has(model_code))labels.set(model_code,[]);
+    labels.get(model_code).push(label);
+  }
+  const seen=new Set(),products=[];
+  for(const row of rows){
+    const code=row.model.trim().toUpperCase();
+    if(seen.has(code))continue;
+    const hit=scanLookup(db,code);
+    if(hit.status!=='collectible'||hit.category!==row.category||hit.model!==row.model)continue;
+    seen.add(code);
+    products.push({id:'miniroom-'+row.id,brand:'LG',displayName:row.name,modelCode:row.model,category:row.category,
+      source:'LG 미니룸 제품 DB',...(labels.has(code)?{labelCodes:labels.get(code)}:{}),
+      imageUrl:'/api/catalog/photo?'+new URLSearchParams({category:row.category,model:row.model})});
+  }
+  return products;
+}
+
 export async function serveCatalog(url, response) {
   function json(status, body) {
     response.writeHead(status, {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}).end(JSON.stringify(body));
@@ -59,7 +85,7 @@ export async function serveCatalog(url, response) {
     db??=new DatabaseSync(process.env.MINIROOM_CATALOG_DB||defaultDB,{readOnly:true});
     const current=db.prepare('PRAGMA data_version').get().data_version;
     if(current!==version){
-      version=current;modelIndex=bodyIndex=legacyIndex=labelIndex=undefined;
+      version=current;modelIndex=bodyIndex=legacyIndex=labelIndex=cameraIndex=undefined;
       hasCameraIndex=!!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='camera_held'").get();
       heldModels=new Set(hasCameraIndex?db.prepare('SELECT model_code FROM camera_held').all().map(r=>r.model_code):[]);
     }
@@ -67,6 +93,10 @@ export async function serveCatalog(url, response) {
       const code=(q.get('code')||'').trim().toUpperCase();
       if(!code||code.length>200||/[\x00-\x1f\x7f]/.test(code))return json(400,{error:'invalid_code'});
       return json(200,scanLookup(db,code));
+    }
+    if(url.pathname==='/api/catalog/camera-products'){
+      if(!hasCameraIndex)return json(503,{error:'camera_index_missing'});
+      return json(200,cameraIndex??=cameraProducts(db));
     }
     if(url.pathname==='/api/catalog/retired-sales')return json(200,legacyIndex??=legacySales(db));
     if(url.pathname==='/api/catalog/models'&&q.get('labels')==='1')return json(200,labelIndex??=catalogLabels(db,heldModels));
