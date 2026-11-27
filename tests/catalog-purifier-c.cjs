@@ -128,20 +128,15 @@ async function verify(browser,width,height){
     await tap('libraryButton');await tap('openCatalog');
     await p.locator('#catalogFamilies button').filter({hasText:'55LX1QKNA'}).tap();
     await p.locator('#catalogSearch').fill('OLED55B5NNA + 27LX6TPGA');
-    const bundle=p.locator('#catalogRows article').filter({hasText:'OLED55B5NNA + 27LX6TPGA'});
-    await bundle.locator('summary').tap();
-    const parts=bundle.locator('li');await parts.nth(1).waitFor();
-    assert.match(await parts.nth(0).innerText(),/OLED55B5NNA/);
-    assert.match(await parts.nth(1).innerText(),/27LX6TPGA/);
-    const dots=await parts.locator('canvas').evaluateAll(nodes=>nodes.map(c=>c.toDataURL()));
-    assert.equal(new Set(dots).size,2);
-    const photo=await p.request.get(await bundle.locator('img').getAttribute('src').then(s=>base+s));
-    assert.equal(photo.status(),200);
-    const hash=createHash('sha256').update(await photo.body()).digest('hex');
-    assert.equal(hash,'478e90f70fb135cbb1a950cd0787a39851e6727a45342b4c11425907f2f831b0');
+    await p.getByText('검색 결과가 없어요.',{exact:true}).waitFor();
+    assert.equal(await p.locator('#catalogRows article').count(),0);
+    for(const model of ['OLED55B5NNA','27LX6TPGA']){
+      await p.locator('#catalogSearch').fill(model);
+      await p.getByRole('button',{name:model+' 수집',exact:true}).waitFor();
+    }
     await tap('catalogBack');await p.locator('#catalogFamilies button').filter({hasText:'AS235DWSA'}).tap();
     await p.locator('#catalogSearch').fill('FS064PSJA');
-    const tower=p.locator('#catalogRows article').filter({hasText:'FS064PSJA'});
+    const tower=p.locator('#catalogRows article').filter({has:p.getByRole('button',{name:'FS064PSJA 수집',exact:true})});
     await tower.locator('summary').tap();await tower.locator('li').first().waitFor();
     await tower.getByRole('button',{name:'FS064PSJA 수집',exact:true}).tap();
     await tap('placeCollected');await tap('editMode');
@@ -158,7 +153,7 @@ async function verify(browser,width,height){
     assert.deepEqual(custom.find(o=>o.id===personal.id),personal);
     assert.equal(custom.filter(o=>o.exhibit).length,5);
     assert.deepEqual(errors,[]);
-    console.log('PASS',width,height,'same C room, updated art and saved positions, four touch reactions, rotation, photos, bundle art, collect/place and reload');
+    console.log('PASS',width,height,'same C room, updated art and saved positions, four touch reactions, rotation, photos, retired bundle and individual TVs, collect/place and reload');
   }finally{await p.context().close()}
 }
 (async()=>{const b=await chromium.launch({channel:'chrome'});try{

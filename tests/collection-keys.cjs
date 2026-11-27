@@ -10,9 +10,9 @@ const base=process.argv[2]||'http://127.0.0.1:4173';
     const button=name=>page.getByRole('button',{name,exact:true});
     await page.goto(base+'/editor?space=dream&observe=1');
     await button('가전 수집').click();
-    await button('TV 55LX1QKNA 수집').click();await button('계속 수집').click();
-    await button('가습기 AW141YBW 수집').click();await button('계속 수집').click();
-    assert.ok(await button('TV 55LX1QKNA 수집').isDisabled());
+    await page.locator('#libraryItems [data-product="catalog:tv:55LX1QKNA"] button').click();await button('계속 수집').click();
+    await page.locator('#libraryItems [data-product="catalog:humid:AW141YBW"] button').click();await button('계속 수집').click();
+    assert.ok(await page.locator('#libraryItems [data-product="catalog:tv:55LX1QKNA"] button').isDisabled());
     await button('가전 목록 닫기').click();
 
     const result=await page.evaluate(async()=>{
@@ -38,7 +38,7 @@ const base=process.argv[2]||'http://127.0.0.1:4173';
       return localStorage['lg-miniroom.state']=JSON.stringify(state);
     });
     await page.reload();await button('가전 수집').click();
-    assert.ok(await button('TV 55LX1QKNA 수집').isDisabled());
+    assert.ok(await page.locator('#libraryItems [data-product="catalog:tv:55LX1QKNA"] button').isDisabled());
     await button('가전 목록 닫기').click();await button('배치 편집').click();
     await page.locator('[data-key="catalog:tv:55LX1QKNA"]').click();
     const restored=await page.evaluate(async()=>{

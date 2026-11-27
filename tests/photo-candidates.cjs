@@ -43,14 +43,14 @@ async function exercise(browser,viewport,controlled=false){
     await start('multiple');await message('예시 후보 3개');assert.equal(await items.getByRole('button').count(),3);
     await items.getByRole('button').nth(1).tap();
     assert.equal((await state()).photoSelections['catalog:fridge:B315DS11'].decision,'confirmed');
-    await close();await start('single');await message('예시 후보 1개');assert.ok(await button('TV 55LX1QKNA 수집').isDisabled());
-    await button('카탈로그에서 직접 선택').tap();await button('냉장고 M876GBC472 수집').tap();
+    await close();await start('single');await message('예시 후보 1개');assert.ok(await page.locator('#libraryItems [data-product="catalog:tv:55LX1QKNA"] button').isDisabled());
+    await button('카탈로그에서 직접 선택').tap();await items.locator('[data-product="catalog:fridge:M876GBC472"] button').tap();
     assert.deepEqual((await state()).photoSelections['catalog:fridge:M876GBC472'],{provider:'example',outcome:'single',decision:'corrected'});
     await close();await start('none');await message('일치하는 제품이 없어요');
-    await button('무선청소기 A912PM 수집').tap();assert.equal((await state()).photoSelections['catalog:stick:A912PM'].outcome,'no_match');
+    await items.locator('[data-product="catalog:stick:A912PM"] button').tap();assert.equal((await state()).photoSelections['catalog:stick:A912PM'].outcome,'no_match');
     await close();await start('failure');await message('후보를 불러오지 못했어요');
     await button('다시 시도').tap();await message('후보를 불러오지 못했어요');
-    await button('가습기 AW141YBW 수집').tap();
+    await page.locator('#libraryItems [data-product="catalog:humid:AW141YBW"] button').tap();
     assert.deepEqual((await state()).photoSelections['catalog:humid:AW141YBW'],{provider:'example',outcome:'error',decision:'manual'});
     await close();await page.reload();await button('배치 편집').tap();await page.locator('[data-key="catalog:tv:55LX1QKNA"]').tap();
     assert.ok(await page.evaluate(()=>{const l=JSON.parse(localStorage.dotroom);return l.layouts[l.room].some(o=>o.k==='catalog:tv:55LX1QKNA')}));
@@ -63,11 +63,11 @@ async function exercise(browser,viewport,controlled=false){
     assert.deepEqual(await page.evaluate(()=>jobs.map(j=>[j.file.name,j.file.size>0,j.signal.aborted])),
       [['A.png',true,true],['B.png',true,false]]);
     await finish(1,['catalog:tv:27LX6TPGA','unknown','catalog:tv:27LX6TPGA']);await message('예시 후보 1개');
-    await finish(0,['catalog:tv:55LX1QKNA']);assert.ok(await button('TV 27LX6TPGA 수집').isVisible());
+    await finish(0,['catalog:tv:55LX1QKNA']);assert.ok(await items.locator('[data-product="catalog:tv:27LX6TPGA"] button').isVisible());
     await close();await start('single');await pending(3);await close();await open();
     await finish(2,['catalog:tv:55LX1QKNA']);assert.ok(await items.getByRole('button').count()>3);
     await close();await start('multiple');await pending(4);
-    await button('카탈로그에서 직접 선택').tap();await button('TV 55LX1QKNA 수집').tap();
+    await button('카탈로그에서 직접 선택').tap();await page.locator('#libraryItems [data-product="catalog:tv:55LX1QKNA"] button').tap();
     const manual=await state();await finish(3,['catalog:fridge:M876GBC472']);assert.deepEqual(await state(),manual);
     assert.deepEqual(manual.photoSelections['catalog:tv:55LX1QKNA'],{provider:'example',outcome:'pending',decision:'manual'});
     await close();await start('single');await pending(5);await finish(4,['unmapped']);

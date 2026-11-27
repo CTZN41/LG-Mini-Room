@@ -105,6 +105,41 @@ const DotScene = (() => {
         images.set(room+':'+tone,im);
         const wood=canvas(im.width,im.height),wc=wood.getContext('2d');
         wc.drawImage(im,0,0);wc.drawImage(await overlay,0,0);images.set('wood:'+room+':'+tone,wood);
+        // The exported art keeps its original matte. On screen the sky shows through outside the walls.
+        for(const [name,source] of [['room',im],['wood',wood]]){
+          const cut=canvas(im.width,im.height),cc=cut.getContext('2d');
+          cc.drawImage(source,0,0);
+          const pixels=cc.getImageData(0,0,cut.width,cut.height),rgba=pixels.data;
+          const [r,g,b]=rgba;
+          // Only the connected room silhouette counts. Isolated stars in the old
+          // backdrop must never extend a scanline across the new sky.
+          const w=cut.width,h=cut.height,visited=new Uint8Array(w*h),queue=new Int32Array(w*h);
+          let silhouette=[];
+          for(let i=0;i<w*h;i++)visited[i]=Number(rgba[i*4]===r&&rgba[i*4+1]===g&&rgba[i*4+2]===b);
+          for(let start=0;start<visited.length;start++){
+            if(visited[start])continue;
+            let end=1;queue[0]=start;visited[start]=1;
+            const visit=j=>{if(!visited[j]){visited[j]=1;queue[end++]=j}};
+            for(let pos=0;pos<end;pos++){
+              const j=queue[pos],x=j%w;
+              if(x>0)visit(j-1);if(x<w-1)visit(j+1);
+              if(j>=w)visit(j-w);if(j+w<w*h)visit(j+w);
+            }
+            if(end>silhouette.length)silhouette=queue.slice(0,end);
+          }
+          visited.fill(0);
+          for(const j of silhouette)visited[j]=1;
+          let tail=0;
+          const exterior=j=>{if(!visited[j]){visited[j]=1;queue[tail++]=j}};
+          for(let x=0;x<w;x++){exterior(x);exterior((h-1)*w+x)}
+          for(let y=0;y<h;y++){exterior(y*w);exterior(y*w+w-1)}
+          for(let pos=0;pos<tail;pos++){
+            const j=queue[pos],x=j%w;rgba[j*4+3]=0;
+            if(x>0)exterior(j-1);if(x<w-1)exterior(j+1);
+            if(j>=w)exterior(j-w);if(j+w<w*h)exterior(j+w);
+          }
+          cc.putImageData(pixels,0,0);images.set('outside:'+name+':'+room+':'+tone,cut);
+        }
         const shade=canvas(im.width,im.height),sc=shade.getContext('2d');
         sc.drawImage(im,0,0);const pixels=sc.getImageData(0,0,im.width,im.height),a=pixels.data;
         const base=[a[0],a[1],a[2]];
@@ -141,7 +176,7 @@ const DotScene = (() => {
     return (rear(o)&&sprite(key+'_rear',t))||sprite(key,t);
   }
   function turnTo(room,o,turn){
-    const old=dims(o);
+    const old=dims(o),wasFlipped=o.f;
     const origin=o.rotationOrigin;
     const useOrigin=origin && origin.atX===o.x && origin.atY===o.y &&
       Number.isFinite(origin.x) && Number.isFinite(origin.y);
@@ -150,7 +185,12 @@ const DotScene = (() => {
     delete o.rotationOrigin;
     o.turn=(turn+4)%4;o.f=o.turn%2;
     const next=dims(o);
-    if(!products[o.k].wall){
+    if(products[o.k].wall&&Boolean(wasFlipped)!==Boolean(o.f)){
+      // Carry the mounting point to the same relative position on the other wall.
+      const {W,D}=roomData(room);
+      if(o.f){o.y=Math.round(o.x/Math.max(1,W-old.w)*(D-next.d));o.x=0}
+      else{o.x=Math.round(o.y/Math.max(1,D-old.d)*(W-next.w));o.y=0}
+    }else if(!products[o.k].wall){
       o.x=cx-Math.floor(next.w/2);o.y=cy-Math.floor(next.d/2);
       const wantedX=o.x,wantedY=o.y;
       clamp(room,o);
@@ -431,7 +471,8 @@ const catWatching=raster(23,27,c=>{
     if(o.f){ctx.translate(s.w,0);ctx.scale(-1,1)}
     const phase=Math.floor(time/160)%6;
     if(kind==='air'){
-      const x=o.k==='wall_ac'?17:8,y=o.k==='wall_ac'?19:15;
+      const wall=(products[o.k].behaviorKey||o.k)==='wall_ac';
+      const x=wall?17:8,y=wall?19:15;
       for(let i=0;i<3;i++){
         const offset=(phase+i*2)%6;
         rect(ctx,x-i*3-offset,y+i*4+offset,7,2,'#b9ebfd');
@@ -499,7 +540,8 @@ const catWatching=raster(23,27,c=>{
       return;
     }
     if(kind==='air'){
-      const ventX=localX(o.k==='wall_ac'?17:8),ventY=o.k==='wall_ac'?20:16;
+      const wall=(products[o.k].behaviorKey||o.k)==='wall_ac';
+      const ventX=localX(wall?17:8),ventY=wall?20:16;
       const headX=fx.cat.x-originX,headY=fx.cat.y-originY-19;
       for(let i=0;i<3;i++){
         const t=(progress*2+i/3)%1;
@@ -687,9 +729,11 @@ const catWatching=raster(23,27,c=>{
     rect(ctx,-10,y,19,1,lime?'#edf2d0':'#ffe5ed');
     ctx.restore();
   }
-  function paint(ctx,room,tone,ordered,selected,fx,blocked=false,wood=false) {
+  function paint(ctx,room,tone,ordered,selected,fx,blocked=false,wood=false,outdoors=false) {
     ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(wood?images.get('wood:'+room+':'+tone):bg(room,tone),0,0);
+    if(outdoors)ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    const background=outdoors?images.get('outside:'+(wood?'wood':'room')+':'+room+':'+tone):wood?images.get('wood:'+room+':'+tone):bg(room,tone);
+    ctx.drawImage(background,0,0);
     if(fx?.dim) ctx.drawImage(images.get('shade:'+room+':'+tone),0,0);
     let catPainted=fx?.sleepBed!=null;
     // Draw the seated cat above loose cushions resting on its own seat.

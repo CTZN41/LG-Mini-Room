@@ -1,3 +1,4 @@
+const roomStorage=typeof globalThis.miniroomStorage==='undefined'?localStorage:globalThis.miniroomStorage;
 let key = 'lg-miniroom.state';
 export const model = 'demo-tv-01';
 export function isCollectibleProduct(k){
@@ -68,7 +69,7 @@ export let storageMessage='';
 function readState(){
   blocked=false;storageMessage='';state=structuredClone(empty);
   try {
-    previous=localStorage.getItem(key);
+    previous=roomStorage.getItem(key);
     if(previous!==null){
       const s=JSON.parse(previous);
       if(s?.schemaVersion!==1 || !Number.isInteger(s.revision) || !Array.isArray(s.collection) ||
@@ -102,11 +103,11 @@ export async function loadHome(){
 }
 export function update(change){
   if(blocked) throw Error(storageMessage);
-  if(localStorage.getItem(key)!==previous) throw Error('저장본이 바뀌었어요. 새로고침해 주세요.');
+  if(roomStorage.getItem(key)!==previous) throw Error('저장본이 바뀌었어요. 새로고침해 주세요.');
   const next=structuredClone(state);
   change(next);next.revision++;
   const raw=JSON.stringify(next);
-  localStorage.setItem(key,raw);
+  roomStorage.setItem(key,raw);
   previous=raw;state=next;
 }
 export function registeredTVs(){
@@ -122,7 +123,7 @@ function sampleTvIds(home){
 // Device IDs remain stable when the demo account moves from generic sprites to DB models.
 export const demoModels={
   tvset:'catalog:tv:55LX1QKNA',standbyme:'catalog:tv:27LX6TPGA',
-  puri_p:'catalog:purifier:AS206NGHA',wash_m:'washer_wl2521wdur',
+  tower_ac:'catalog:ac:FQ16ET4HSN',puri_p:'catalog:purifier:AS206NGHA',wash_m:'washer_wl2521wdur',
   fridge_bm:'catalog:fridge:M876GBC472',fridge_pb:'catalog:fridge:B315DS11',
   fridge_sg:'catalog:fridge:S836MDS002',vacuum:'catalog:stick:A727TA',robot_vacuum:'catalog:robot:R560BL1'
 };
@@ -133,7 +134,7 @@ function matchedAccountDevices(devices){
     }
     const k=ProductCatalog.matchModel(d.category,d.modelCode);
     if(!k)return [];
-    return [{...d,k,...(d.category==='TV'?{kind:'tv',capability:'power.set'}:{})}];
+    return [{...d,k,...(d.category==='TV'?{kind:'tv',capability:d.capability||'power.set'}:{})}];
   });
 }
 export function pruneRetiredCollection(){
@@ -160,7 +161,12 @@ export function pruneRetiredCollection(){
 export function registeredAppliances(){
   if(homeSource==='unavailable')return [];
   const base=homeSource==='demo'?sampleAppliances(state):accountDevices;
-  return base.concat(cameraDevices(state));
+  return uniqueDevices(base.concat(cameraDevices(state)));
+}
+function uniqueDevices(devices){
+  const byId=new Map();
+  for(const device of devices)if(device.id)byId.set(device.id,device);
+  return [...byId.values()];
 }
 function cameraDevices(home){
   const rows=home?.cameraAppliances;
@@ -173,21 +179,33 @@ function cameraDevices(home){
   });
   cameraDeviceCache.set(rows,result);return result;
 }
-export function registerFromCamera(params){
-  if(homeSource==='unavailable')throw Error('등록 목록을 다시 불러온 뒤 새로고침해 주세요.');
+export function readCameraResult(params){
+  if(params.get('lgcam')==='cancelled')return null;
+  let payload=Object.fromEntries(params);
+  const invalid=()=>new Error('제품 정보를 확인할 수 없어요. 라벨을 다시 촬영해 주세요.');
+  if(params.has('lgcam')){
+    const raw=params.get('lgcam_item');
+    if(params.get('lgcam')!=='registered'||!raw||raw.length>16000)throw invalid();
+    try{payload=JSON.parse(raw)}catch{throw invalid()}
+  }
   const record={};
   for(const field of ['id','modelCode','displayName','category']){
-    const value=params.get(field)?.trim();
-    if(!value||value.length>200||/[\x00-\x1f\x7f]/.test(value))return '제품 정보를 확인할 수 없어요. 라벨을 다시 촬영해 주세요.';
+    const value=typeof payload?.[field]==='string'?payload[field].trim():'';
+    if(field==='category'&&!value){record.category='기타';continue}
+    if(!value||value.length>200||/[\x00-\x1f\x7f]/.test(value))throw invalid();
     record[field]=value;
   }
   record.modelCode=normalizeCode(record.modelCode);
   // Only keep the product thumbnail, never a data URL or an uploaded image.
   record.imageUrl='';
   try{
-    const url=new URL(params.get('imageUrl'));
+    const url=new URL(payload.imageUrl);
     if(url.protocol==='https:'&&!url.username&&!url.password&&url.href.length<=2048)record.imageUrl=url.href;
   }catch{}
+  return record;
+}
+export function registerFromCamera(record){
+  if(homeSource==='unavailable')throw Error('등록 목록을 다시 불러온 뒤 새로고침해 주세요.');
   const exists=registeredAppliances().some(d=>normalizeCode(d.modelCode||DotScene.products[d.k]?.modelCode)===record.modelCode);
   if(exists)return '이미 등록된 가전이에요.';
   update(draft=>{(draft.cameraAppliances??=[]).push(record)});
@@ -209,34 +227,41 @@ function sampleAppliances(home){
 }
 // Discoveries are shared across rooms. One key per template makes concurrent discoveries independent.
 export const discoveryPrefix='lg-miniroom.discovered.';
-export function discovery(id){return localStorage.getItem(discoveryPrefix+id)}
+export function discovery(id){return roomStorage.getItem(discoveryPrefix+id)}
 export function rememberPreview(id,source){
-  if(!discovery(id))localStorage.setItem(discoveryPrefix+id,source);
+  if(!discovery(id))roomStorage.setItem(discoveryPrefix+id,source);
 }
 export async function inventoryHome(){
-  const read=key=>JSON.parse(localStorage.getItem(key)||'null');
+  const read=key=>JSON.parse(roomStorage.getItem(key)||'null');
   const demo=read('lg-miniroom.state'),thinq=read('lg-miniroom.state.thinq');
   if(!demo?.savedRoutines?.length&&!thinq?.savedRoutines?.length)return {records:[],placed:[]};
   const home=await fetchHome();
   const suffix=home.mode==='demo'?'':'.thinq';
   const stored=home.mode==='demo'?demo:thinq;
   const layout=read('lg-miniroom.dot.my'+suffix);
-  const registered=(home.mode==='demo'?sampleAppliances(stored):matchedAccountDevices(home.devices)).concat(cameraDevices(stored));
+  const registered=uniqueDevices((home.mode==='demo'?sampleAppliances(stored):matchedAccountDevices(home.devices)).concat(cameraDevices(stored)));
   const placed=layout?(layout.layouts?.[layout.room]||[]).filter(o=>registered.some(d=>d.id===o.deviceId&&d.k===o.k)):null;
   return {records:stored?.savedRoutines||[],placed,registered};
 }
 function catalogKey(k){
   return k===model?'tvset':k;
 }
+let cachedCollection, ownedKeys;
 export function collected(k,collection=state.collection){
   const product=catalogKey(k);
-  return isCollectibleProduct(product)&&collection.some(entry=>catalogKey(entry)===product);
+  if(!isCollectibleProduct(product))return false;
+  if(collection!==state.collection)return collection.some(entry=>catalogKey(entry)===product);
+  if(cachedCollection!==collection){
+    cachedCollection=collection;ownedKeys=new Set(collection.map(catalogKey));
+  }
+  return ownedKeys.has(product);
 }
 // Also used by the older editor when collection and placement share one transaction.
 export function addToCollection(draft,k,source){
   const product=catalogKey(k);
   if(!isCollectibleProduct(product))throw Error('수집 카탈로그에 없는 제품이에요. 목록에서 제품을 골라 주세요.');
   if(collected(product,draft.collection))return;
+  if(ProductCatalog.heldSale(product))throw Error('판매 패키지는 수집할 수 없어요. 본체 단품 모델을 골라 주세요.');
   draft.collection.push(product);
   draft.collectionSources??={};draft.collectionSources[product]=source;
 }
@@ -254,8 +279,9 @@ export function collect(k,source,photoSelection){
 export function saveRoutines(records){
   update(s=>{
     for(const record of records){
+      const previous=s.savedRoutines.find(r=>r.templateId===record.templateId&&r.anchorId===record.anchorId);
       s.savedRoutines=s.savedRoutines.filter(r=>r.templateId!==record.templateId||r.anchorId!==record.anchorId);
-      s.savedRoutines.push(record);
+      s.savedRoutines.push(previous?.condition?{...record,condition:previous.condition}:record);
     }
   });
 }
@@ -285,6 +311,15 @@ export function customOptions(device){
   const kind=key==='floor_lamp'?'light':['tvset','standbyme'].includes(key)?'tv':
     Object.keys(applianceGroups).find(group=>applianceGroups[group].keys.includes(key));
   return customActions.filter(a=>a.kind===kind&&(!device.capability||device.capability===a.capability));
+}
+// Each suggestion uses the same virtual actions that the composer can save and replay.
+export const singleDeviceRules=[
+  {operation:'air-clean',name:'공기청정기 자동 청정',reason:'공기청정기 한 대로 자동 청정을 사용할 수 있어요.'},
+  {operation:'light-off',name:'잘 때 조명 끄기',reason:'조명 한 대로 취침 전 불을 끌 수 있어요.'}
+];
+export function singleDeviceSuggestion(device){
+  const options=customOptions(device);
+  return singleDeviceRules.find(rule=>options.some(a=>a.actionId===rule.operation))||null;
 }
 export function customRoutine(name,steps,recordId){
   name=name.trim();

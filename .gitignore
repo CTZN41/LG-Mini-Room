@@ -7,3 +7,4 @@ Thumbs.db
 .DS_Store
 /data/lg_appliances.db
 /data/products.sqlite
+/data/miniroom-members.sqlite*

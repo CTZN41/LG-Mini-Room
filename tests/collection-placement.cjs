@@ -1,4 +1,4 @@
-﻿const assert=require('node:assert/strict');
+const assert=require('node:assert/strict');
 const {readFile}=require('node:fs/promises');
 const {chromium}=require('playwright');
 const base=process.argv[2]||'http://127.0.0.1:4173';
@@ -10,7 +10,8 @@ async function exercise(browser,viewport){
   const button=name=>page.getByRole('button',{name,exact:true});
   const layout=()=>page.evaluate(()=>JSON.parse(localStorage.dotroom));
   const events=()=>page.evaluate(()=>JSON.parse(sessionStorage['lg-miniroom.events']));
-  const ac=data=>data.layouts[data.room].find(o=>o.k==='tower_ac');
+  const acKey='catalog:ac:FQ16ET4HSN';
+  const ac=data=>data.layouts[data.room].find(o=>o.k===acKey);
   await page.goto(base+'/editor?space=dream&observe=1');
   await button('가전 수집').tap();
   const last=page.locator('#libraryItems button').last();
@@ -18,21 +19,21 @@ async function exercise(browser,viewport){
   const scroll=await page.locator('#library').evaluate(el=>el.scrollTop);
   await last.tap();await button('계속 수집').tap();
   assert.ok(Math.abs((await page.locator('#library').evaluate(el=>el.scrollTop))-scroll)<=2);
-  await button('타워 에어컨 수집').tap();
+  await page.locator('[data-product="'+acKey+'"] button').tap();
   assert.ok(!ac(await layout()));
   await button('방에 놓기').tap();
   assert.ok(await button('배치 완료').isVisible());
-  assert.match(await page.locator('#name').innerText(),/타워 에어컨/);
+  assert.match(await page.locator('#name').innerText(),/에어컨/);
   assert.ok(ac(await layout()));
   assert.equal((await events()).some(e=>e.event.startsWith('routine_')),false);
   const added=(await events()).filter(e=>e.event==='collection_added');
   assert.equal(added.length,2);
-  assert.equal(added[1].productKey,'tower_ac');assert.equal('templateId' in added[1],false);
+  assert.equal(added[1].productKey,acKey);assert.equal('templateId' in added[1],false);
 
   assert.ok(await page.locator('#up').isHidden());
   await page.keyboard.press(']');assert.equal(ac(await layout()).e,0);
   await page.locator('#flip').tap();assert.equal(ac(await layout()).turn,1);
-  await page.keyboard.press('d');assert.equal((await layout()).layouts.B.filter(o=>o.k==='tower_ac').length,1);
+  await page.keyboard.press('d');assert.equal((await layout()).layouts.B.filter(o=>o.k===acKey).length,1);
   await page.locator('#remove').tap();await page.locator('#undo').tap();
   const saved=await layout();
   const scenes=new Set();
@@ -53,10 +54,10 @@ async function exercise(browser,viewport){
   await page.locator('#view').focus();
   for(let i=0;i<8;i++){
     await page.keyboard.press('ArrowRight');
-    if((await page.locator('#keyboardTarget').textContent()).includes('타워 에어컨'))break;
+    if((await page.locator('#keyboardTarget').textContent()).includes('에어컨'))break;
   }
-  assert.match(await page.locator('#keyboardTarget').textContent(),/타워 에어컨/);
-  await page.keyboard.press('Enter');assert.equal(await page.locator('#lifeTitle').innerText(),'타워 에어컨');
+  assert.match(await page.locator('#keyboardTarget').textContent(),/에어컨/);
+  await page.keyboard.press('Enter');assert.match(await page.locator('#lifeTitle').innerText(),/에어컨/);
   assert.equal(await page.locator('#lifeDetail').innerText(),'');
   assert.equal((await events()).some(e=>e.event==='routine_opened'),false);
   await button('쾌적한 방').tap();assert.equal(await page.locator('#lifeTitle').innerText(),'쾌적한 방');

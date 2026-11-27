@@ -1,16 +1,29 @@
+import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import {bootstrap, memberFor, serveMembers} from './members.mjs';
+import {weatherService} from './weather.mjs';
+import {evaluateRule,needsWeather,validateRule} from './public/routine-conditions.mjs';
+let weatherKey=process.env.MINIROOM_KMA_KEY;
+if(!weatherKey && process.platform==='win32' && process.env.LOCALAPPDATA && process.env.MINIROOM_WEATHER_PROVIDER!=='open-meteo'){
+  try{
+    weatherKey=(await readFile(join(process.env.LOCALAPPDATA,'LG Mini Room','secrets','kma.key'),'utf8')).trim();
+  }catch(error){
+    if(error.code!=='ENOENT')console.warn('기상청 로컬 인증 설정을 읽을 수 없습니다.');
+  }
+}
+const routineContext=weatherService({key:weatherKey});
 const require = createRequire(import.meta.url);
 
 const runFile=promisify(execFile);
 let pendingInventory;
 async function sendInventory(request,response){
   const json=(status,body)=>response.writeHead(status,{"Content-Type":"application/json","Cache-Control":"no-store"}).end(JSON.stringify(body));
-  if(!process.env.THINQ_PAT)return json(200,{mode:"demo"});
+  if(memberFor(request)||!process.env.THINQ_PAT)return json(200,{mode:"demo"});
   const localAddresses=["127.0.0.1","::1","::ffff:127.0.0.1"];
   if(!localAddresses.includes(request.socket.remoteAddress)||
     !/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(request.headers.host||""))
@@ -35,6 +48,13 @@ const guestPages = new Map([
 const guestAssets = new Set(["/dot-assets.js","/dot-scene.js","/purifier-profiles.js","/catalog-art.js","/product-catalog.js","/state.js"]);
 const pages = new Map([
   ...guestPages,
+  ["/login", ["login.html","text/html; charset=utf-8"]],
+  ["/login.js", ["login.js","text/javascript; charset=utf-8"]],
+  ["/login.css", ["login.css","text/css; charset=utf-8"]],
+  ...['routine-conditions','routine-places','routine-condition-editor'].map(name=>['/'+name+'.mjs',[name+'.mjs','text/javascript; charset=utf-8']]),
+  ["/members", ["members.html", "text/html; charset=utf-8"]],
+  ["/members.js", ["members.js", "text/javascript; charset=utf-8"]],
+  ["/account-storage.js", ["account-storage.js", "text/javascript; charset=utf-8"]],
   ["/thinq/shell.css", ["thinq/shell.css", "text/css; charset=utf-8"]],
   ["/thinq/shell.js", ["thinq/shell.js", "text/javascript; charset=utf-8"]],
   ...["home","support","devices","care","energy","usage","coupon"].map(name => {
@@ -58,6 +78,8 @@ const pages = new Map([
 ]);
 
 const server = createServer(async (request, response) => {
+  if(!visitorOnly&&request.url?.startsWith('/api/members/'))
+    return serveMembers(request,response,new URL(request.url,'http://localhost'));
   if (request.method !== "GET" && request.method !== "HEAD") {
     response.writeHead(405, { Allow: "GET, HEAD" }).end();
     return;
@@ -73,8 +95,21 @@ const server = createServer(async (request, response) => {
   }
   if (visitorOnly && path === "/") { response.writeHead(302,{Location:"/experience"}).end(); return; }
   if (visitorOnly && !guestPages.has(path) && !guestAssets.has(path)) { response.writeHead(404).end(); return; }
-  if(path==="/api/catalog/retired-sales"||path==="/api/catalog/models"||path==="/api/catalog/bundles"||path==="/api/catalog/bodies"||path==="/api/catalog"||path==="/api/catalog/photo"||path==="/api/catalog/product")
+  if(path==="/api/catalog/scan"||path==="/api/catalog/retired-sales"||path==="/api/catalog/models"||path==="/api/catalog/bundles"||path==="/api/catalog/bodies"||path==="/api/catalog"||path==="/api/catalog/photo"||path==="/api/catalog/product")
     return (await import('./catalog.mjs')).serveCatalog(new URL(request.url,'http://localhost'),response);
+  if(path==="/api/routine-context"){
+    const params=new URL(request.url,'http://localhost').searchParams;
+    try{
+      const rule=params.has('rule')?JSON.parse(params.get('rule')):undefined;
+      if(rule!==undefined)validateRule(rule);
+      const result=await routineContext(rule&&!needsWeather(rule)?null:params.get('place'));
+      if(rule)result.check=evaluateRule(rule,result);
+      response.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'}).end(JSON.stringify(result));
+    }catch{
+      response.writeHead(400,{'Content-Type':'application/json','Cache-Control':'no-store'}).end(JSON.stringify({error:'지역과 조건을 확인해 주세요.'}));
+    }
+    return;
+  }
   if(path==="/api/my-appliances")return sendInventory(request,response);
   const page = pages.get(path);
 
@@ -86,7 +121,24 @@ const server = createServer(async (request, response) => {
 
   const [file, contentType] = page;
   try {
-    const body = await readFile(new URL("./public/" + file, import.meta.url));
+    const appEntry=file==='index.html'||file==='members.html'||
+      (file==='dot-room.html'&&new URL(request.url,'http://localhost').searchParams.get('app')==='thinq');
+    if(appEntry&&!memberFor(request)){
+      response.writeHead(302,{Location:'/login','Cache-Control':'no-store'}).end();return;
+    }
+    if(file==='login.html'&&memberFor(request)){
+      response.writeHead(302,{Location:'/','Cache-Control':'no-store'}).end();return;
+    }
+    let body = await readFile(new URL("./public/" + file, import.meta.url));
+    if(file==='experience-qr.html'&&!visitorOnly)
+      body=Buffer.from(body.toString().replace('data-entry="/experience"','data-entry="/login"').replace('href="/experience"','href="/login"'));
+    if(file==='dot-room.html'||file==='members.html'){
+      const snapshot=bootstrap(request);
+      if(snapshot){
+        const data=JSON.stringify(snapshot).replaceAll('<','\\u003c');
+        body=Buffer.from(body.toString().replace('<head>',()=>'<head><script type="application/json" id="account-data">'+data+'</script>'));
+      }
+    }
     response.writeHead(200, {
       "Content-Type": contentType,
       "Content-Length": body.length,

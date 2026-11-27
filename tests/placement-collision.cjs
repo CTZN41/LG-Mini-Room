@@ -9,7 +9,7 @@ async function exercise(browser,space,width,height){
   const cdp=await page.context().newCDPSession(page);
   const key=space==='dream'?'dotroom':'lg-miniroom.dot.my.thinq';
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.route('**/api/my-appliances',r=>r.fulfill({json:{mode:'thinq',devices:[{id:'tv',k:'tvset',name:'거실 TV'}]}}));
+  await page.route('**/api/my-appliances',r=>r.fulfill({json:{mode:'thinq',devices:[{id:'tv',category:'TV',modelCode:'55LX1QKNA',name:'거실 TV'}]}}));
   const layout=()=>page.evaluate(key=>JSON.parse(localStorage[key]).layouts.B,key);
   await page.goto(base+'/editor?space='+space);
   await page.getByRole('button',{name:'배치 편집',exact:true}).waitFor();
@@ -18,7 +18,7 @@ async function exercise(browser,space,width,height){
       localStorage.setItem(key,JSON.stringify({layoutVersion:1,room:'B',theme:'pink',layouts:{B:items}}));
       if(key==='dotroom'){
         localStorage['lg-miniroom.state']=JSON.stringify({schemaVersion:1,revision:1,
-          collection:['tvset'],dreamLayout:{},myLayout:{},savedRoutines:[]});
+          collection:['catalog:tv:55LX1QKNA'],dreamLayout:{},myLayout:{},savedRoutines:[]});
       }
     },{key,items});
     await page.reload();await page.getByRole('button',{name:'배치 편집',exact:true}).click();
@@ -28,11 +28,14 @@ async function exercise(browser,space,width,height){
       const data=JSON.parse(localStorage[key]),items=DotScene.sorted('B',data.layouts.B);
       const o=items.find(o=>o.id===id),q=DotScene.place('B','pink',o);
       const canvas=document.querySelector('#scene'),box=canvas.getBoundingClientRect(),k=box.width/canvas.width;
+      let best=null,bestDistance=Infinity;
       for(let y=q.y+2;y<q.y+q.s.h-2;y++)for(let x=q.x+2;x<q.x+q.s.w-2;x++){
         if(![[0,0],[1,1],[-1,-1]].every(([dx,dy])=>DotScene.hits('B','pink',items,x+dx,y+dy)[0]===o))continue;
         const px=box.x+(x+.5)*k,py=box.y+(y+.5)*k;
-        if(document.elementFromPoint(px,py)?.id==='view')return {x:px,y:py,k};
+        const distance=Math.hypot(x-q.x-q.s.w/2,y-q.y-q.s.h/2);
+        if(distance<bestDistance&&document.elementFromPoint(px,py)?.id==='view'){bestDistance=distance;best={x:px,y:py,k}}
       }
+      if(best)return best;
       throw Error('No visible point for '+id);
     },{key,id});
   }
@@ -43,13 +46,13 @@ async function exercise(browser,space,width,height){
     if(type==='move')return page.mouse.move(x,y);
     return page.mouse.up();
   }
-  const tv=item(2,'tvset',31,26,{deviceId:'tv'});
+  const tv=item(2,'catalog:tv:55LX1QKNA',31,26,{deviceId:'tv'});
   const start=[item(1,'stool',16,26),tv,item(3,'rug',20,23)];
   await load(start);
   const p=await point(1);
   const move=dx=>pointer('move',p.x+2*dx*p.k,p.y+dx*p.k);
   await pointer('down',p.x,p.y);await move(10);await move(14);
-  await page.waitForFunction(()=>document.querySelector('#placementHint').textContent.includes('TV'));
+  await page.waitForFunction(()=>document.querySelector('#placementHint').textContent.includes('겹쳐서'));
   assert.deepEqual(await layout(),start,'preview never writes into saved layout');
   await pointer('up');let placed=await layout();
   assert.equal(placed[0].x,26,'stool touches the TV edge and stands on the rug');assert.equal(placed[0].y,26);
@@ -64,9 +67,9 @@ async function exercise(browser,space,width,height){
   await page.keyboard.press('ArrowRight');assert.deepEqual(await layout(),placed);
   await page.keyboard.press('d');assert.deepEqual(await layout(),placed);
   assert.equal(await page.locator('#duplicate').count(),0);
-  const turn=[item(1,'sofa',18,16),item(2,'coffee',30,31)];
-  await load(turn);const couch=await point(1);await page.mouse.click(couch.x,couch.y);
-  await page.locator('#flip').click();assert.deepEqual(await layout(),turn);
+  const turn=[item(1,'sofa',18,16),item(2,'coffee',24,29)];
+  await load(turn);const beforeTurn=await layout();const couch=await point(1);await page.mouse.click(couch.x,couch.y);
+  await page.locator('#flip').click();assert.deepEqual(await layout(),beforeTurn);
   assert.ok(await page.locator('#undo').isDisabled(),'blocked rotation leaves no history');
   await page.waitForFunction(()=>document.querySelector('#notice').textContent.includes('겹쳐서'));
 
@@ -82,7 +85,7 @@ async function exercise(browser,space,width,height){
     packed.push(item(packed.length+1,'stool',Math.min(95,x),Math.min(79,y)));
   }
   await load(packed);
-  await page.locator('[data-cat="가전"]').click();await page.locator('[data-key=tvset]').click();
+  await page.locator('[data-cat="가전"]').click();await page.locator('[data-key="catalog:tv:55LX1QKNA"]').click();
   assert.deepEqual(await layout(),packed);assert.ok(await page.locator('#undo').isDisabled());
   assert.match(await page.locator('#notice').innerText(),/자리가 부족/);
   assert.deepEqual(errors,[]);await page.context().close();

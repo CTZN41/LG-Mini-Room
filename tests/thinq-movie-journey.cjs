@@ -1,9 +1,10 @@
 const assert = require('node:assert/strict');
 const {chromium} = require('playwright');
-const base = process.argv[2] || 'http://127.0.0.1:4173';
+const join=require('./support/join.cjs');
+const withServer=require('./member-server.cjs');
 const tvKey = 'catalog:tv:55LX1QKNA';
 
-async function check(browser,width,height) {
+async function check(base,browser,width,height) {
   const reducedMotion=width===320?'reduce':'no-preference';
   const page = await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true,reducedMotion});
   page.setDefaultTimeout(9000);
@@ -18,10 +19,10 @@ async function check(browser,width,height) {
     const paint=DotScene.paint;
     DotScene.paint=function(...args){const result=paint(...args);window.lastRoomFrame=args[5];if(args[5]?.walking)window.sawWalk=true;return result;};
   }));
-  const read = key => page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
+  const read = key => page.evaluate(key=>JSON.parse(roomStorage.getItem(key)),key);
   async function myPixels() {
     return page.evaluate(()=>{
-      const s=JSON.parse(localStorage['lg-miniroom.dot.my']);
+      const s=JSON.parse(roomStorage.getItem('lg-miniroom.dot.my'));
       const ctx=document.querySelector('#scene').getContext('2d');
       const result={};
       for(const obj of s.layouts[s.room].filter(o=>['my-tv-1','my-tv-2','my-light-1'].includes(o.deviceId))){
@@ -39,7 +40,7 @@ async function check(browser,width,height) {
     });
   }
   try {
-    await page.goto(base);
+    await join(page,base,'movie-'+width);await page.goto(base);
     await tab('메뉴').tap();
     await page.getByRole('link',{name:'LG 미니룸'}).tap();
     await tap('가전 수집');
@@ -53,7 +54,7 @@ async function check(browser,width,height) {
     const screen=dream.layouts[dream.room].find(o=>o.k===tvKey);
     assert.ok(screen&&!screen.exhibit&&!screen.deviceId);
     const tapPoint=await page.evaluate(id=>{
-      const s=JSON.parse(localStorage.dotroom),items=DotScene.sorted(s.room,s.layouts[s.room]);
+      const s=JSON.parse(roomStorage.getItem('dotroom')),items=DotScene.sorted(s.room,s.layouts[s.room]);
       const item=items.find(o=>o.id===id),q=DotScene.place(s.room,s.theme,item);
       const cv=document.querySelector('#scene'),r=cv.getBoundingClientRect(),scale=r.width/cv.width;
       for(let y=3;y<q.s.h-3;y++)for(let x=3;x<q.s.w-3;x++){
@@ -88,16 +89,16 @@ async function check(browser,width,height) {
     const preview=await myPixels();
     assert.equal(preview['my-tv-1'],before['my-tv-1']);
     for(const id of ['my-tv-2','my-light-1'])assert.notEqual(preview[id],before[id]);
-    await tap('내 루틴에 저장');await button('루틴 추가').waitFor();
+    await tap('내 루틴에 저장');await button('＋ 추가').waitFor();
     assert.deepEqual(await myPixels(),before);
     const stored=await read('lg-miniroom.state'),movie=stored.savedRoutines.find(r=>r.templateId==='movie-night');
     assert.deepEqual(movie.bindings,{'tv-on':'my-tv-2','light-dim':'my-light-1'});
     assert.equal(movie.exclusions['curtain-close'],'no_device');
     assert.deepEqual(stored.collection,state.collection);
     assert.deepEqual(await read('dotroom'),dream);
-    await tab('홈').tap();await page.locator('#home:visible').waitFor();await page.reload();
-    await tab('마이룸').tap();await button('영화 보기').waitFor();
-    assert.equal(await page.locator('#lifeTitle').innerText(),'내 루틴');
+    await page.evaluate(()=>roomStorage.whenSynced());await tab('홈').tap();await page.locator('#home:visible').waitFor();await page.reload();
+    await tab('마이룸').tap();await page.locator('#myLink').tap();await button('영화 보기').waitFor();
+    assert.equal(await page.locator('#lifeTitle').innerText(),'내 루틴 1');
     assert.deepEqual(await myPixels(),before);
     await tap('영화 보기');await button('재생 종료').waitFor();
     assert.match(await page.locator('#lifeDetail').innerText(),/침실 TV.*조명 30%/);
@@ -106,14 +107,14 @@ async function check(browser,width,height) {
     assert.equal(replay['my-light-1'],preview['my-light-1']);
     assert.notEqual(replay['my-tv-2'],before['my-tv-2']);
     if(reducedMotion==='reduce')assert.deepEqual(replay,preview);
-    await tap('재생 종료');await button('루틴 추가').waitFor();
+    await tap('재생 종료');await button('＋ 추가').waitFor();
     assert.deepEqual(await myPixels(),before);
     assert.deepEqual(errors,[]);
     console.log(width+'×'+height+' PASS home → collect and place TV → cat → movie → choose bedroom TV and light → save → reload and replay. TV and lamp pixels restored.');
   } finally {await page.context().close();}
 }
-(async()=>{
+withServer(async base=>{
   const browser=await chromium.launch({channel:'chrome'});
-  try{for(const [width,height] of [[320,568],[390,844]])await check(browser,width,height);}
+  try{for(const [width,height] of [[320,568],[390,844]])await check(base,browser,width,height);}
   finally{await browser.close();}
-})().catch(error=>{console.error(error);process.exitCode=1;});
+}).catch(error=>{console.error(error);process.exitCode=1;});

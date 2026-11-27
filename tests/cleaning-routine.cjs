@@ -6,14 +6,16 @@ async function checkDream(browser){
   const p=await browser.newPage({viewport:{width:390,height:844},hasTouch:true});
   const tap=name=>p.getByRole('button',{name,exact:true}).tap();
   await p.goto(base+'/editor?space=dream');
-  for(const name of ['가전 수집','로봇청소기 수집','방에 놓기','배치 완료'])await tap(name);
+  await tap('가전 수집');
+  await p.locator('#libraryItems [data-product="catalog:robot:R560BL1"] button').tap();
+  await tap('방에 놓기');await tap('배치 완료');
   await p.locator('#view').focus();
   for(let i=0;i<20;i++){
     await p.keyboard.press('ArrowRight');
     if((await p.locator('#keyboardTarget').innerText()).includes('로봇청소기'))break;
   }
   await p.keyboard.press('Enter');
-  assert.equal(await p.locator('#lifeTitle').innerText(),'로봇청소기');
+  await p.getByText('LG전자 코드제로 R5',{exact:true}).waitFor();
   await tap('청소 시간');await tap('미리보기');
   assert.match(await p.locator('#lifeDetail').innerText(),/공기청정기 제외/);
   await tap('내 방에 맞추기');await tap('체험용 기기 사용');
@@ -33,15 +35,15 @@ async function checkPlayback(browser,withSofa,reducedMotion,obstructed=false){
   const errors=[];p.on('pageerror',e=>errors.push(e.message));
   const key='lg-miniroom.dot.my.thinq';
   const items=[
-    {id:1,k:'robot_vacuum',x:60,y:8,deviceId:'robot-a'},
-    {id:2,k:'robot_vacuum',x:16,y:19,deviceId:'robot-b'},
-    {id:3,k:'puri_p',x:5,y:50,deviceId:'purifier'}
+    {id:1,k:'catalog:robot:R560BL1',x:60,y:8,deviceId:'robot-a'},
+    {id:2,k:'catalog:robot:R560BL1',x:16,y:19,deviceId:'robot-b'},
+    {id:3,k:'catalog:purifier:AS235DWSA',x:5,y:50,deviceId:'purifier'}
   ];
   if(withSofa)items.push({id:4,k:'sofa',x:obstructed?26:39,y:obstructed?32:17});
   await p.route('**/api/my-appliances',r=>r.fulfill({json:{mode:'thinq',
-    devices:items.filter(o=>o.deviceId).map(o=>({id:o.deviceId,k:o.k,name:o.deviceId}))}}));
+    devices:items.filter(o=>o.deviceId).map(o=>({id:o.deviceId,name:o.deviceId,category:o.deviceId==='purifier'?'공기청정기':'로봇청소기',modelCode:o.k.split(':')[2]}))}}));
   await p.goto(base+'/editor?space=my');
-  await p.evaluate(({key,items})=>localStorage.setItem(key,JSON.stringify({layoutVersion:1,room:'B',theme:'pink',
+  await p.evaluate(({key,items})=>localStorage.setItem(key,JSON.stringify({layoutVersion:1,room:'B',theme:'pink',woodRooms:['B'],
     layouts:{B:items.map(o=>({...o,e:0,f:0}))}})),{key,items});
   await p.addInitScript(()=>{
     // Observe the frames sent to the real canvas renderer, including transient positions.

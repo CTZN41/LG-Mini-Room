@@ -5,7 +5,7 @@
 
   const tabs = [
     ['home', '홈', '/'], ['devices', '디바이스', '/?tab=devices'],
-    ['my', '마이룸', '/editor?space=my&app=thinq'],
+    ['my', '마이룸', '/editor?space=dream&app=thinq'],
     ['care', '케어', '/?tab=care'], ['menu', '메뉴', '/?tab=menu']
   ];
   const icons = {
@@ -28,12 +28,19 @@
   }
   let active;
   if (inRoom) {
-    active = query.get('space') === 'my' ? 'my' : 'menu';
+    active = ['dream','my'].includes(query.get('space')) ? 'my' : 'menu';
   } else {
     active = ['devices','care','menu'].includes(query.get('tab')) ? query.get('tab') : 'home';
     for (const screen of document.querySelectorAll('.screen')) screen.hidden = screen.id !== active;
     for (const slot of document.querySelectorAll('[data-icon]')) slot.innerHTML = icon(slot.dataset.icon);
     document.title = 'LG ThinQ · '+tabs.find(([id]) => id === active)[1];
+    const uid=sessionStorage.getItem('miniroom.welcomeUid');
+    if(active==='home'&&/^\d{8}$/.test(uid||'')){
+      const note=document.createElement('p');
+      note.setAttribute('role','status');note.textContent='가입했어요 · 내 UID '+uid;
+      document.querySelector('#home header').after(note);
+      sessionStorage.removeItem('miniroom.welcomeUid');
+    }
   }
   const footer = document.createElement('footer');
   footer.className = 'thinq-footer';

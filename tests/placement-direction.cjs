@@ -1,18 +1,23 @@
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const base=process.argv[2]||'http://127.0.0.1:4173';
-const products=['vacuum','robot_vacuum','puri_p','puri_m','puri_b','tower_ac'];
+const units=[
+  ['무선청소기','A727TA','stick'],['로봇청소기','R560BL1','robot'],
+  ['공기청정기','AS206NGHA','purifier'],['공기청정기','AS235DWSA','purifier'],
+  ['공기청정기','AS153HWFS','purifier'],['에어컨','FQ16ET4HSN','ac']
+].map(([category,modelCode,slug])=>({category,modelCode,id:modelCode,name:modelCode,k:'catalog:'+slug+':'+modelCode}));
+const products=units.map(unit=>unit.k);
 
 async function exercise(browser,space,width,height){
   const p=await browser.newPage({viewport:{width,height},isMobile:width<700,hasTouch:width<700});
   const key=space==='my'?'lg-miniroom.dot.my.thinq':'dotroom';
   await p.route('**/api/my-appliances',r=>r.fulfill({json:{mode:'thinq',
-    devices:products.map(k=>({id:k,name:k,k}))}}));
+    devices:units}}));
   await p.goto(base+'/editor?space='+space);
   await p.getByRole('button',{name:'배치 편집',exact:true}).waitFor();
   await p.evaluate(({key,products})=>{
     localStorage.setItem(key,JSON.stringify({layoutVersion:1,room:'B',theme:'pink',layouts:{B:[]}}));
-    localStorage.setItem('lg-miniroom.state',JSON.stringify({schemaVersion:1,revision:1,
+    localStorage.setItem(key==='dotroom'?'lg-miniroom.state':'lg-miniroom.state.thinq',JSON.stringify({schemaVersion:1,revision:1,
       collection:products,dreamLayout:{},myLayout:{},savedRoutines:[]}));
   },{key,products});
   await p.reload();await p.getByRole('button',{name:'배치 편집',exact:true}).click();
@@ -33,7 +38,7 @@ async function exercise(browser,space,width,height){
   for(const k of products){
     await p.locator('[data-key="'+k+'"]').click();
     // Test all headings in open floor away from other furniture.
-    if(k==='robot_vacuum')for(let i=0;i<10;i++)await p.keyboard.press('ArrowLeft');
+    if(k===products[1])for(let i=0;i<10;i++)await p.keyboard.press('ArrowLeft');
     for(const quadrant of [[-1,1],[-1,-1],[1,-1],[1,1]]){
       assert.deepEqual(await arrow(),quadrant,k+' points out of the front edge');
       await p.locator('#flip').click();
@@ -42,7 +47,9 @@ async function exercise(browser,space,width,height){
   }
   await p.locator('[data-cat="가구"]').click();await p.locator('[data-key=coffee]').click();
   assert.equal(await arrow(),null,'ordinary furniture keeps its footprint only');
-  await p.locator('[data-cat="가전"]').click();await p.locator('[data-key=tower_ac]').click();
+  if(await p.locator('#products').isHidden())await p.getByRole('button',{name:'다른 제품 놓기'}).click();
+  await p.locator('[data-cat="가전"]').click();
+  await p.locator('[data-key="'+products.at(-1)+'"]').click();
   const drag=await p.evaluate(key=>{
     const items=JSON.parse(localStorage[key]).layouts.B,unit=items.at(-1),table=items[0];
     const scene=document.querySelector('#scene'),box=scene.getBoundingClientRect(),scale=box.width/scene.width;

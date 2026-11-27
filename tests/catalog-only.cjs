@@ -1,4 +1,5 @@
 const assert=require('node:assert/strict');
+const {registeredModels}=require('./support/catalog.cjs');
 const {chromium}=require('playwright');
 const base=process.argv[2]||'http://127.0.0.1:4174';
 const tv='catalog:tv:55LX1QKNA',retired=['tvset','floor_lamp','demo-tv-01','styler','catalog:tv:NO_SUCH_MODEL'];
@@ -14,7 +15,27 @@ async function run(browser,width,height){
     assert.equal(layout.layouts.C.length,10);
     assert.ok(await page.evaluate(()=>JSON.parse(localStorage.dotroom).layouts.C.every(o=>ProductCatalog.hasModel(o.k))));
     await tap('libraryButton');
-    assert.ok(await page.locator('#libraryItems [data-product]').evaluateAll(nodes=>nodes.length===9&&nodes.every(n=>ProductCatalog.hasModel(n.dataset.product))));
+    const expected=registeredModels({collectibleOnly:true}),listed=[];
+    // Check every catalogue page, including the last page of each family.
+    for(const family of new Set(expected.map(([category])=>category))){
+      const models=expected.filter(([category])=>category===family);
+      let offset=0;
+      while(offset<models.length){
+        const response=await page.request.get(base+'/api/catalog?'+new URLSearchParams({category:family,offset}));
+        assert.equal(response.status(),200);
+        const {rows,total}=await response.json();assert.equal(total,models.length,family);
+        assert.ok(rows.length>0,family+' 빈 목록');
+        listed.push(...rows.map(row=>[family,row.model]));
+        offset+=rows.length;
+      }
+    }
+    assert.deepEqual(listed,expected,'공개 목록의 누락·중복·보류 제품');
+    const shown=await page.locator('#libraryItems [data-product]').evaluateAll(nodes=>nodes.map(n=>{
+      const k=n.dataset.product,product=DotScene.products[k];
+      if(!ProductCatalog.hasModel(k))throw Error('DB 등록 누락 '+k);
+      return product.catalogFamily||(product.washerStyle?'세탁기':'');
+    }));
+    assert.deepEqual(shown.sort(),[...new Set(registeredModels().map(([family])=>family))].sort());
     await page.locator('[data-product="'+tv+'"] button').tap();await tap('placeCollected');
     await page.evaluate(({tv,retired})=>{
       const s=JSON.parse(localStorage['lg-miniroom.state']);
@@ -33,7 +54,7 @@ async function run(browser,width,height){
     },tv));
     await visit('my');await page.getByRole('button',{name:'체험용 기기 사용',exact:true}).tap();
     await tap('libraryButton');
-    assert.ok(await page.locator('#libraryItems [data-product]').evaluateAll(nodes=>nodes.length>1&&nodes.every(n=>ProductCatalog.hasModel(n.dataset.product))));
+    assert.ok(await page.locator('#libraryItems [data-product]').evaluateAll(nodes=>nodes.length>1&&nodes.every(n=>n.dataset.product==='floor_lamp'||ProductCatalog.hasModel(n.dataset.product))));
     await page.evaluate(()=>{
       const l=JSON.parse(localStorage['lg-miniroom.dot.my']);l.layouts.B.find(o=>o.deviceId==='my-tv-1').k='tvset';
       localStorage['lg-miniroom.dot.my']=JSON.stringify(l);
@@ -47,7 +68,7 @@ async function run(browser,width,height){
     await visit('my');await tap('libraryButton');
     assert.deepEqual(await page.locator('#libraryItems [data-product]').evaluateAll(nodes=>nodes.map(n=>n.dataset.product)),[tv]);
     const before=await page.evaluate(()=>localStorage.dotroom);
-    await page.route('**/api/catalog/models',r=>r.fulfill({status:503,body:'offline'}));
+    await page.route('**/api/catalog/models*',r=>r.fulfill({status:503,body:'offline'}));
     await page.goto(base+'/editor?space=dream');await page.getByText(/제품 DB를 열 수 없어요/).waitFor();
     assert.equal(await page.evaluate(()=>localStorage.dotroom),before);assert.deepEqual(errors,[]);
     console.log('PASS',width,height,'DB-only display, collection, migration, demo inventory, exact ThinQ fixture and offline storage safety');

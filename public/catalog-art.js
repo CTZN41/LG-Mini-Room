@@ -127,6 +127,44 @@ const CatalogArt=(()=>{
   function add(key,w,d,h,draw){
     for(const rear of [false,true])DOT_ASSETS.sprites.appl['db_'+key+(rear?'_rear':'')]=sprite(w,d,h,rear,draw);
   }
+  for(const [key,buttons] of [['switch_two',2],['switch_three',3]]){
+    add(key,5,1,15,({box,bar})=>{
+      box(0,0,0,5,1,15,white);
+      for(let i=1;i<buttons;i++)bar([0,1,15*i/buttons],[5,1,15*i/buttons],'#a9a4a4');
+    });
+  }
+  for(const key of ['sensor_air','sensor_motion','sensor_climate']){
+    const tall=key==='sensor_motion',h=tall?11:4;
+    add(key,4,4,h+3,({roundBody,point,ellipse,line})=>{
+      roundBody(2,2,0,5,5,h,white);
+      const [x,y]=point(2,2,h);
+      if(tall)ellipse(x,y-1,3,2,'#d4dbe0','#a5adb5');
+      else if(key==='sensor_air'){
+        for(const dx of [-2,0,2])line([x+dx,y],[x+dx,y],'#a2a0a2');
+      }else{
+        line([x-1,y-1],[x-1,y+1],'#8e8e95');
+        ellipse(x+2,y,1,1,'#aabac4');
+      }
+    });
+  }
+  add('hub',7,7,10,({rear,roundBody,point,ellipse,line})=>{
+    const [x,y]=point(3.5,3.5,6);
+    roundBody(3.5,3.5,0,9,9,1,silver);
+    roundBody(3.5,3.5,1,10,10,5,white);
+    // Follow the curved grille so the stipple stays below the smooth top.
+    for(let dx=-8;dx<=8;dx+=2){
+      const rim=Math.round(4*Math.sqrt(1-(dx/10)**2));
+      for(let dy=1;dy<=3;dy+=2){
+        const px=x+dx+(dy===1?0:1);
+        line([px,y+rim+dy],[px,y+rim+dy],'#aba8a9');
+      }
+    }
+    const sign=rear?-1:1,ink='#88848a';
+    line([x-6*sign-1,y],[x-6*sign+1,y],ink);
+    line([x+6*sign-1,y],[x+6*sign+1,y],ink);
+    line([x+6*sign,y-1],[x+6*sign,y+1],ink);
+    ellipse(x,y+2*sign,1,0,ink);
+  });
   add('tv',22,6,63,({rear,box,bar,face})=>{
     for(const x of [1,21]){
       bar([x,2,21],[x,0,0],'#8d8585');

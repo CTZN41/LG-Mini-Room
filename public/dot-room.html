@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#3d2740">
+  <meta name="theme-color" content="#293638">
   <title>MY DOT ROOM · 도트 룸 에디터</title>
+  <script>if(new URLSearchParams(location.search).get('camera')==='resume')document.documentElement.classList.add('camera-return');</script>
+  <style>.camera-return body > :not(#cameraReturn){display:none!important}.camera-return #cameraReturn{display:block;padding:1rem}.camera-return #cameraReturn a{color:inherit}</style>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="dot-editor.css">
   <script defer src="dot-assets.js"></script>
@@ -12,41 +14,49 @@
   <script defer src="catalog-art.js"></script>
   <script defer src="product-catalog.js"></script>
   <script defer src="dot-scene.js"></script>
+  <script defer src="account-storage.js"></script>
   <script defer src="dot-editor.js"></script>
   <link rel="stylesheet" href="thinq/shell.css">
   <script defer src="thinq/shell.js"></script>
 </head>
 <body>
+<section id="cameraReturn" hidden><p role="status">촬영을 시작한 방으로 돌아가는 중이에요.</p><a href="/" hidden>ThinQ 홈 열기</a></section>
 <header class="top">
   <h1 aria-label="MY DOT ROOM"><canvas id="logo" aria-hidden="true"></canvas></h1>
   <nav id="rooms" aria-label="방 구조"></nav>
-  <div class="tones" aria-label="가구 톤"><button data-tone="pink">핑크</button><button data-tone="lime">연두</button></div>
+  <span id="environmentLabel" aria-label="방 밖의 환경"></span>
   <button id="more" aria-label="방 메뉴" title="방 메뉴">⋯</button>
 </header>
 <nav id="spaces" hidden aria-label="미니룸"><a id="dreamLink" href="?space=dream">드림룸</a><a id="myLink" href="?space=my">마이룸</a><a id="washerShelf" hidden></a><button id="libraryButton" hidden></button><button id="routineBagButton" hidden>인벤토리</button><button id="editMode">배치 편집</button></nav>
 <main>
   <section class="studio" aria-label="방 배치">
+    <div class="room-stage">
     <div id="view" tabindex="0" aria-label="방 캔버스. 둘러볼 때 좌우 방향키로 제품을 고르고 Enter로 열 수 있어요. 편집할 때 제품을 끌어 이동하세요.">
       <canvas id="scene" aria-label="방 전체와 배치한 제품"></canvas>
       <span id="keyboardTarget" role="status" hidden></span>
       <span id="placementHint" role="status"></span>
     </div>
-    <nav class="camera" aria-label="화면 배율">
-      <button id="overview">전체 보기</button><button id="wallView" hidden>벽면 확대</button>
-      <div class="zoom"><button id="out" aria-label="축소">−</button><output id="scale">100%</output><button id="in" aria-label="확대">＋</button></div>
-    </nav>
+    <button id="overview" aria-label="전체 보기" title="전체 보기" aria-pressed="false"><span aria-hidden="true"></span></button>
+    <div class="map-zoom" hidden><button id="out" aria-label="축소">−</button><button id="in" aria-label="확대">＋</button></div>
+    </div>
+    <div class="camera"><button id="scanDream" hidden>＋ 가전 촬영</button></div>
     <div id="comboHint" role="status"></div>
     <section id="living" hidden aria-label="방 상호작용"><strong id="lifeTitle"></strong><div id="routineTools" role="group" aria-label="루틴 관리" hidden></div><span id="lifeDetail" role="status"></span><div id="lifeActions"></div></section>
+    <div id="bagPlacement" hidden>
+      <strong id="bagPlacementName"></strong><span>제품을 끌어 위치를 정하세요.</span>
+      <div><button id="bagPlaceCancel">취소</button><button id="bagPlaceConfirm">여기에 놓기</button></div>
+    </div>
     <div class="selection">
       <div class="selectedName"><img id="editPhoto" hidden alt=""><canvas id="sample" width="40" height="40" hidden></canvas><span><span id="name" role="status">제품을 눌러 선택</span><small id="unknownEditModel" hidden>모델명 미확인</small></span></div>
       <div id="actions" hidden>
         <button id="ccw" aria-label="왼쪽 90도 회전" title="왼쪽 90도 (Shift+R)">↺ 90°</button><button id="flip" title="오른쪽 90도 (R)">↻ 90°</button><button id="aim" hidden>TV 쪽으로</button><button id="up" hidden aria-label="높이 올리기" title="높이 올리기 (])">높이＋</button><button id="down" hidden aria-label="높이 내리기" title="높이 내리기 ([)">높이−</button><button id="remove">삭제</button><button id="overlap" hidden>겹친 제품</button>
       </div>
+      <button id="pickAnother" hidden>다른 제품 놓기</button>
       <button id="undo" title="되돌리기 (Ctrl+Z)">↶ 되돌리기</button>
     </div>
   </section>
   <aside id="drawer">
-    <div class="drawerHead"><h2>제품 서랍 <span id="count"></span></h2><button id="expand" aria-controls="products" aria-expanded="false">펼치기 ⌃</button></div>
+    <div class="drawerHead"><h2><span id="drawerTitle">제품 서랍</span> <span id="count"></span></h2><button id="expand" aria-controls="products" aria-expanded="false">펼치기 ⌃</button></div>
     <nav id="categories" aria-label="제품 카테고리"></nav>
     <div id="products" aria-label="제품 목록"></div>
   </aside>
@@ -71,12 +81,19 @@
   <section id="collectionResult" hidden>
     <canvas id="collectedPic" width="64" height="54" aria-hidden="true"></canvas>
     <strong id="collectedName"></strong><p id="collectedUse"></p>
-    <div><button id="placeCollected">방에 놓기</button><button id="continueCollecting">계속 수집</button></div>
+    <div><button id="placeCollected">방에 놓기</button><button id="keepScanned" hidden>인벤토리에 보관</button><button id="continueCollecting">계속 수집</button></div>
   </section>
 </dialog>
 <dialog id="routineBag" aria-labelledby="bagTitle">
-  <header><h2 id="bagTitle">루틴 인벤토리</h2><button class="close" aria-label="인벤토리 닫기">×</button></header>
+  <header><h2 id="bagTitle">인벤토리</h2><button class="close" aria-label="인벤토리 닫기">×</button></header>
+  <div id="bagFilters" role="group" aria-label="인벤토리 종류">
+    <button data-bag="routine" aria-pressed="true" aria-controls="bagRows">루틴</button>
+    <button data-bag="appliance" aria-pressed="false" aria-controls="bagItems">가전</button>
+    <button hidden data-bag="furniture" aria-pressed="false" aria-controls="bagItems">가구</button>
+  </div>
   <div id="bagRows"></div>
+  <div id="bagGroupNav" hidden><button id="bagGroupBack" type="button">← 종류 목록</button><strong id="bagGroupTitle"></strong></div>
+  <ul id="bagItems" hidden></ul>
 </dialog>
 <dialog id="menu"><header><h2>방 메뉴</h2><button class="close" aria-label="메뉴 닫기">×</button></header>
   <button id="observationFile" hidden>관찰 기록 내려받기</button>
@@ -85,6 +102,8 @@
   <button id="saveFile">배치 파일 저장</button><button id="openFile">배치 파일 불러오기</button><input type="file" id="layoutFile" accept="application/json,.json" hidden>
   <button id="previousLayout" hidden>전환 전 배치 내려받기</button>
   <button id="reset">이 방 기본 배치</button><button id="clear">이 방 전부 비우기</button>
+  <a href="/members">계정 및 친구 방</a>
+  <button id="accountSaveStatus" hidden aria-live="polite"></button>
   <a id="friendRoom" href="/#example" hidden>예시 친구 방</a>
   <a id="retroRoom" href="?space=dream&amp;room=C" hidden>C 현관 투존 · 가전 전시</a>
   <a id="washerComparison" href="/editor?space=example&amp;compare=washers" hidden>세탁기 모델 비교</a>
@@ -92,6 +111,27 @@
   <a id="mini" href="/#menu">LG 미니룸으로</a>
 </dialog>
 <dialog id="picture"><header><h2>방 이미지</h2><button class="close" aria-label="이미지 닫기">×</button></header><img id="exportImage" alt="편집 표시가 없는 방 전체 이미지"><a id="download" download>PNG 저장</a></dialog>
+<dialog id="shelfAdd" aria-labelledby="shelfAddTitle">
+  <header><h2 id="shelfAddTitle">루틴 추가</h2><button class="close" aria-label="루틴 추가 닫기">×</button></header>
+  <div id="shelfChoices"></div>
+</dialog>
+<dialog id="conditionDialog" aria-labelledby="conditionTitle">
+  <header><h2 id="conditionTitle">실행 조건</h2><button class="close" aria-label="조건 닫기">×</button></header>
+  <form id="conditionForm" novalidate>
+    <fieldset><legend>언제 확인할까요?</legend>
+      <label><input id="useTime" type="checkbox">요일과 시각</label>
+      <div id="conditionSchedule"><select id="conditionDays" aria-label="반복 요일"><option value="weekday">평일</option><option value="daily">매일</option><option value="weekend">주말</option></select>
+      <input type="time" id="conditionTime" aria-label="한국 시각" step="60"></div>
+      <label><input id="useTemperature" type="checkbox">바깥 기온이 설정값 이상</label>
+      <label id="temperatureValue"><input id="conditionTemp" type="number" min="-50" max="60" step="any" aria-label="최저 바깥 기온"> °C 이상</label>
+      <label><input id="useRain" type="checkbox">우리 동네에 비가 올 때</label>
+    </fieldset>
+    <label id="weatherLocation">우리 집 날씨 지역<select id="conditionArea"><option value="">지역 선택</option></select><small>변경하면 이 홈의 날씨 루틴에 함께 적용돼요.</small></label>
+    <p id="conditionStatus" role="status" aria-live="polite"></p>
+    <small id="conditionSource" hidden><a target="_blank" rel="noopener noreferrer">날씨 자료 출처</a></small>
+    <div class="condition-actions"><button type="button" id="conditionCheck">지금 조건 확인</button><button type="button" id="conditionRun" hidden>방에서 가상 실행</button><button type="submit">조건 저장</button><button type="button" id="conditionClear">조건 해제</button></div>
+  </form>
+</dialog>
 <dialog id="batch" aria-labelledby="batchTitle">
   <header><h2 id="batchTitle">여러 루틴 설정</h2><button class="close" aria-label="설정 닫기">×</button></header>
   <div id="batchList" aria-label="설정할 루틴"></div>

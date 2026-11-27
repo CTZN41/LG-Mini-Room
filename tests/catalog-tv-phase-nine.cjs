@@ -1,3 +1,4 @@
+const {registeredModels}=require('./support/catalog.cjs');
 const assert = require('node:assert/strict');
 const {chromium} = require('playwright');
 const {verifyPhone} = require('./catalog-room-check.cjs');
@@ -52,11 +53,14 @@ const base = process.argv[2] || 'http://127.0.0.1:4174';
     assert.equal(audit.issue,undefined,JSON.stringify(audit.issue));
     assert.ok(audit.widths[43]<audit.widths[65] && audit.widths[65]<audit.widths[86]);
     console.log('PASS',rows.length,'TVs /',audit.count,'sprite recipes, four directions and screen playback');
+    const available=new Set(registeredModels({collectibleOnly:true}).filter(([family])=>family==='TV').map(([,code])=>code));
+    const publicRows=rows.filter(row=>available.has(row[1]));
+    assert.equal(publicRows.length,available.size);
     const examples = new Map();
-    for (const row of rows) if (!examples.has(row[5])) examples.set(row[5],{model:row[1]});
+    for (const row of publicRows) if (!examples.has(row[5])) examples.set(row[5],{model:row[1]});
     // Avoid using the largest example in every collector flow. These three share a base shape.
-    examples.set('feet',{model:rows.find(r=>r[5]==='feet'&&r[9]===43)[1]});
-    for (const size of [65,86]) examples.set('feet'+size,{model:rows.find(r=>r[5]==='feet'&&r[9]===size)[1]});
+    examples.set('feet',{model:publicRows.find(r=>r[5]==='feet'&&r[9]===43)[1]});
+    for (const size of [65,86]) examples.set('feet'+size,{model:publicRows.find(r=>r[5]==='feet'&&r[9]===size)[1]});
     await page.close();
     await Promise.all([[320,568],[390,844]].map(([w,h])=>
       verifyPhone(browser,base,w,h,[...examples.values()],'TV','tv','phase9')));

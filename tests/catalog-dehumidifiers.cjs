@@ -1,3 +1,4 @@
+const {registeredModels}=require('./support/catalog.cjs');
 const {expectedTitle}=require('./catalog-room-title.cjs');
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
@@ -35,29 +36,33 @@ async function check(browser,width,height){
     await page.locator('#lifeActions').getByRole('button',{name:'닫기'}).tap();
     await tap('libraryButton');await tap('openCatalog');await page.locator('#catalogFamilies button').filter({hasText:featured}).tap();
     const catalog=new Map();
-    for(const first of [1,17,33]){
+    const modelsOf=collectibleOnly=>registeredModels({collectibleOnly}).filter(([category])=>category==='제습기').map(([,model])=>model);
+    const available=modelsOf(true);
+    for(let first=1;first<=available.length;first+=16){
       await page.waitForFunction(i=>document.querySelector('#catalogStatus').textContent.startsWith(i+'–'),first);
       for(const [model,image,label] of await page.locator('#catalogRows article').evaluateAll(rows=>rows.map(row=>[
-        row.querySelector('strong').textContent,row.querySelector('canvas').toDataURL(),row.querySelector('small').textContent]))){
+        row.dataset.model,row.querySelector('canvas').toDataURL(),row.querySelector('details .appearance')?.textContent||'']))){
         assert.match(label,/물통|수위창|바퀴/);catalog.set(model,image);
       }
-      if(first!==33)await tap('catalogNext');
+      if(first+16<=available.length)await tap('catalogNext');
     }
-    assert.equal(catalog.size,40);assert.equal(new Set(catalog.values()).size,14);
-    assert.equal(catalog.get('DQ134MWEC'),catalog.get('DQ134MWECS'));
+    assert.equal(catalog.keys().next().value,featured);
+    assert.deepEqual([...catalog.keys()].sort(),available);
+    assert.ok(await page.locator('#catalogNext').isHidden());
     assert.notEqual(catalog.get(pink),catalog.get('DQ202PBBC'));
     assert.notEqual(catalog.get('DQ200PBBC'),catalog.get('DQ202PBBC'));
     const directions=await page.evaluate(models=>{
-      const fronts=new Set(),backs=new Set();
+      const fronts=new Set(),backs=new Set(),pairs={};
       for(const model of models){
         const k='catalog:dehumid:'+model,item=ProductCatalog.restore(DotScene.products,k);
         const views=[0,2].map(turn=>DotScene.place('C','pink',{k,x:10,y:10,e:0,f:0,turn}).s);
         if(views.some(s=>!s.outlet||!s.pixels[(s.outlet[1]*s.w+s.outlet[0])*4+3]))throw Error('indicator '+model);
         if(views[0].im.toDataURL()===views[1].im.toDataURL())throw Error('rear '+model);
         for(const suffix of ['','_rear'])if(!DOT_ASSETS.sprites.appl[item.spriteKey+suffix].retroAA)throw Error(model);
-        fronts.add(views[0].im.toDataURL());backs.add(views[1].im.toDataURL());
-      }return [fronts.size,backs.size];
-    },[...catalog.keys()]);assert.deepEqual(directions,[14,14]);
+        const [front,back]=views.map(v=>v.im.toDataURL());
+        fronts.add(front);backs.add(back);pairs[model]=front+back;
+      }return [fronts.size,backs.size,pairs.DQ134MWEC===pairs.DQ134MWECS];
+    },modelsOf(false));assert.deepEqual(directions,[14,14,true]);
     await page.locator('#catalogSearch').fill(pink);await page.getByRole('button',{name:pink+' 수집',exact:true}).tap();
     await tap('placeCollected');await tap('flip');await tap('editMode');
     const placed=(await layout()).layouts.C.find(o=>o.k===key(pink));assert.ok(placed);assert.equal(placed.turn,1);

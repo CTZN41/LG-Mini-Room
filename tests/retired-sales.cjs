@@ -1,4 +1,5 @@
-﻿const assert=require('node:assert/strict');
+const assert=require('node:assert/strict');
+const {registeredModels}=require('./support/catalog.cjs');
 const {chromium}=require('playwright');
 const base=process.argv[2]||'http://127.0.0.1:4174';
 
@@ -58,9 +59,11 @@ const base=process.argv[2]||'http://127.0.0.1:4174';
           const im=new Image();im.src='/api/catalog/photo?'+new URLSearchParams({category,model:code});await im.decode();
           if(im.naturalWidth<50)throw Error('photo '+code);
         }
-        return all.length;
+        for(const code of ['LZ-H154GB','Z-E0250U2SC','65EP5G','55CT5WN','A948BWE','RD22WSQ','K83IGY','K83WGY'])assertAbsent(code);
+        function assertAbsent(code){if(all.some(([,model])=>model===code))throw Error('제외 제품 노출 '+code)}
+        return all;
       });
-      assert.equal(checks,2813);assert.deepEqual(errors,[]);
+      assert.deepEqual(checks,registeredModels());assert.deepEqual(errors,[]);
       await page.context().close();console.log('PASS',width,height,'migration, idempotence, standalone photos and keys');
     }
   }finally{await browser.close()}

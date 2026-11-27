@@ -10,7 +10,7 @@ const families = [
   ['무선청소기','vacuum',['A938RA','AS9272WD','AO9571GKT','AU9202WD']],
   ['로봇청소기','robot_vacuum',['N95THU','B95AWBH']],
   ['제습기','dehumidifier',['DQ134MWEC','DQ202PPBC']],
-  ['가습기','humidifier',['AW141YBW','HY505RWLL','HY704RSUA']]
+  ['가습기','humidifier',['AW141YBW','HY505RWLAH','HY704RSUA']]
 ];
 
 (async () => {

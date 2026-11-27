@@ -1,9 +1,9 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>미니룸 체험 QR</title><link rel="stylesheet" href="/experience.css"><script src="/experience-qr.js"></script></head>
 <body class="poster"><main><b>LG 미니룸</b><h1>영화가 있는 거실</h1><p>휴대폰 카메라로 미니룸에 입장하세요.</p>
-<div id="qr" aria-label="미니룸 체험 링크 QR 코드"></div><a class="primary" id="entry" href="/experience">이 기기에서 체험하기</a><p id="local"></p><form id="venue" hidden><label>휴대폰에서 접속할 서버 주소<input id="address" type="url" placeholder="http://192.168.0.10:4185" required></label><button>QR 변경</button></form></main>
+<div id="qr" aria-label="미니룸 체험 링크 QR 코드"></div><a class="primary" id="entry" data-entry="/experience" href="/experience">이 기기에서 체험하기</a><p id="local"></p><form id="venue" hidden><label>휴대폰에서 접속할 서버 주소<input id="address" type="url" placeholder="http://192.168.0.10:4185" required></label><button>QR 변경</button></form></main>
 <script>
-const entry=new URL('/experience',location.origin);
+const entry=new URL(document.querySelector('#entry').dataset.entry,location.origin);
 if(new URLSearchParams(location.search).get('observe')==='1')entry.searchParams.set('observe','1');
 const local=['localhost','127.0.0.1','[::1]'].includes(location.hostname);
 const venue=document.querySelector('#venue');

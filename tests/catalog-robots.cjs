@@ -17,8 +17,8 @@ async function check(browser,width,height){
     for(const first of [1,17,33]){
       await page.waitForFunction(first=>document.querySelector('#catalogStatus').textContent.startsWith(first+'–'),first);
       const entries=await page.locator('#catalogRows article').evaluateAll(rows=>rows.map(row=>[
-        row.querySelector('strong').textContent,row.querySelector('canvas').toDataURL(),
-        row.querySelector('small').textContent
+        row.dataset.model,row.querySelector('canvas').toDataURL(),
+        row.querySelector('details .appearance')?.textContent||''
       ]));
       for(const [model,art,label] of entries){
         assert.doesNotMatch(label,/제품군 대표 도트/);

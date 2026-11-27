@@ -2,20 +2,20 @@ const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const base=process.argv[2]||'http://127.0.0.1:4173';
 const steps=[[0,1],[-1,0],[0,-1],[1,0]];
-const robot=(x,y,turn)=>({id:1,k:'robot_vacuum',x,y,f:turn%2,turn,e:0,deviceId:'robot'});
+const robot=(x,y,turn)=>({id:1,k:'catalog:robot:R560BL1',x,y,f:turn%2,turn,e:0,deviceId:'robot'});
 
 async function check(browser,space,viewport){
   const p=await browser.newPage({viewport,hasTouch:true,isMobile:viewport.width<500});
   p.setDefaultTimeout(6000);
   const key=space==='my'?'lg-miniroom.dot.my.thinq':'dotroom';
-  await p.route('**/api/my-appliances',r=>r.fulfill({json:{mode:'thinq',devices:[{id:'robot',k:'robot_vacuum',name:'로봇청소기'}]}}));
+  await p.route('**/api/my-appliances',r=>r.fulfill({json:{mode:'thinq',devices:[{id:'robot',category:'로봇청소기',modelCode:'R560BL1',name:'로봇청소기'}]}}));
   const btn=name=>p.getByRole('button',{name,exact:true});
   await p.goto(base+'/editor?space='+space);await btn('배치 편집').waitFor();
   async function load(items,room='B'){
     await p.evaluate(({items,key,room})=>{
       localStorage[key]=JSON.stringify({layoutVersion:1,room,theme:'pink',layouts:{[room]:items}});
       if(key==='dotroom')localStorage['lg-miniroom.state']=JSON.stringify({schemaVersion:1,revision:0,
-        collection:['robot_vacuum'],dreamLayout:{},myLayout:{},savedRoutines:[]});
+        collection:['catalog:robot:R560BL1'],dreamLayout:{},myLayout:{},savedRoutines:[]});
     },{items,key,room});
     await p.reload();await btn('배치 편집').waitFor();
     await p.evaluate(()=>{
@@ -37,14 +37,22 @@ async function check(browser,space,viewport){
     });
   }
   const saved=()=>p.evaluate(key=>JSON.parse(localStorage[key]).layouts.B[0],key);
-  async function openRobot(){
-    await p.locator('#view').focus();
-    for(let i=0;i<2;i++){
-      await p.keyboard.press('ArrowRight');
-      if((await p.locator('#keyboardTarget').textContent()).includes('로봇청소기'))break;
-    }
-    await p.keyboard.press('Enter');await btn('청소 시간').waitFor();
+  async function tapRobot(){
+    const point=await p.evaluate(key=>{
+      const s=JSON.parse(localStorage[key]),items=DotScene.sorted(s.room,s.layouts[s.room]);
+      const robot=items.find(item=>item.id===1),q=DotScene.place(s.room,s.theme,robot);
+      const canvas=document.querySelector('#scene'),rect=canvas.getBoundingClientRect();
+      for(let y=2;y<q.s.h-2;y++)for(let x=2;x<q.s.w-2;x++){
+        const px=q.x+x,py=q.y+y;
+        if(![[0,0],[-1,-1],[1,1]].every(([dx,dy])=>DotScene.hits(s.room,s.theme,items,px+dx,py+dy)[0]===robot))continue;
+        const screen=[rect.left+(px+.5)*rect.width/canvas.width,rect.top+(py+.5)*rect.height/canvas.height];
+        if(document.querySelector('#view').contains(document.elementFromPoint(...screen)))return screen;
+      }
+      throw Error('로봇청소기 터치 위치를 찾지 못했습니다.');
+    },key);
+    await p.touchscreen.tap(...point);
   }
+  async function openRobot(){await tapRobot();await btn('청소 시간').waitFor()}
   async function checkTrack(o,dx,dy,max){
     await p.waitForFunction(({x,y})=>travel.some(([a,b])=>a===x&&b===y),
       {x:o.x+dx*max,y:o.y+dy*max});
@@ -76,12 +84,21 @@ async function check(browser,space,viewport){
     assert.deepEqual(await saved(),o);
   }
   const checks=await p.evaluate(()=>{
-    const crosses=(room,x,y,turn)=>DotScene.robotCrossesStep(room,{k:'robot_vacuum',x,y,f:turn%2,turn});
+    const crosses=(room,x,y,turn)=>DotScene.robotCrossesStep(room,{k:'catalog:robot:R560BL1',x,y,f:turn%2,turn});
     return [crosses('B',38,15,3),crosses('B',39,15,3),crosses('B',55,20,1),
       crosses('A',5,38,0),crosses('A',5,46,2),crosses('A',5,46,3),
       crosses('C',5,46,0),crosses('C',5,54,2),crosses('C',5,54,3)];
   });
   assert.deepEqual(checks,Array(9).fill(false));
+  // The current wood rooms are level. Exercise an actual raised zone in this test tab.
+  await load([robot(28,22,3)]);
+  await p.evaluate(()=>DotScene.roomData('B').zones.push([39,0,100,48,4]));
+  await openRobot();await checkTrack(robot(28,22,3),1,0,3);
+  await load([robot(28,22,0)]);
+  await p.evaluate(()=>DotScene.roomData('B').zones.push([39,0,100,48,4]));
+  await btn('배치 편집').tap();await tapRobot();const initial=await saved();
+  await p.locator('#ccw').tap();assert.match(await p.locator('#notice').innerText(),/단차/);
+  assert.deepEqual(await saved(),initial);
   for(const [room,y] of [['A',38],['C',46]]){
     const o=robot(5,y,0);
     await load([o],room);await openRobot();await checkTrack(o,0,1,8);

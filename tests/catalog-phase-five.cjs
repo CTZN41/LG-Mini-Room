@@ -1,20 +1,14 @@
 const {expectedTitle}=require('./catalog-room-title.cjs');
 const assert = require('node:assert/strict');
-const path = require('node:path');
-const { DatabaseSync } = require('node:sqlite');
+const {registeredModels}=require('./support/catalog.cjs');
 const { chromium } = require('playwright');
 
 const base = process.argv[2] || 'http://127.0.0.1:4174';
-const families = ['TV','냉장고','세탁기','건조기','공기청정기','가습기','제습기','로봇청소기','무선청소기'];
+const models=registeredModels();
+const families=[...new Set(models.map(([category])=>category))];
 const ready = page => page.waitForFunction(() => document.querySelectorAll('#rooms [data-room]').length === 3);
 
 async function auditDatabase(browser) {
-  const db = new DatabaseSync(process.env.MINIROOM_CATALOG_DB || path.join(__dirname,'../data/lg_appliances.db'), {readOnly:true});
-  let models;
-  try {
-    models = db.prepare('SELECT DISTINCT category,model_name FROM products ORDER BY category,model_name').all()
-      .map(row => [row.category,row.model_name]);
-  } finally { db.close(); }
   const page = await browser.newPage();
   try {
     await page.goto(base+'/editor?space=dream&room=C');
@@ -113,9 +107,16 @@ async function exerciseRoom(browser,width,height) {
       const item=current.find(o=>initial.every(old=>old.id!==o.id));
       assert.equal(current.length,initial.length+1);
       assert.equal(item.k,chosen.k);
-      for(const expected of [1,2,3,0,1]){
+      const wall=await page.evaluate(k=>Boolean(DotScene.products[k].wall),item.k);
+      const turns=wall?[3,0,3,0,3]:[1,2,3,0,1];
+      for(const expected of turns){
         await tap('flip');
-        assert.equal((await layout()).find(o=>o.id===item.id).turn,expected,family+' 회전');
+        const rotated=(await layout()).find(o=>o.id===item.id);
+        assert.equal(rotated.turn,expected,family+' 회전');
+        if(wall){
+          assert.equal(rotated.f?rotated.x:rotated.y,0);
+          if(expected===0)assert.ok(Math.abs(rotated.x-item.x)<=1,'벽 장착 위치 복원');
+        }
       }
       const edited=await layout();
       await tap('editMode');
@@ -128,7 +129,7 @@ async function exerciseRoom(browser,width,height) {
       await tap('editMode');await tapPlacement(page,item.id);await tap('remove');
       assert.deepEqual(await layout(),initial);
       await tap('editMode');
-      console.log('PASS',width+'x'+height,family,chosen.model,'배치·네 방향 회전·새로고침·터치 선택·회수');
+      console.log('PASS',width+'x'+height,family,chosen.model,'배치·지원 방향 회전·새로고침·터치 선택·회수');
     }
     assert.deepEqual(errors,[]);
   }finally{await page.context().close();}

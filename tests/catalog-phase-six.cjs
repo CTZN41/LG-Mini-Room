@@ -4,6 +4,7 @@ const path=require('node:path');
 const {chromium}=require('playwright');
 const {tapPlacement}=require('./catalog-phase-five.cjs');
 const {reviewCatalog}=require('../scripts/review-catalog.cjs');
+const {registeredModels}=require('./support/catalog.cjs');
 const pilots=require('../docs/catalog-art-reviews.json');
 const base=process.argv[2]||'http://127.0.0.1:4174';
 
@@ -56,7 +57,7 @@ async function checkRoom(browser,width,height){
 
 (async()=>{
   const rows=await reviewCatalog('--all',base);
-  assert.equal(new Set(rows.map(row=>row.category)).size,9);
+  assert.deepEqual(rows.map(row=>[row.category,row.model].join('|')).sort(),registeredModels().map(pair=>pair.join('|')).sort());
   assert.ok(rows.every(row=>row.key&&row.spriteKey&&row.photo&&Array.isArray(row.components)));
   for(const [model,pilot] of Object.entries(pilots)){
     const row=rows.find(r=>r.category===pilot.category&&r.model===model);

@@ -1,3 +1,4 @@
+const {registeredModels}=require('./support/catalog.cjs');
 const {expectedTitle}=require('./catalog-room-title.cjs');
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
@@ -32,10 +33,10 @@ async function check(browser,width,height,reduced){
   try{
     await page.goto(base+'/editor?space=dream');await collect('AW141YBW');await collect('HY705RWUA');
     await page.reload();await page.locator('#libraryButton').waitFor();
-    const gallery=await page.evaluate(async()=>{
-      const {rows}=await (await fetch('/api/catalog?category=가습기')).json();
+    const models=registeredModels().filter(([category])=>category==='가습기').map(([,code])=>code);
+    const gallery=await page.evaluate(models=>{
       const keys=new Set();
-      for(const {model} of rows){
+      for(const model of models){
         const k='catalog:humid:'+model,item=ProductCatalog.restore(DotScene.products,k);
         keys.add(item.spriteKey);
         for(let turn=0;turn<4;turn++){
@@ -44,8 +45,8 @@ async function check(browser,width,height,reduced){
           if(!s.pixels[(y*s.w+x)*4+3])throw Error(model+' outlet outside product');
         }
       }
-      return [rows.length,keys.size];
-    });
+      return [models.length,keys.size];
+    },models);
     assert.deepEqual(gallery,[14,7]);
     // The cat keeps its seated profile throughout the mist animation, on either side.
     await page.evaluate(()=>{

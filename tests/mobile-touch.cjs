@@ -24,7 +24,7 @@ async function check(browser,width,height){
     }
   }
   await button('가전 수집').tap();
-  await button('로봇청소기 R560BL1 수집').tap();
+  await page.locator('#libraryItems [data-product="catalog:robot:R560BL1"]').getByRole('button',{name:/수집$/}).tap();
   await button('방에 놓기').tap();
   const collapsed=(await view.boundingBox()).height;
   await page.locator('#expand').tap();

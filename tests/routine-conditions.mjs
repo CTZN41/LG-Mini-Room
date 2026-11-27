@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {evaluateRule,validateRule,seoulClock} from '../public/routine-conditions.mjs';
+const now='2026-11-27T09:00:59Z', weather={observedAt:'2026-11-27T08:00:00Z',temperature:28,raining:true};
+const rule={time:'18:00',days:'weekday',minTemp:28,rain:true};
+const result=(r,w=weather,n=now)=>evaluateRule(r,{now:n,weather:w}).status;
+assert.equal(result(rule),'match');
+assert.equal(result(rule,{...weather,temperature:27.9}),'miss');
+assert.equal(result(rule,{...weather,raining:false}),'miss');
+assert.equal(result(rule,{...weather,observedAt:'2026-11-27T07:30:00Z'}),'pending');
+assert.equal(result(rule,null),'pending');
+assert.equal(result({days:'weekday',time:'18:00'},null),'match');
+assert.deepEqual(seoulClock('2026-11-27T15:00:00Z'),{date:'2026-11-28',time:'00:00',day:6});
+assert.equal(result({days:'weekend',time:'00:00'},null,'2026-11-27T15:00:00Z'),'match');
+assert.equal(result({days:'weekday',time:'00:00'},null,'2026-11-27T15:00:00Z'),'miss');
+assert.equal(result(rule,weather,'2026-11-27T09:01:00Z'),'miss');
+for(const r of [{},{days:'daily'},{time:'24:00',days:'daily'},{minTemp:null},{minTemp:100},{rain:false}])assert.throws(()=>validateRule(r));
+console.log('PASS Korean midnight, weekdays, exact minute, threshold, rain, stale or missing data and invalid rules');

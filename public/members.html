@@ -1,0 +1,15 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>미니룸 · 계정 및 친구 방</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#392d3b;color:#382d39;font:16px/1.45 system-ui,sans-serif}main{max-width:440px;min-height:100dvh;margin:auto;background:#fff4f6;padding:18px}section,form{display:grid;gap:10px}section{margin:15px 0}h1,h2,p{margin:6px 0}h1{font-size:22px}h2{font-size:17px}input,button,a{font:inherit}input:not([type=checkbox]),textarea{width:100%;padding:10px;border:1px solid #8e7181}button,a{color:#452c40}button{padding:8px;background:#f8dae6;border:2px solid #473047;text-align:center;cursor:pointer}nav{display:flex;flex-wrap:wrap;gap:12px}label{display:block}output{display:block;overflow-wrap:anywhere}canvas{background:#604767;width:100%;height:auto;image-rendering:pixelated}#results article{border-top:1px solid #c8aab8;padding:10px 0}#status{min-height:1.5em}section[hidden],form[hidden],[hidden]{display:none!important}
+</style>
+<script defer src="/dot-assets.js"></script><script defer src="/purifier-profiles.js"></script><script defer src="/catalog-art.js"></script><script defer src="/product-catalog.js"></script><script defer src="/dot-scene.js"></script><script defer src="/account-storage.js"></script><script defer src="/members.js"></script>
+</head><body><main>
+<nav><a href="/editor?space=my&amp;app=thinq">내 마이룸</a><a href="/editor?space=dream&amp;app=thinq">내 드림룸</a></nav><h1>계정 및 친구 방</h1>
+<p role="status" id="status"></p><button id="accountSaveStatus" hidden aria-live="polite"></button>
+<section id="account" hidden><h2 id="identity"></h2><form id="setCredentials" hidden><h2>이 계정의 로그인 정보 설정</h2><label>이름<input name="name" maxlength="60" required></label><label>아이디<input name="username" autocomplete="username" maxlength="40" required></label><label>비밀번호<input name="password" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="숫자 6자리" autocomplete="new-password" required></label><button>로그인 정보 저장</button></form><form id="profile"><label>닉네임 변경<input name="nickname" required maxlength="30"></label><p>드림룸은 다른 회원에게 공개돼요.</p><label><input type="checkbox" name="myPublic"> 내 마이룸도 공개</label><button>설정 저장</button></form><button id="logout">로그아웃</button>
+<section aria-label="퀘스트와 보상"><h2>퀘스트와 보상</h2><p id="balance"></p><p id="quests"></p><button id="claim">수집·튜토리얼 보상 받기</button><h3>체험용 쿠폰</h3><ul id="coupons"></ul></section>
+<h2>가져온 루틴</h2><div id="copies"></div>
+<form id="search"><h2>친구 찾기</h2><label>닉네임 또는 회원 ID<input name="q" required maxlength="32"></label><button>검색</button></form><div id="results"></div></section>
+<section id="visit" hidden><h2 id="visitTitle"></h2><canvas id="preview" aria-label="친구의 방"></canvas><div id="shared"></div>
+<form id="guestbook"><label>방명록<input name="message" required maxlength="200"></label><button>글 남기기</button></form><ul id="notes"></ul></section>
+</main></body></html>

@@ -1,18 +1,23 @@
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
-const url=process.argv[2]||'http://127.0.0.1:4173';
-(async()=>{const browser=await chromium.launch({channel:'chrome'});
+const join=require('./support/join.cjs');
+const withServer=require('./member-server.cjs');
+withServer(async url=>{const browser=await chromium.launch({channel:'chrome'});
 try{for(const [width,height] of [[320,568],[390,844],[844,390],[1150,750]]){
  const ctx=await browser.newContext({viewport:{width,height},hasTouch:width<1000,isMobile:width<1000,reducedMotion:'reduce'}),p=await ctx.newPage(),errors=[];
  p.on('pageerror',e=>errors.push(e.message));p.setDefaultTimeout(5000);
  const btn=t=>p.getByRole('button',{name:t,exact:true});
- const ready=()=>p.waitForFunction(()=>document.querySelector('#scale')?.textContent==='100%'&&document.querySelector('#scene')?.width>300&&!document.querySelector('#living')?.hidden);
+ const ready=()=>p.waitForFunction(()=>document.querySelector('#scale')?.textContent==='100%'&&document.querySelector('#scene')?.width>300&&!document.querySelector('#living')?.hidden,null,{timeout:20000});
  const scene=()=>p.locator('#scene').evaluate(c=>c.toDataURL());
- const store=()=>p.evaluate(()=>['dotroom','lg-miniroom.dot.my','lg-miniroom.state'].map(k=>localStorage.getItem(k)));
- const check=async(space)=>{await ready();assert.equal(new URL(p.url()).searchParams.get('space'),space);assert.ok(await p.locator('#view').isVisible())};
- await p.goto(url+'/?observe=1#menu');await check('menu');const menuFrame=await scene();assert.deepEqual(await store(),[null,null,null]);
+ const store=()=>p.evaluate(()=>['dotroom','lg-miniroom.dot.my','lg-miniroom.state'].map(k=>roomStorage.getItem(k)));
+ const check=async space=>{
+   await p.waitForURL(url=>url.searchParams.get('space')===space,{timeout:20000});
+   await ready();
+   assert.ok(await p.locator('#view').isVisible());
+ };
+ await join(p,url,'friend-'+width);await p.goto(url+'/editor?space=menu&app=thinq&observe=1');await check('menu');const menuFrame=await scene();assert.deepEqual(await store(),[null,null,null]);
  await btn('드림룸 들어가기').click();await check('dream');assert.equal(await scene(),menuFrame);
- await p.getByRole('button',{name:/C현관|C 현관/}).count().then(async()=>{await p.locator('#rooms [data-room=C]').click()});await p.locator('[data-tone=lime]').click();
+ await p.locator('#rooms [data-room=C]').click();await p.locator('[data-tone=lime]').click();
  const customized=await scene(),original=await store();
  await p.locator('#more').click();await p.locator('#mini').click();await check('menu');assert.equal(await scene(),customized);
  await btn('예시 친구 방').click();await check('example');const friendFrame=await scene();assert.equal(friendFrame,menuFrame);
@@ -29,10 +34,13 @@ try{for(const [width,height] of [[320,568],[390,844],[844,390],[1150,750]]){
  assert.equal(await p.locator('#lifeTitle').innerText(),'영화 보기 연결');
  await p.reload();await check('my');await btn('체험용 기기 사용').click();
  await p.getByLabel('재생할 TV').selectOption('my-tv-2');await btn('미리보기').click();await btn('내 루틴에 저장').click();await btn('영화 보기').waitFor();
- await p.reload();await btn('영화 보기').click();assert.match(await p.locator('#lifeDetail').innerText(),/침실 TV 재생/);
+ await p.evaluate(()=>roomStorage.whenSynced());await p.reload();await btn('영화 보기').click();assert.match(await p.locator('#lifeDetail').innerText(),/침실 TV 재생/);
+ const saved=await p.evaluate(()=>JSON.parse(roomStorage.getItem('lg-miniroom.state')).savedRoutines.find(r=>r.templateId==='movie-night'));
+ assert.equal(saved.bindings['tv-on'],'my-tv-2');assert.equal(saved.exclusions['curtain-close'],'no_device');
+ assert.ok(Object.values(saved.bindings).every(id=>['my-tv-2','my-light-1'].includes(id)));
  const rows=await p.evaluate(()=>JSON.parse(sessionStorage['lg-miniroom.events']));for(const event of ['routine_offered','routine_opened','routine_saved','routine_replayed'])assert.ok(rows.some(r=>r.source==='example_room'&&r.event===event),event);
- await p.goto(url+'/#example');await check('example');assert.equal(await scene(),friendFrame);
- await p.locator('#dreamLink').click();assert.equal((await store())[0],original[0]);assert.deepEqual(errors,[]);await ctx.close();
- console.log(width+'x'+height+' PASS same baseline room pixels, custom menu continuity, legacy friend link, read-only sofa hit, preview/restore, save/replay and event path');
+ await p.goto(url+'/editor?space=example&app=thinq');await check('example');assert.equal(await scene(),friendFrame);
+ await p.locator('#dreamLink').click();await check('dream');assert.equal((await store())[0],original[0]);assert.deepEqual(errors,[]);await ctx.close();
+ console.log(width+'x'+height+' PASS same baseline room pixels, custom menu continuity, signed-in friend link, read-only sofa hit, preview/restore, save/replay and event path');
 }}finally{await browser.close()}
-})().catch(e=>{console.error(String(e).slice(0,1000));process.exitCode=1})
+}).catch(e=>{console.error(e);process.exitCode=1})

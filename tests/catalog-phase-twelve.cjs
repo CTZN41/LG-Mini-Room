@@ -1,3 +1,4 @@
+const {registeredModels}=require('./support/catalog.cjs');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
@@ -10,12 +11,14 @@ const base = process.argv[2] || 'http://127.0.0.1:4174';
     JOIN images i USING(image_id) WHERE p.product_id IN (SELECT min(product_id) FROM products GROUP BY category,model_name)
     ORDER BY category,model`).all();
   db.close();
+  const allowed=new Set(registeredModels({collectibleOnly:true}).map(pair=>JSON.stringify(pair)));
+  for(const row of rows)row.collectible=allowed.has(JSON.stringify([row.category,row.model]));
   const browser = await chromium.launch({channel:'chrome'});
   try {
     const page = await browser.newPage();
     await page.goto(base+'/editor?space=dream&room=C'); await page.waitForSelector('#rooms button');
     for(const category of new Set(rows.map(r=>r.category))){
-      const expected=rows.filter(r=>r.category===category),listed=[];
+      const expected=rows.filter(r=>r.category===category&&r.collectible),listed=[];
       for(let offset=0;offset<expected.length;offset+=16){
         const res=await page.request.get(base+'/api/catalog',{params:{category,offset}});
         const data=await res.json();
@@ -39,10 +42,16 @@ const base = process.argv[2] || 'http://127.0.0.1:4174';
       const {addToCollection}=await import('/state.js');
       // Bound concurrent photo decoding and release each bitmap after inspection.
       for(let start=0;start<rows.length;start+=4){
-        result.push(...await Promise.all(rows.slice(start,start+4).map(async ({category,model,id,photo})=>{
+        result.push(...await Promise.all(rows.slice(start,start+4).map(async ({category,model,id,photo,collectible})=>{
           const key=ProductCatalog.matchModel(category,model),item=ProductCatalog.restore(DotScene.products,key);
           if(!ProductCatalog.hasModel(key)||item.modelCode!==model)throw Error('제품 키 '+model);
-          addToCollection(draft,key,'catalog');
+          if(collectible)addToCollection(draft,key,'catalog');
+          else{
+            if(!ProductCatalog.heldSale(key))throw Error('수집 보류 표시 누락 '+model);
+            let rejected=false;
+            try{addToCollection(draft,key,'catalog')}catch(error){rejected=error.message.includes('수집할 수 없어요')}
+            if(!rejected||draft.collection.includes(key))throw Error('수집 보류 제품 처리 오류 '+model);
+          }
           const card=await (await fetch('/api/catalog/product?id='+id)).json();
           if(card.model!==model||card.category!==category)throw Error('제품 카드 '+model);
           const response=await fetch(item.photoUrl);
@@ -68,7 +77,7 @@ const base = process.argv[2] || 'http://127.0.0.1:4174';
           return {category,model,photo,pair:views[0]+'/'+views[2],normal,width:item.displayWidth};
         })));
       }
-      if(new Set(draft.collection).size!==rows.length)throw Error('수집 키 중복 또는 누락');
+      if(new Set(draft.collection).size!==rows.filter(r=>r.collectible).length)throw Error('수집 키 중복 또는 누락');
       return result;
     },rows);
     const groups=(items,field)=>Map.groupBy(items,r=>r[field]);

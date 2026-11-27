@@ -89,10 +89,11 @@ async function check(browser, width, height) {
   const collected = [...codes.slice(3), 'FX25WSQX'];
   for (const code of collected) {
     await page.locator('#libraryButton').tap();
-    await page.locator('#libraryItems [data-product=' + key(code) + '] button').tap();
+    await page.locator('#openCatalog').tap();await page.locator('#catalogFamilies button').filter({hasText:'세탁기'}).tap();
+    await page.locator('#catalogSearch').fill(code);await page.getByRole('button',{name:code+' 수집',exact:true}).tap();
     await page.locator('#placeCollected').tap();
-    assert.match(await page.locator('#name').innerText(), new RegExp(code));
-    assert.ok(await page.locator('#editPhoto').isVisible());
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.dotroom).layouts.B.at(-1).k),key(code));
+    assert.ok(await page.locator('#editPhoto').isVisible());if(code!==collected.at(-1))await page.locator('#editMode').tap();
   }
   await page.locator('#flip').tap();
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.dotroom).layouts.B.find(o => o.k === 'washer_fx25wsqx').turn), 1);

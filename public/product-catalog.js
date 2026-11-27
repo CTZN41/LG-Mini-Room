@@ -105,7 +105,9 @@ const ProductCatalog=(()=>{
     ['washer','세탁기','FG19WNR',12,10,'wash_m'],['dryer','건조기','RD20WNR',12,11],
     ['purifier','공기청정기','AS235DWSA',8,8,'puri_p'],['humid','가습기','AW141YBW',9,9,'humidifier'],
     ['dehumid','제습기','DQ203PCCA',10,9,'dehumidifier'],['robot','로봇청소기','R560BL1',8,8,'robot_vacuum'],
-    ['stick','무선청소기','A912PM',6,6,'vacuum']
+    ['stick','무선청소기','A912PM',6,6,'vacuum'],['ac','에어컨','FQ16ET4HSN',8,8,'tower_ac'],
+    ['sensor','센서','TMSA2A4W',4,4],['switch','조명 스위치','TMCS2W4W',5,1],
+    ['hub','AI 홈 허브','HMAK4W',7,7]
   ].map(([slug,name,model,w,d,behavior])=>({slug,name,model,w,d,behavior}));
   function keyFor(family,model){
     if(family.slug==='washer'){
@@ -114,30 +116,108 @@ const ProductCatalog=(()=>{
     }
     return 'catalog:'+family.slug+':'+encodeURIComponent(model);
   }
-  const modelKeys=new Set(),modelLookup=new Map();
+  const modelKeys=new Set(),modelLookup=new Map(),labels=new Map();
+  function productTitle(key,fallback){return labels.get(key)?.title||fallback}
+  // Match only words present in the sales name. Keep the complete label for details.
+  const linesByFamily={
+    TV:/스탠바이미\s*(?:2\s*Max|2|Go)?|포제 올레드(?: evo)?|룸앤TV|이젤 올레드|올레드 (?:evo|8K|W|T)|올레드|QNED(?: evo)?|나노셀|울트라HD|(?:Micro|Mini) RGB|MyView|스윙|NANO 4K UHD/i,
+    공기청정기:/에어로(?:캣타워|퍼니처|스피커|부스터|타워|미니)|하이드로타워(?: Max)?|360°(?:\s*(?:M[0-9]+|알파\s*UP|알파|Hit|플러스|펫))?|월핏|몽블랑|퓨리케어/i,
+    세탁기:/워시(?:타워|콤보)(?: 컴팩트)?|트윈워시|통돌이|꼬망스|트롬(?: 코인식?)?|시그니처/,
+    건조기:/트롬(?: (?:코인|펫))?|시그니처/,
+    가습기:/하이드로(?:타워|에센셜)|시그니처|퓨리케어/,
+    제습기:/휘센|듀얼 인버터/,
+    무선청소기:/A[0-9]+S?(?: (?:Core|Air|ThinQ))?|코드제로/i,
+    로봇청소기:/로보킹|R[0-9]+|M[0-9]+|코드제로/i,
+    에어컨:/벽걸이|창호형|이동식|상업용\s*스탠드|[124]\s*Way|타워(?:Ⅱ|Ⅰ)?|뷰(?:Ⅱ|Ⅰ)?(?: 프로)?|위너|칸|쿨(?: 프로)?|듀얼|사계절/i
+  };
+  function compactTitle(title,category){
+    if(category==='AI 홈 허브')return title.replace(/^LG\s+/,'').replace(/\s+AI 홈 허브$/,'');
+    if(category==='센서'||category==='조명 스위치')return title.replace(/^LG\s+/,'').replace(/^스마트\s+/,'');
+    const text=title.replace(/360˚/g,'360°').replace(/(타워|뷰)II/g,'$1Ⅱ').replace(/(타워|뷰)I/g,'$1Ⅰ');
+    if(category==='냉장고'){
+      const type=text.match(/냉동전용고|냉장전용고|김치냉장고|와인셀러|냉동고|일반냉장고/)?.[0];
+      if(type)return /컨버터블/.test(text)?'컨버터블 '+type:type;
+      const line=text.match(/STEM (?:얼음정수|베이직)|모던엣지|얼음정수|베이직|디오스/)?.[0];
+      return [line?.startsWith('STEM')?'디오스':'',line,category].filter(Boolean).join(' ');
+    }
+    const genericBrand={공기청정기:'퓨리케어',가습기:'퓨리케어',세탁기:'트롬',무선청소기:'코드제로',로봇청소기:'코드제로'}[category];
+    const seriesText=genericBrand?text.replace(genericBrand,''):text;
+    const line=seriesText.match(linesByFamily[category])?.[0]?.trim()||text.match(linesByFamily[category])?.[0]?.trim();
+    if(!line)return category;
+    if(line==='하이드로타워 Max'||line.includes(category)||/^(?:워시타워|워시콤보|에어로캣타워|스탠바이미)/.test(line))return line;
+    const brand=category==='에어컨'&&text.includes('휘센')?'휘센 ':'';
+    return brand+line+' '+category;
+  }
+  function listTitle(key,fallback){return labels.get(key)?.short||fallback}
+  function unitTitle(unit,item){
+    return unit?.name||listTitle(item?.k,item?.n)||unit?.modelCode||'등록 가전';
+  }
+  function labelItem(label,item,unit,hints){
+    const short=listTitle(item.k,item.salesName||item.n);
+    const title=unit?.name||short;
+    const name=document.createElement('span');name.className='list-title';name.textContent=title;
+    label.replaceChildren(name);
+    const extra=unit?(title!==short?short:''):hints?.get(item.k);
+    if(extra){
+      const sub=document.createElement('small');sub.textContent=extra;label.append(sub);
+    }
+  }
+  // Compare only the models appearing together in this list. Equal colours do not distinguish units.
+  function differences(keys){
+    const groups=new Map(),result=new Map();
+    for(const key of new Set(keys)){
+      const info=labels.get(key);
+      if(!info)continue;
+      if(!groups.has(info.short))groups.set(info.short,[]);
+      groups.get(info.short).push(info);
+    }
+    for(const peers of groups.values()){
+      if(peers.length<2)continue;
+      for(const entry of peers){
+        const detail=entry.traits.find((value,i)=>value&&
+          peers.some(other=>other.traits[i]&&other.traits[i]!==value)&&
+          peers.filter(other=>other.traits[i]===value).length===1);
+        result.set(entry.key,detail||entry.code);
+      }
+    }
+    return result;
+  }
+  const heldSales=new Set();
   async function loadModels(){
-    const response=await fetch('/api/catalog/models',{signal:AbortSignal.timeout(8000)});
+    const response=await fetch('/api/catalog/models?labels=1',{signal:AbortSignal.timeout(8000)});
     if(!response.ok)throw Error('제품 DB 연결 실패');
     const rows=await response.json();
     if(!Array.isArray(rows)||!rows.length)throw Error('제품 DB에 모델이 없어요.');
-    for(const [category,code] of rows){
+    for(const [category,code,rawName,color,material,interior,held] of rows){
       const family=families.find(f=>f.name===category);
       if(!family)continue;
       const key=keyFor(family,code);
       if(componentOnly(key))continue;
+      if(held)heldSales.add(key);else heldSales.delete(key);
+      if(rawName){
+        let title=salesName({name:rawName,model:code},category).replace(/^LG전자(?=\s)/,'LG').replace(/\bDIOS\b/g,'디오스');
+        const knownType=category==='세탁기'&&/워시타워|워시콤보|통돌이/.test(title)||
+          category==='냉장고'&&/냉동고|와인셀러/.test(title);
+        if(!title.includes(category)&&!knownType)title+=' '+category;
+        labels.set(key,{key,code,title,short:compactTitle(title,category),interior,traits:[color,material]});
+      }
       modelKeys.add(key);modelLookup.set(category+'|'+code.toUpperCase(),key);
     }
     if(!modelKeys.size)throw Error('지원되는 제품 모델이 없어요.');
   }
   const hasModel=key=>modelKeys.has(key);
   const matchModel=(category,code)=>typeof code==='string'&&modelLookup.get(category+'|'+code.trim().toUpperCase());
-  // Camera model IDs remain distinct when several models share a category sprite.
-  function cameraProduct(products,record){
+  function cameraModel(record){
     const {modelCode,category,displayName}=record;
     const aliases={'김치냉장고':'냉장고','와인셀러':'냉장고','컨버터블 패키지':'냉장고','세탁 건조기':'세탁기','의류건조기':'건조기',
       '스탠바이미':'TV','가습 공기청정기':'공기청정기','청소기':/로봇|로보킹|로보틱|R9|M9/i.test(displayName)?'로봇청소기':'무선청소기'};
     const family=Object.hasOwn(aliases,category)?aliases[category]:category;
-    const exact=matchModel(family,modelCode)||families.map(f=>matchModel(f.name,modelCode)).find(Boolean);
+    return {family,exact:matchModel(family,modelCode)||families.map(f=>matchModel(f.name,modelCode)).find(Boolean)};
+  }
+  // Camera model IDs remain distinct when several models share a category sprite.
+  function cameraProduct(products,record){
+    const {modelCode,category,displayName}=record;
+    const {family,exact}=cameraModel(record);
     if(exact)return restore(products,exact);
     const key='camera:'+modelCode;
     if(Object.hasOwn(products,key))return products[key];
@@ -145,8 +225,8 @@ const ProductCatalog=(()=>{
     const native={'에어컨':/벽걸이/.test(displayName)?'wall_ac':'tower_ac','벽걸이형 에어컨':'wall_ac','의류관리기':'styler','스타일러':'styler'};
     let art=null;
     if(category==='스탠바이미')art=products.standbyme;
-    else if(f)art=restore(products,keyFor(f,f.model));
     else if(Object.hasOwn(native,family))art=products[native[family]];
+    else if(f)art=restore(products,keyFor(f,f.model));
     const item={...(art||{w:7,d:7,wall:0,elev:0,layer:1}),k:key,c:'가전',cameraArt:true,
       spriteKey:art?(art.spriteKey||art.k):'camera_generic',behaviorKey:art&&(art.behaviorKey||art.k),
       modelCode,n:displayName,salesName:displayName,catalogFamily:category,photoUrl:record.imageUrl||''};
@@ -165,6 +245,19 @@ const ProductCatalog=(()=>{
     const item={...washer,k:key,n:f.name+' '+model,c:'가전',w:f.w,d:f.d,elev:0,wall:0,layer:1,
       modelCode:model,spriteKey:washer?.spriteKey||'db_'+f.slug,catalogFamily:f.name,
       behaviorKey:f.behavior,photoUrl:'/api/catalog/photo?'+new URLSearchParams({category:f.name,model,v:'3'})};
+    if(f.slug==='ac'){
+      // In the reviewed indoor-unit catalog SQ/SW, WQ and TN are mounted units.
+      const mounted=/^(SQ|SW|WQ|TN)/.test(model);
+      const sprite=mounted?'wall_ac':'tower_ac', art=products[sprite];
+      Object.assign(item,{w:art.w,d:art.d,wall:art.wall,elev:art.elev,layer:art.layer,
+        behaviorKey:sprite,spriteKey:sprite});
+    }
+    if(f.slug==='sensor'){
+      item.spriteKey=model==='TMSMAA4W'?'db_sensor_motion':model==='TMSTAA4W'?'db_sensor_climate':'db_sensor_air';
+    }
+    if(f.slug==='switch'){
+      Object.assign(item,{wall:1,elev:24,spriteKey:model==='TMCS3W4W'?'db_switch_three':'db_switch_two'});
+    }
     if(f.slug==='purifier'){
       const profile=PurifierReview.models.get(model);
       if(profile){
@@ -222,6 +315,10 @@ const ProductCatalog=(()=>{
     function productDetails(row,signal){
       const details=document.createElement('details'),summary=document.createElement('summary');
       details.className='catalog-details';summary.textContent='제품 사진·구성';details.append(summary);
+      const appearance=scene.products[matchModel(row.category||family.name,row.model)]?.appearance;
+      if(appearance){
+        const note=document.createElement('small');note.className='appearance';note.textContent=appearance;details.append(note);
+      }
       let loaded=false;
       details.ontoggle=async()=>{
         if(!details.open||loaded||signal.aborted)return;
@@ -235,7 +332,16 @@ const ProductCatalog=(()=>{
           const photo=document.createElement('img');photo.alt=row.model+' 상품 사진';
           photo.onerror=()=>photo.replaceWith(document.createTextNode('상품 사진을 표시할 수 없어요.'));
           photo.src='/api/catalog/photo?v=3&id='+data.id;
-          content.replaceChildren(photo);
+          const modelCode=document.createElement('small');modelCode.textContent=row.model;
+          const fullName=document.createElement('p');fullName.textContent=productTitle(matchModel(data.category,data.model),row.name);
+          content.replaceChildren(photo,fullName,modelCode);
+          const feature=labels.get(matchModel(data.category,data.model))?.interior;
+          if(feature){
+            const spec=document.createElement('p');spec.textContent='냉장실 수납 · '+feature;
+            const link=document.createElement('a');link.textContent='LG 공식 사양';
+            link.href='https://www.lge.co.kr/refrigerators/'+encodeURIComponent(data.model.toLowerCase());
+            link.target='_blank';link.rel='noopener';content.append(spec,link);
+          }
           if(data.photoStatus==='보류'){
             const note=document.createElement('small');note.textContent='사진 확인 중';content.append(note);
           }
@@ -246,7 +352,8 @@ const ProductCatalog=(()=>{
             const entryKey=JSON.stringify([part.role,part.model,part.evidence,part.specification]);
             if(seen.has(entryKey))continue;
             seen.add(entryKey);
-            const li=document.createElement('li'),name=document.createElement('span'),art=componentArt(part);
+            const li=document.createElement('li'),name=document.createElement('span');
+            const art=part.role==='판매 상품'&&part.model===data.model?product(family,data.model):componentArt(part);
             if(art)li.append(thumbnail(art));
             name.textContent=part.role+' · '+part.model+(art?'':' · 도트 준비 전');
             if(part.role==='미니워시')name.textContent+=' · 세탁기 하단 결합 전용';
@@ -288,12 +395,15 @@ const ProductCatalog=(()=>{
         const data=await res.json();if(controller.signal.aborted)return;
         $('catalogStatus').textContent=data.total?(offset+1)+'–'+(offset+data.rows.length)+' / '+data.total+'개 모델':'검색 결과가 없어요.';
         $('catalogPrev').hidden=!offset;$('catalogNext').hidden=offset+data.rows.length>=data.total;
+        const hints=differences(data.rows.map(row=>keyFor(family,row.model)));
         for(const row of data.rows){
           const item=product(family,row.model),entry=document.createElement('article'),label=document.createElement('span');
           const b=document.createElement('button'),code=document.createElement('strong'),desc=document.createElement('small');
           item.salesName=salesName(row,family.name);
-          code.textContent=row.model;desc.textContent=row.name+' · '+(item.appearance||(row.model===family.model?'대표 모델':item.catalogFamily?'제품군 대표 도트':'모델별 도트'));
-          label.append(code,desc);b.disabled=collected(item.k);b.textContent=b.disabled?'수집 완료':'수집';
+          entry.dataset.model=row.model;
+          code.className='list-title';code.textContent=listTitle(item.k,item.salesName);
+          desc.textContent=hints.get(item.k)||'';
+          label.append(code);if(desc.textContent)label.append(desc);b.disabled=collected(item.k);b.textContent=b.disabled?'수집 완료':'수집';
           b.setAttribute('aria-label',row.model+' 수집');b.onclick=()=>collect(item,entry);
           entry.append(thumbnail(item),label,b,productDetails(row,controller.signal));rows.append(entry);
         }
@@ -310,5 +420,5 @@ const ProductCatalog=(()=>{
     $('library').addEventListener('close',cancel);
     return {gallery,resume(){ $('catalogBrowse').hidden=false;list() }};
   }
-  return {restore,cameraProduct,applyBody,loadSalesName,browser,representatives:()=>families.map(f=>keyFor(f,f.model)).filter(hasModel),loadModels,hasModel,matchModel,purifierModels,componentOnly,loadBodies,loadRetiredSales,migratePlacement,retiredSale:key=>oldSales.get(key)};
+return {heldSale:key=>heldSales.has(key),productTitle,listTitle,unitTitle,differences,labelItem,restore,cameraModel,cameraProduct,applyBody,loadSalesName,browser,representatives:()=>families.map(f=>keyFor(f,f.model)).filter(hasModel),loadModels,hasModel,matchModel,purifierModels,componentOnly,loadBodies,loadRetiredSales,migratePlacement,retiredSale:key=>oldSales.get(key)};
 })();

@@ -8,6 +8,14 @@ async function exercise(browser,space,width,height,reduced){
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   const btn=name=>page.getByRole('button',{name,exact:true});
   const key=space==='my'?'lg-miniroom.dot.my':'dotroom';
+  const codes={tower_ac:['에어컨','FQ16ET4HSN','catalog:ac:FQ16ET4HSN'],wall_ac:['에어컨','SQ06ACJCAJ.AKORG','catalog:ac:SQ06ACJCAJ.AKORG'],
+    wash_m:['세탁기','WL2521WDUR','washer_wl2521wdur'],puri_m:['공기청정기','AS206NGHA','catalog:purifier:AS206NGHA'],
+    styler:['스타일러','TEST-STYLER','camera:TEST-STYLER'],floor_lamp:['조명','','floor_lamp'],
+    fridge_bm:['냉장고','M876GBC472','catalog:fridge:M876GBC472'],fridge_pb:['냉장고','B315DS11','catalog:fridge:B315DS11'],
+    fridge_sg:['냉장고','S836MDS002','catalog:fridge:S836MDS002'],vacuum:['무선청소기','A727TA','catalog:stick:A727TA'],
+    robot_vacuum:['로봇청소기','R560BL1','catalog:robot:R560BL1']};
+  const device=o=>({...o,category:codes[o.k][0],modelCode:codes[o.k][1],kind:o.k,k:codes[o.k][2],f:0,e:0});
+  const stateKey=space==='my'?'lg-miniroom.state.thinq':'lg-miniroom.state';
   const devices=[
     {id:1,k:'tower_ac',x:7,y:18},
     {id:2,k:'wash_m',x:65,y:8},
@@ -16,16 +24,16 @@ async function exercise(browser,space,width,height,reduced){
     {id:5,k:'puri_m',x:10,y:53},
     {id:6,k:'styler',x:69,y:31},
     {id:7,k:'floor_lamp',x:40,y:39}
-  ].map(o=>({...o,f:0,e:0,deviceId:'unit-'+o.id}));
+  ].filter(o=>o.k!=='styler'||space==='my').map(o=>device({...o,deviceId:o.k==='styler'?'camera-unit:TEST-STYLER':'unit-'+o.id}));
   await page.route('**/api/my-appliances',route=>route.fulfill({json:{mode:'thinq',
-    devices:devices.map(o=>({id:o.deviceId,k:o.k,name:o.k+o.id}))}}));
+    devices:devices.filter(o=>o.kind!=='styler').map(o=>({id:o.deviceId,category:o.category,modelCode:o.modelCode,name:o.category+o.id}))}}));
   const layoutKey=space==='my'?key+'.thinq':key;
   await page.goto(base+'/editor?space='+space+'&observe=1');await btn('배치 편집').waitFor();
-  await page.evaluate(({layoutKey,devices})=>{
+  await page.evaluate(({layoutKey,devices,stateKey})=>{
     localStorage.setItem(layoutKey,JSON.stringify({layoutVersion:1,room:'B',theme:'pink',layouts:{B:devices}}));
-    localStorage.setItem('lg-miniroom.state',JSON.stringify({schemaVersion:1,revision:1,
-      collection:devices.map(o=>o.k),dreamLayout:{},myLayout:{},savedRoutines:[]}));
-  },{layoutKey,devices});
+    localStorage.setItem(stateKey,JSON.stringify({schemaVersion:1,revision:1,
+      cameraAppliances:devices.filter(o=>o.kind==='styler').map(o=>({id:'test-styler',modelCode:o.modelCode,category:o.category,displayName:'스타일러'})),collection:devices.map(o=>o.k),dreamLayout:{},myLayout:{},savedRoutines:[]}));
+  },{layoutKey,devices,stateKey});
   await page.reload();await btn('배치 편집').waitFor();
   // Isolate the cat from furniture and wind streaks. Its top row is a broad
   // horizontal ear when folded, and a narrow tip when upright.
@@ -80,6 +88,11 @@ async function exercise(browser,space,width,height,reduced){
     },{layoutKey,id});
     if(width<500)await page.touchscreen.tap(...point);else await page.mouse.click(...point);
   }
+  async function checkProductTitle(id){
+    const d=devices.find(d=>d.id===id);
+    const expected=d.kind==='styler'?'스타일러':await require('./catalog-room-title.cjs').expectedTitle(page,d.category,d.modelCode);
+    await page.waitForFunction(title=>document.querySelector('#lifeTitle').textContent===title,expected);
+  }
   const arrived=id=>page.waitForFunction(id=>window.pose?.reaction?.itemId===id,id);
   await tap(7);await arrived(7);
   assert.equal(await page.locator('#lifeTitle').innerText(),'스탠드 조명');
@@ -87,7 +100,7 @@ async function exercise(browser,space,width,height,reduced){
   await btn('조명 켜기').click();assert.equal(await page.locator('#lifeDetail').innerText(),'');
   await btn('조명 끄기').click();await btn('닫기').click();
   await tap(1);await arrived(1);
-  assert.equal(await page.locator('#lifeTitle').innerText(),'타워 에어컨');
+  await checkProductTitle(1);
   assert.equal(await page.locator('#lifeDetail').innerText(),'');
   assert.equal(await btn('미리보기').count(),0);
   assert.equal(await page.evaluate(()=>pose.reaction.kind),'air');
@@ -99,7 +112,7 @@ async function exercise(browser,space,width,height,reduced){
   await tap(4);await arrived(4);
   assert.notDeepEqual(await page.evaluate(()=>pose.cat),first);
   await tap(1);await tap(2);await arrived(2);
-  assert.equal(await page.locator('#lifeTitle').innerText(),'워시타워 민트');
+  await checkProductTitle(2);
   assert.equal(await page.locator('#lifeDetail').innerText(),'');
   assert.equal(await page.evaluate(()=>pose.reaction.kind),'washer');
   assert.notDeepEqual(await page.evaluate(()=>pose.cat),first);
@@ -113,9 +126,10 @@ async function exercise(browser,space,width,height,reduced){
     assert.equal(await page.locator('#scene').evaluate(c=>c.toDataURL()),frame);
   }
   for(const [id,kind,title] of [[5,'purifier','공기청정기 민트'],[6,'styler','스타일러']]){
+    if(id===6&&space==='dream')continue;
     await tap(id);await arrived(id);
     assert.equal(await page.evaluate(()=>pose.reaction.kind),kind);
-    assert.equal(await page.locator('#lifeTitle').innerText(),title);
+    await checkProductTitle(id);
     assert.equal(await page.locator('#lifeDetail').innerText(),'');
     assert.equal(await btn('미리보기').count(),0);
     assert.deepEqual(await page.evaluate(()=>pose.appliances),{});
@@ -129,16 +143,16 @@ async function exercise(browser,space,width,height,reduced){
     }
   }
   assert.ok(await page.evaluate(()=>!localStorage.getItem('lg-miniroom.discovered.clothes-care')));
-  await btn('의류 관리').click();
+  await tap(space==='my'?6:2);await btn('의류 관리').click();
   await btn('미리보기').click();
   assert.equal(await page.evaluate(()=>pose.reaction),null);
-  assert.equal(await page.evaluate(()=>pose.appliances[6]),'styler');
+  assert.equal(await page.evaluate(id=>pose.appliances[id],space==='my'?6:2),space==='my'?'styler':'washer');
   await btn('재생 종료').click();await btn('미리보기').waitFor();
   await tap(3);await arrived(3);
   assert.ok(await page.evaluate(()=>pose.reaction.wall));
   assert.deepEqual(await page.evaluate(()=>pose.appliances),{});
   assert.ok(await page.evaluate(()=>!localStorage.getItem('lg-miniroom.discovered.room-comfort')));
-  assert.equal(await page.locator('#lifeTitle').innerText(),'벽걸이 에어컨');
+  await checkProductTitle(3);
   await btn('쾌적한 방').click();
   await btn('미리보기').click();
   assert.equal(await page.evaluate(()=>pose.reaction),null);
@@ -151,14 +165,14 @@ async function exercise(browser,space,width,height,reduced){
   // Isolate the low cleaner from the tall refrigerator sprites during touch checks.
   const pets=['fridge_bm','fridge_pb','fridge_sg','vacuum','robot_vacuum'];
   const locations=[[2,0],[23,0],[44,0],[25,48],[38,30]];
-  devices.splice(0,devices.length,...pets.map((k,i)=>({
+  devices.splice(0,devices.length,...pets.map((k,i)=>device({
     k,id:10+i,deviceId:'pet-'+i,x:locations[i][0],y:locations[i][1],f:0,e:0
   })));
-  await page.evaluate(({layoutKey,devices})=>{
+  await page.evaluate(({layoutKey,devices,stateKey})=>{
     localStorage[layoutKey]=JSON.stringify({layoutVersion:1,room:'B',theme:'pink',layouts:{B:devices}});
-    const state=JSON.parse(localStorage['lg-miniroom.state']);state.collection=devices.map(d=>d.k);
-    localStorage['lg-miniroom.state']=JSON.stringify(state);
-  },{layoutKey,devices});
+    const state=JSON.parse(localStorage[stateKey]);state.collection=devices.map(d=>d.k);
+    localStorage[stateKey]=JSON.stringify(state);
+  },{layoutKey,devices,stateKey});
   await page.reload();await btn('배치 편집').waitFor();
   await page.evaluate(()=>{
     const paint=DotScene.paint;
@@ -167,8 +181,8 @@ async function exercise(browser,space,width,height,reduced){
   const savedLayout=await page.evaluate(key=>localStorage[key],layoutKey);
   for(const device of devices){
     await tap(device.id);await arrived(device.id);
-    assert.equal(await page.locator('#lifeTitle').innerText(),await page.evaluate(k=>DotScene.products[k].n,device.k));
-    assert.equal(await page.evaluate(()=>pose.reaction.kind),device.k.startsWith('fridge_')?'fridge':device.k);
+    await checkProductTitle(device.id);
+    assert.equal(await page.evaluate(()=>pose.reaction.kind),device.kind.startsWith('fridge_')?'fridge':device.kind);
     assert.deepEqual(await page.evaluate(()=>pose.appliances),{});
     assert.equal(await btn('미리보기').count(),0);
     const frame=await page.locator('#scene').evaluate(c=>c.toDataURL());
@@ -186,12 +200,12 @@ async function exercise(browser,space,width,height,reduced){
   await btn('닫기').click();
   assert.equal(await page.evaluate(()=>pose.reaction),null);
   assert.equal(await page.evaluate(key=>localStorage[key],layoutKey),savedLayout);
-  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage['lg-miniroom.state']).savedRoutines),[]);
+  assert.deepEqual(await page.evaluate(key=>JSON.parse(localStorage[key]).savedRoutines,stateKey),[]);
   if(space==='dream'){
     // The corner has walls on two sides, furniture flush against the other two.
     await page.evaluate(key=>{
       const s=JSON.parse(localStorage[key]),items=s.layouts.B;
-      Object.assign(items.find(o=>o.k==='robot_vacuum'),{x:0,y:0});
+      Object.assign(items.find(o=>o.id===14),{x:0,y:0});
       items.push({id:51,k:'wardrobe',x:8,y:0,f:0,e:0},{id:52,k:'wardrobe',x:0,y:8,f:0,e:0});
       localStorage[key]=JSON.stringify(s);
     },layoutKey);

@@ -24,7 +24,7 @@ return p.evaluate(dev=>{
  return hash;
 },device);
 }
-await p.goto(url);await tap('체험용 기기 사용'); await tap('루틴 연결');
+await p.goto(url);await tap('체험용 기기 사용'); await tap('＋ 추가');await tap('영화 보기 연결');
 const picker=p.getByLabel('재생할 TV');assert.deepEqual(await picker.locator('option').allTextContents(),['TV 선택','거실 TV','침실 TV']);
 assert.ok(await button('미리보기').isDisabled());
 await picker.selectOption({label:'침실 TV'});await tap('＋ 조명 30%');
@@ -34,7 +34,7 @@ assert.ok((await p.locator('#lifeDetail').innerText()).includes('침실 TV 재�
 await tap('내 루틴에 저장');await button('영화 보기').waitFor();const [original]=await rows();
 assert.equal(original.bindings['tv-on'],'my-tv-2');assert.equal(original.bindings['light-dim'],'my-light-1');
 await p.reload();await tap('영화 보기');assert.match(await p.locator('#lifeDetail').innerText(),/침실 TV 재생/);await tap('재생 종료');await button('영화 보기').waitFor();
-await manage();await tap('침실 TV 등록 해제');await tap('완료');assert.match(await p.locator('#lifeDetail').innerText(),/침실 TV 재연결 필요/);
+await manage();await tap('침실 TV 등록 해제');await tap('완료');assert.match(await button('TV 다시 연결').innerText(),/TV 다시 연결/);
 await p.reload();await tap('TV 다시 연결');
 const rep=p.getByLabel('대체 TV');assert.deepEqual(await rep.locator('option').allTextContents(),['TV 선택','거실 TV']);assert.equal(await button('연결하고 재생').isEnabled(),false);
 await rep.selectOption({label:'거실 TV'});await tap('취소');assert.deepEqual(await rows(),[original]);await tap('TV 다시 연결');

@@ -1,0 +1,9 @@
+*{box-sizing:border-box}
+:root{font-family:"Malgun Gothic",system-ui,sans-serif;color:#f5f6fc;background:#202125;color-scheme:dark}
+body{margin:0} main{max-width:440px;min-height:100dvh;margin:auto;background:#10131c;padding:clamp(16px,4vw,25px);display:grid;align-items:center}
+section{width:100%;margin:auto;max-width:364px}h1{font-size:27px;letter-spacing:-1px;margin:0 0 24px}
+form,label{display:grid;gap:7px}form{gap:12px}label{color:#d6d9e5;font-size:14px}
+input,button{font:inherit}input:not([type=checkbox]){width:100%;height:46px;background:#222634;border:1px solid #555b70;color:white;padding:0 13px;border-radius:12px;font-size:16px}
+button{border:1px solid #50576c;background:#242837;color:white;min-height:44px;border-radius:12px;cursor:pointer;font-weight:700}button.primary{background:#b6c1ff;color:#141b38;border:0;margin-top:3px}
+button.text{border:0;background:transparent;color:#bec5dd;font-size:13px}button:disabled{opacity:.6}#status{color:#ffc9b6;font-size:14px}[hidden]{display:none!important}
+:focus-visible{outline:2px solid #bfccff;outline-offset:2px}
