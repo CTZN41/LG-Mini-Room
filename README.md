@@ -28,6 +28,15 @@ node tests/camera-catalog.cjs
 node tests/camera-registration.cjs http://127.0.0.1:4174
 ```
 
+카메라도 이 제품 DB 하나를 쓴다. 카메라는 앱을 열 때 `/api/catalog/camera-products`에서 제품 목록을 받는다. 형식은 카메라 `products.json`과 같고, `/api/catalog/scan`이 `collectible`로 답하는 모델과 그 모델로 이어지는 검증된 라벨 코드(`labelCodes`)만 들어 있다. 등록 전에는 읽은 라벨 코드를 `/api/catalog/scan`으로 확인한다. 제품을 추가하거나 제외할 때 이 DB만 고치면 카메라에도 반영된다.
+
+- 두 API는 카메라 주소에서 부를 수 있게 CORS를 허용한다. 허용 주소는 `https://lg-camera-lab.pages.dev`와 그 미리보기 주소(`*.lg-camera-lab.pages.dev`), 로컬 시험용 `http://localhost`·`http://127.0.0.1`(포트 무관)이다. 다른 카메라 주소는 `MINIROOM_CAMERA_ORIGINS`에 쉼표로 넣는다.
+- 공개 카메라에서 쓰려면 미니룸이 https 주소로 열려 있어야 한다. 휴대폰에서 `127.0.0.1`은 휴대폰 자신이다.
+
+```powershell
+node tests/camera-products.cjs
+```
+
 ## 제품 DB에서 수집하기
 
 수집과 가전 배치에는 실행 DB에 있는 모델만 사용한다. 드림룸 C에는 DB 모델 10대가 기본 전시된다. 모델명이 없던 기본 예시 가전은 기존 저장본에서도 정리된다.

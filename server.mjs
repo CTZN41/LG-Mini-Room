@@ -38,6 +38,21 @@ async function sendInventory(request,response){
 const host = process.env.LG_MINI_ROOM_HOST || "127.0.0.1";
 const port = Number(process.env.LG_MINI_ROOM_PORT ?? "4173");
 const visitorOnly = process.env.MINIROOM_VISITOR_ONLY === "1";
+// LG CAMERA reads the shared product list and confirms scanned codes from another origin.
+// Allowed: the public camera, its Cloudflare preview deployments, local test servers, and
+// any extra origins in MINIROOM_CAMERA_ORIGINS (comma separated).
+const cameraOrigins = new Set((process.env.MINIROOM_CAMERA_ORIGINS ?? "").split(",").map(s => s.trim()).filter(Boolean));
+function cameraOrigin(origin) {
+  if (!origin) return null;
+  if (cameraOrigins.has(origin)) return origin;
+  try {
+    const url = new URL(origin);
+    if (url.origin !== origin) return null;
+    if (url.protocol === "https:" && (url.hostname === "lg-camera-lab.pages.dev" || url.hostname.endsWith(".lg-camera-lab.pages.dev"))) return origin;
+    if (url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) return origin;
+  } catch {}
+  return null;
+}
 const guestPages = new Map([
   ["/experience", ["experience.html", "text/html; charset=utf-8"]],
   ["/experience/qr", ["experience-qr.html", "text/html; charset=utf-8"]],
@@ -95,7 +110,12 @@ const server = createServer(async (request, response) => {
   }
   if (visitorOnly && path === "/") { response.writeHead(302,{Location:"/experience"}).end(); return; }
   if (visitorOnly && !guestPages.has(path) && !guestAssets.has(path)) { response.writeHead(404).end(); return; }
-  if(path==="/api/catalog/scan"||path==="/api/catalog/retired-sales"||path==="/api/catalog/models"||path==="/api/catalog/bundles"||path==="/api/catalog/bodies"||path==="/api/catalog"||path==="/api/catalog/photo"||path==="/api/catalog/product")
+  if(path==="/api/catalog/scan"||path==="/api/catalog/camera-products"){
+    const allowed=cameraOrigin(request.headers.origin);
+    response.setHeader("Vary","Origin");
+    if(allowed)response.setHeader("Access-Control-Allow-Origin",allowed);
+  }
+  if(path==="/api/catalog/scan"||path==="/api/catalog/camera-products"||path==="/api/catalog/retired-sales"||path==="/api/catalog/models"||path==="/api/catalog/bundles"||path==="/api/catalog/bodies"||path==="/api/catalog"||path==="/api/catalog/photo"||path==="/api/catalog/product")
     return (await import('./catalog.mjs')).serveCatalog(new URL(request.url,'http://localhost'),response);
   if(path==="/api/routine-context"){
     const params=new URL(request.url,'http://localhost').searchParams;
